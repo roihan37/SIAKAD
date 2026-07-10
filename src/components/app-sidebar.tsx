@@ -60,23 +60,23 @@ const data = {
       items: [
         {
           title: "Mahasiswa",
-          url: "#",
+          url: "/mahasiswa",
         },
         {
           title: "Dosen",
-          url: "#",
+          url: "/dosen",
         },
         {
           title: "Fakultas",
-          url: "#",
+          url: "/fakultas",
         },
         {
           title: "Program Studi",
-          url: "#",
+          url: "/program-studi",
         },
         {
           title: "Mata Kuliah",
-          url: "#",
+          url: "/mata-kuliah",
         },
         {
           title: "Ruangan",
