@@ -5,7 +5,7 @@ import { DataTable } from "@/components/tables/data-table"
 
 
 export default function MahasiswaPage() {
-
+    
     return (
         <>
             <div className="container mx-auto mt-4">
