@@ -2,6 +2,7 @@
 import { JabatanDosen, Role, Status } from "@prisma/client";
 import "dotenv/config";
 import { prisma } from "../src/lib/prisma";
+import { hashPassword } from "../src/lib/bycript";
 
 
 
@@ -33,7 +34,7 @@ async function main() {
     },
   });
 
-//   const password = await bcrypt.hash("password123", 10);
+  const password = hashPassword("Tasik123");
 
   // ==========================
   // Admin
@@ -43,7 +44,7 @@ async function main() {
       name: "Super Admin",
       email: "admin@siakad.com",
       username: "admin",
-      password : "Tasik123",
+      password : password,
       role: Role.Admin,
       gender : "Male",
       phoneNumber: "081111111111",

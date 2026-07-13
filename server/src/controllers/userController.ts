@@ -1,9 +1,11 @@
 import { Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { hashPassword } from "../lib/bycript";
+import { Prisma } from "@prisma/client";
 
 export class Controller {
     static async addUser(req: Request, res: Response) {
+
         try {
             const {
                 name,
@@ -27,52 +29,68 @@ export class Controller {
 
             const hash = await hashPassword(password)
 
-            const newUser = await prisma.user.create({
-                data: {
-                    name,
-                    email,
-                    username,
-                    password: hash,
-                    birthDate,
-                    role,
-                    phoneNumber,
-                    gender,
-                    address,
+            const newUser = await prisma.$transaction(async (tx) => {
+                const user = await prisma.user.create({
+                    data: {
+                        name,
+                        email,
+                        username,
+                        password: hash,
+                        birthDate,
+                        role,
+                        phoneNumber,
+                        gender,
+                        address,
+                    }
+                })
+
+                if (role === "Mahasiswa") {
+                    await tx.mahasiswa.create({
+                        data: {
+                            nim,
+                            angkatan,
+                            semester,
+                            status,
+                            prodiId,
+                            userId: user.id
+                        }
+                    })
                 }
+
+                if (role === "Dosen") {
+                    await tx.dosen.create({
+                        data: {
+                            nidn,
+                            jabatan,
+                            status,
+                            prodiId,
+                            userId: user.id
+                        }
+                    })
+                }
+
+                return user
             })
-
-            if (role === "Mahasiswa") {
-                await prisma.mahasiswa.create({
-                    data: {
-                        nim,
-                        angkatan,
-                        semester,
-                        status,
-                        prodiId,
-                        dosenId,
-                        userId: newUser.id
-                    }
-                })
-            }
-
-            if (role === "Dosen") {
-                await prisma.dosen.create({
-                    data: {
-                        nidn,
-                        jabatan,
-                        status,
-                        prodiId,
-                        userId: newUser.id
-                    }
-                })
-            }
 
             res.status(201).json({
                 message: `${newUser.name} created successfully`
             })
 
         } catch (error) {
-            res.status(500).json({ message: error });
+
+            if (error instanceof Prisma.PrismaClientKnownRequestError &&
+                error.code === "P2002"
+            ) {
+                const field = error.meta?.target as string[];
+                res.status(400).json({
+                    message: `${field.join(", ")} sudah terdaftar`
+                });
+
+            } else {
+                res.status(500).json({
+                    message: `Internal Server Error`
+                });
+            }
         }
     }
 
