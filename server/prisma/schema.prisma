@@ -11,110 +11,113 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
 model User {
-  id          String   @id @default(uuid())
-  name        String
-  email       String   @unique
-  username    String   @unique
-  password    String
-  role        Role
+  id        String    @id @default(uuid())
+  name      String
+  email     String    @unique
+  username  String    @unique
+  password  String
+  role      Role
+  gender    String
+  birthDate DateTime?
 
   phoneNumber String?
   photo       String?
   address     String?
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  mahasiswa   Mahasiswa?
-  dosen       Dosen?
+  mahasiswa Mahasiswa?
+  dosen     Dosen?
 }
 
 model Mahasiswa {
-  id          String   @id @default(uuid())
+  id String @id @default(uuid())
 
-  nim         String   @unique
+  nim String @unique
 
-  angkatan    Int
-  semester    Int
+  angkatan Int
+  semester Int
 
-  status      Status
+  status Status
 
-  userId      String   @unique
-  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  prodiId     Int
-  prodi        Prodi   @relation(fields: [prodiId], references: [id])
+  prodiId Int
+  prodi   Prodi @relation(fields: [prodiId], references: [id])
 
-  dosenId     String?
-  dosen        Dosen?  @relation(fields: [dosenId], references: [id])
+  dosenId String?
+  dosen   Dosen?  @relation(fields: [dosenId], references: [id])
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Dosen {
-  id          String   @id @default(uuid())
+  id String @id @default(uuid())
 
-  nidn        String   @unique
+  nidn String @unique
 
-  status      Status
-  jabatan     JabatanDosen @default(DOSEN)
+  status  Status
+  jabatan JabatanDosen @default(Dosen)
 
-  userId      String   @unique
-  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  prodiId     Int
-  prodi        Prodi   @relation(fields: [prodiId], references: [id])
+  prodiId Int
+  prodi   Prodi @relation(fields: [prodiId], references: [id])
 
-  mahasiswa   Mahasiswa[]
+  mahasiswa Mahasiswa[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Fakultas {
-  id          Int      @id @default(autoincrement())
-  kode        String   @unique
-  nama        String
+  id   Int    @id @default(autoincrement())
+  kode String @unique
+  nama String
 
-  prodi       Prodi[]
+  prodi Prodi[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Prodi {
-  id          Int      @id @default(autoincrement())
-  kode        String   @unique
-  nama        String
+  id   Int    @id @default(autoincrement())
+  kode String @unique
+  nama String
 
-  fakultasId  Int
-  fakultas    Fakultas @relation(fields: [fakultasId], references: [id])
+  fakultasId Int
+  fakultas   Fakultas @relation(fields: [fakultasId], references: [id])
 
-  dosen       Dosen[]
-  mahasiswa   Mahasiswa[]
+  dosen     Dosen[]
+  mahasiswa Mahasiswa[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum Role {
-  ADMIN
-  DOSEN
-  MAHASISWA
+  Admin
+  Dosen
+  Mahasiswa
 }
 
 enum Status {
-  AKTIF
-  CUTI
-  LULUS
-  NONAKTIF
+  Aktif
+  Cuti
+  Lulus
+  Nonaktif
 }
 
 enum JabatanDosen {
-  DOSEN
-  KAPRODI
-  DEKAN
-  REKTOR
+  Dosen
+  Kaprodi
+  Dekan
+  Rektor
 }
