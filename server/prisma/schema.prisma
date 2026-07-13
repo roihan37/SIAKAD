@@ -29,8 +29,9 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  mahasiswa Mahasiswa?
-  dosen     Dosen?
+  mahasiswa     Mahasiswa?
+  dosen         Dosen?
+  refreshTokens RefreshToken[]
 }
 
 model Mahasiswa {
@@ -74,6 +75,19 @@ model Dosen {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model RefreshToken {
+  id          String   @id @default(uuid())
+  hashedToken String   @unique
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  revoked     Boolean  @default(false)
+  device      String?
+  ip          String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  expireAt    DateTime
 }
 
 model Fakultas {
