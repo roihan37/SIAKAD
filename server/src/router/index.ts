@@ -1,6 +1,6 @@
 import express, { Request, Response } from "express";
 import routerUser from "./users";
-import routerAunth from "./aunth";
+import routerAunth from "./auth";
 
 const router = express.Router()
 
