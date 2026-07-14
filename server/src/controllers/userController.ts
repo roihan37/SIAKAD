@@ -1,11 +1,14 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { hashPassword } from "../lib/bycript";
 import { Prisma } from "@prisma/client";
 
 export class Controller {
-    static async addUser(req: Request, res: Response) {
-
+    static async addUser(
+        req: Request, 
+        res: Response, 
+        next : NextFunction
+        ) {
         try {
             const {
                 name,
@@ -71,26 +74,12 @@ export class Controller {
 
                 return user
             })
-
             res.status(201).json({
                 message: `${newUser.name} created successfully`
             })
 
         } catch (error) {
-
-            if (error instanceof Prisma.PrismaClientKnownRequestError &&
-                error.code === "P2002"
-            ) {
-                const field = error.meta?.target as string[];
-                res.status(400).json({
-                    message: `${field.join(", ")} sudah terdaftar`
-                });
-
-            } else {
-                res.status(500).json({
-                    message: `Internal Server Error`
-                });
-            }
+            next(error)
         }
     }
 
