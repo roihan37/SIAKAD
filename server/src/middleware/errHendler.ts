@@ -22,14 +22,20 @@ export const errorHandler: ErrorRequestHandler = (
     }
     else if (error.name === "Unauthorized") {
         return res.status(401).json({
-            message: "Invalid Email / Password"
+            message: error.message? error.message 
+            : "Invalid Email / Password"
         });
     }
-    else if (error.name === "badRequest") {
-        return res.status(400).json({
-            message: "Email / Password is required"
+    else if (error.name === "Unauth") {
+        return res.status(401).json({
+            message: "Invalid or expired token"
         });
-    } 
+    }
+    else if (error.name === "NotFound"){
+        return res.status(404).json({
+            message: "Data not found"
+        });
+    }
     return res.status(500).json({
         message: "Internal Server Error"
     });

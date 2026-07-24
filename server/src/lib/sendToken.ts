@@ -7,13 +7,13 @@ export const generateAccessToken = (payload : object) => {
     });
  } 
 
-export const generateRefreshToken = (payload : object) =>{
+export const generateRefreshToken = () =>{
     const token = crypto.randomBytes(16).toString('base64url');
    return token;
 }
 
 export const generateTokens = (payload : object) => {
    const accessToken = generateAccessToken(payload)
-   const refreshToken = generateRefreshToken(payload)
+   const refreshToken = generateRefreshToken()
    return {accessToken, refreshToken}
 }
