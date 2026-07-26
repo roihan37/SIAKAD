@@ -1,8 +1,9 @@
 import { api } from "@/api/axios";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
+
 export interface LoginRequest {
-    email: string;
+    identifier: string;
     password: string;
   }
   
@@ -12,12 +13,15 @@ export const login = createAsyncThunk(
   async (data: LoginRequest, thunkAPI) => {
     try {
       const response = await api.post("/auth/login", {
-        email : data.email,
+        identifier : data.identifier,
         password : data.password,
       });
+      console.log(response);
       
       return response.data;
     } catch (err: any) {
+      console.log(err);
+      
       return thunkAPI.rejectWithValue(
         err.response.data.message
       );
