@@ -6,15 +6,42 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import React, { useState } from "react"
+import { login } from "@/features/action/authThunk"
+import { useAppDispatch } from "@/hook/redux"
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"form">) {
+  const dispatch = useAppDispatch();
+  const [loginForm, setLoginForm] = useState({
+    identifier : 'ts',
+    password : 'ts'
+  })
 
-  // const []
+  const henddleinput = ({ target } : React.ChangeEvent<HTMLInputElement>) => {
+
+    setLoginForm({
+      ...loginForm,
+      [target.name] : target.value
+    }) 
+  }
+
+  const submitLogin = async (e: React.SubmitEvent) => {
+    e.preventDefault();
+    try {
+      const data = await dispatch(login(loginForm)).unwrap();
+  
+      console.log(data);
+    } catch (error) {
+      
+      console.log(error);
+    }
+  }
+
   return (
-    <form className={cn("flex flex-col gap-6", className)} {...props}>
+    <form onSubmit={submitLogin} className={cn("flex flex-col gap-6", className)} {...props}>
       <FieldGroup>
         <div className="flex flex-col items-center gap-1 text-center">
           <h1 className="text-2xl font-bold">Login to your account</h1>
@@ -23,8 +50,8 @@ export function LoginForm({
           </p>
         </div>
         <Field>
-          <FieldLabel htmlFor="email">Email</FieldLabel>
-          <Input id="email" type="email" placeholder="m@example.com" required />
+          <FieldLabel htmlFor="email">Email or Username</FieldLabel>
+          <Input id="email" name="identifier" value={loginForm.identifier} onChange={henddleinput} placeholder="email or username" required />
         </Field>
         <Field>
           <div className="flex items-center">
@@ -36,13 +63,12 @@ export function LoginForm({
               Forgot your password?
             </a>
           </div>
-          <Input id="password" type="password" required />
+          <Input id="password" name="password" value={loginForm.password} onChange={henddleinput} type="password" required />
         </Field>
         <Field>
           <Button type="submit">Login</Button>
         </Field>
-      
-        
+ 
       </FieldGroup>
     </form>
   )
