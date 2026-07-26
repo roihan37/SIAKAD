@@ -1,32 +1,30 @@
 import { createSlice } from "@reduxjs/toolkit"
 import { login } from "../action/authThunk"
+import type { AuthState } from "@/types/state"
 
-
-interface AuthState {
-    isLoading : boolean,
-    error: string | null;
-}
 
 const initialState : AuthState = {
     isLoading : false,
-    error : null
+    error : null,
+    accessToken : null
 }
 
 const authSlice = createSlice({
     name : 'auth',
     initialState,
     reducers : {
-
+        logout(state){
+            state.accessToken = null
+        }
     },
     extraReducers(builder) {
         builder
-
         .addCase(login.pending, state => {
             state.isLoading = true
         })
         .addCase(login.fulfilled, (state, action) => {
             state.isLoading = false
-            localStorage.setItem("access_token", action.payload.access_token)
+            state.accessToken = action.payload.access_token
         })
         .addCase(login.rejected, (state, action) =>{
             state.isLoading = false

@@ -32,11 +32,13 @@ const router = createBrowserRouter([
           path: "/program-studi",
           element: <PStudiPage/>
         },
-      ]
+      ],
+      
   },
   {
     path: "/",
-    element: <LoginPage/>
+    element: <LoginPage/>,
+    
   },
 ]);
 

@@ -8,16 +8,19 @@ import {
 import { Input } from "@/components/ui/input"
 import React, { useState } from "react"
 import { login } from "@/features/action/authThunk"
-import { useAppDispatch } from "@/hook/redux"
+import { useAppDispatch } from "@/hooks/redux"
+import { useNavigate } from "react-router"
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"form">) {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate()
+
   const [loginForm, setLoginForm] = useState({
-    identifier : 'ts',
-    password : 'ts'
+    identifier : 'pro.muliaa@gmail.com',
+    password : 'Tasik123'
   })
 
   const henddleinput = ({ target } : React.ChangeEvent<HTMLInputElement>) => {
@@ -28,11 +31,11 @@ export function LoginForm({
     }) 
   }
 
-  const submitLogin = async (e: React.SubmitEvent) => {
+  const submitLogin = async (e: React.SubmitEvent<Element>) => {
     e.preventDefault();
     try {
       const data = await dispatch(login(loginForm)).unwrap();
-  
+      navigate('/mahasiswa')
       console.log(data);
     } catch (error) {
       
@@ -68,7 +71,6 @@ export function LoginForm({
         <Field>
           <Button type="submit">Login</Button>
         </Field>
- 
       </FieldGroup>
     </form>
   )
