@@ -1,3 +1,4 @@
+import { logout, setAccessToken } from "@/features/slice/authSlice";
 import axios from "axios";
 let appStore: typeof import("@/app/store").store;
 
@@ -14,6 +15,8 @@ export const api = axios.create({
 
 api.interceptors.request.use((config) => {
 
+  // console.log(config, "ISI CONFIG");
+  
   const token = appStore.getState().users.accessToken;
 
     if (token) {
@@ -24,18 +27,63 @@ api.interceptors.request.use((config) => {
 });
 
 api.interceptors.response.use(
-  (res) => res,
+  (response) => response,
 
- async (err) => {
-  // request yang tadi gagal
-  const originalRequest = err.config;
-  // setAccessToken
-  if(err.response.status === 401){
+  async (err) => {
+    const originalRequest = err.config;
 
+    if (
+      err.response?.status === 401 &&
+      err.response?.data?.code === "TOKEN_EXPIRED" &&
+      !originalRequest._retry
+    ) {
+      originalRequest._retry = true;
+
+      try {
+        const { data } = await api.post("/auth/refresh");
+        console.log(data, 'MMM');
+        
+        appStore.dispatch(setAccessToken(data.access_token));
+        
+        originalRequest.headers.Authorization =
+          `Bearer ${data.access_token}`;
+
+        return api(originalRequest);
+
+      } catch (refreshError) {
+        console.log(refreshError);
+        
+        appStore.dispatch(logout());
+
+        return Promise.reject(refreshError);
+      }
+    }
+
+    return Promise.reject(err);
   }
+);
+
+// api.interceptors.response.use(
+//   (res) => res,
+
+//  async (err) => {
+//   // request yang tadi gagal
+//   const originalRequest = err.config;
+//   // setAccessToken
+//   if (
+//     err.response?.status === 401 &&
+//     err.response?.data?.code === "TOKEN_EXPIRED"
+//   ){
+//     try {
+//       const refreshToken = await api.post('/auth/refreshTokens')
+//       appStore.dispatch(setAccessToken(refreshToken.data.access_token))
+//     } catch (error) {
+      
+//     }
+//   }
   
- }
-)
+//  }
+// )
 
 
 // Response Interceptor

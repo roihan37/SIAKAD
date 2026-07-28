@@ -27,7 +27,8 @@ const authSlice = createSlice({
         })
         .addCase(login.fulfilled, (state, action) => {
             state.isLoading = false
-            state.accessToken = action.payload.access_token
+            state.accessToken = action.payload.accessToken
+            console.log(action.payload.accessToken, "<< data case");
         })
         .addCase(login.rejected, (state, action) =>{
             state.isLoading = false
@@ -35,6 +36,8 @@ const authSlice = createSlice({
         })
     }
 })
+
+export const { logout, setAccessToken } = authSlice.actions;
 
 export default authSlice.reducer
 
