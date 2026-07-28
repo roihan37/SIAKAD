@@ -1,10 +1,8 @@
-import jwt from "jsonwebtoken";
 import crypto from 'crypto';
+import { createTokenJwt } from "./jwt";
 
 export const generateAccessToken = (payload : object) => {
-    return jwt.sign(payload, 'shhhhh', {
-       expiresIn: '5m'
-    });
+    return createTokenJwt(payload)
  } 
 
 export const generateRefreshToken = () =>{

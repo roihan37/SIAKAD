@@ -15,6 +15,9 @@ const authSlice = createSlice({
     reducers : {
         logout(state){
             state.accessToken = null
+        },
+        setAccessToken(state, action) {
+            state.accessToken = action.payload;
         }
     },
     extraReducers(builder) {

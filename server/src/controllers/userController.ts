@@ -86,7 +86,7 @@ export class Controller {
     static async getAllStudents(req: Request, res: Response) {
         try {
             const allStudents = await prisma.user.findMany()
-            console.log(allStudents);
+            res.status(200).json(allStudents)
 
         } catch (error) {
 

@@ -19,7 +19,8 @@ export async function authMiddleware(
       const token = authHeader.split(" ")[1];
   
       const payload = decoded(token) as ResultToken;
-  
+      console.log(payload, '<<');
+      
       const user = await prisma.user.findUnique({
         where: {
           id: payload.id,
@@ -37,6 +38,9 @@ export async function authMiddleware(
   
       next();
     } catch (error) {
+      
+      // res.send(error)
+      
       next(error);
     }
   }

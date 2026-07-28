@@ -15,7 +15,13 @@ export const errorHandler: ErrorRequestHandler = (
         return res.status(409).json({
             message: `${field.join(", ")} sudah terdaftar`
         });
-    } else if (error.name === "badRequest") {
+    } else if (error.name === "TokenExpiredError") {
+        return res.status(401).json({
+            code: "TOKEN_EXPIRED",
+            message: "Access token expired",
+        });
+    }
+    else if (error.name === "badRequest") {
         return res.status(400).json({
             message: "Email / Password is required"
         });
