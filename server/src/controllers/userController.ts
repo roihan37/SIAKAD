@@ -1,13 +1,14 @@
 import { NextFunction, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { hashPassword } from "../lib/bycript";
+import { SelectUser } from "../types/user";
 
 export class Controller {
     static async addUser(
-        req: Request, 
-        res: Response, 
-        next : NextFunction
-        ) {
+        req: Request,
+        res: Response,
+        next: NextFunction
+    ) {
         try {
             const {
                 name,
@@ -82,29 +83,29 @@ export class Controller {
         }
     }
 
-    static async getAllStudents(req: Request, res: Response, next : NextFunction) {
+    static async getAllStudents(req: Request, res: Response, next: NextFunction) {
         try {
-                const allStudents = await prisma.user.findMany(
-                    {
-                        where : {
-                            role : "Mahasiswa"
-                        },
-                        select : {
-                            id : true,
-                            name : true,
-                            email : true,
-                            role : true,
-                            gender : true,
-                            mahasiswa : {
-                                select : {
-                                    id : true,
-                                    nim : true,
-                                    status : true,                
-                                }
+            const allStudents = await prisma.user.findMany(
+                {
+                    where: {
+                        role: "Mahasiswa"
+                    },
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        role: true,
+                        gender: true,
+                        mahasiswa: {
+                            select: {
+                                id: true,
+                                nim: true,
+                                status: true,
                             }
                         }
                     }
-                )
+                }
+            )
             res.status(200).json(allStudents)
 
         } catch (error) {
@@ -112,51 +113,95 @@ export class Controller {
         }
     }
 
-    static async getStudentById(req: Request, res: Response, next : NextFunction){
+    static async getUserById(req: Request, res: Response, next: NextFunction) {
         try {
             const { id } = req.params
 
-            const studentById = await prisma.user.findUnique({
-                where : { id : id as string }
+            const user = await prisma.user.findUnique({
+                where: { id: id as string },
+                select: {
+                    role: true
+                }
             })
 
-            if(!studentById){
-                throw { name : "NotFound"}
+            if (!user) {
+                throw { name: "NotFound" }
             }
+
+            let select: SelectUser = {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+                gender: true,
+            }
+
+            switch (user?.role) {
+                case "Mahasiswa":
+                    select.mahasiswa = {
+                        select: {
+                            id: true,
+                            nim: true,
+                            status: true,
+                        },
+                    }
+                    break;
+                case "Dosen":
+                    select.dosen = {
+                        select: {
+                            id: true,
+                            nidn: true,
+                            status: true,
+                            jabatan: true
+                        }
+                    }
+                default:
+                    return res.status(400).json({
+                        message: "Role tidak dikenali",
+                    });
+
+            }
+
+            const result = await prisma.user.findUnique({
+                where: { id: id as string },
+                select
+            })
+
+            res.status(200).json(result)
         } catch (error) {
             next(error)
         }
     }
 
-    static async getAllLecturers(req: Request, res: Response, next : NextFunction) {
+    static async getAllLecturers(req: Request, res: Response, next: NextFunction) {
         try {
             const allLecturers = await prisma.user.findMany(
                 {
-                    where : {
-                        role : "Dosen"
+                    where: {
+                        role: "Dosen"
                     },
-                    select : {
-                        id : true,
-                        name : true,
-                        email : true,
-                        role : true,
-                        gender : true,
-                        dosen : {
-                            select : {
-                                id : true,
-                                nidn : true,
-                                status : true,
-                                jabatan : true
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        role: true,
+                        gender: true,
+                        dosen: {
+                            select: {
+                                id: true,
+                                nidn: true,
+                                status: true,
+                                jabatan: true
                             }
                         }
                     }
                 }
             )
-        res.status(200).json(allLecturers)
+            res.status(200).json(allLecturers)
 
-    } catch (error) {
-        next(error)
-    }
+        } catch (error) {
+            next(error)
+        }
     }
 
 }

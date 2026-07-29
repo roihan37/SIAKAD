@@ -1,18 +1,22 @@
-// export interface User {
-//     name : string
-//     email : string
-//     username : string
-//     password : string
-//     role : string
-//     phoneNumber : string
-//     gender : string
-//     address: string
-//     nim : string
-//     angkatan : string
-//     semester : string
-//     status : string
-//     prodiId : number
-//     dosenId : number
-//     nidn : number
-//     jabatan : string
-// }
+export interface SelectUser {
+    id: boolean;
+    name: boolean;
+    email: boolean;
+    role: boolean;
+    gender: boolean;
+    mahasiswa?: {
+        select: {
+            id: boolean;
+            nim: boolean;
+            status: boolean;
+        };
+    },
+    dosen?: {
+        select: {
+            id: boolean;
+            nidn: boolean;
+            status: boolean;
+            jabatan : boolean
+        };
+    };
+}
