@@ -6,6 +6,6 @@ export const decoded = (token : string) => {
  
 export const createTokenJwt = (payload : object) => {
   return jwt.sign(payload, 'shhhhh', {
-      expiresIn: '3s'
+      expiresIn: '25m'
    });
 }

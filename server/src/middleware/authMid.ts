@@ -13,13 +13,13 @@ export async function authMiddleware(
       const authHeader = req.headers.authorization;
   
       if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        throw { name: "Unauth" };
+        throw { name: "TokenInvalid" };
       }
   
       const token = authHeader.split(" ")[1];
   
       const payload = decoded(token) as ResultToken;
-      console.log(payload, '<<');
+      
       
       const user = await prisma.user.findUnique({
         where: {
@@ -38,8 +38,6 @@ export async function authMiddleware(
   
       next();
     } catch (error) {
-      
-      // res.send(error)
       
       next(error);
     }

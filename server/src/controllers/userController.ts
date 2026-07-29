@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { hashPassword } from "../lib/bycript";
-import { Prisma } from "@prisma/client";
 
 export class Controller {
     static async addUser(
@@ -83,14 +82,81 @@ export class Controller {
         }
     }
 
-    static async getAllStudents(req: Request, res: Response) {
+    static async getAllStudents(req: Request, res: Response, next : NextFunction) {
         try {
-            const allStudents = await prisma.user.findMany()
+                const allStudents = await prisma.user.findMany(
+                    {
+                        where : {
+                            role : "Mahasiswa"
+                        },
+                        select : {
+                            id : true,
+                            name : true,
+                            email : true,
+                            role : true,
+                            gender : true,
+                            mahasiswa : {
+                                select : {
+                                    id : true,
+                                    nim : true,
+                                    status : true,                
+                                }
+                            }
+                        }
+                    }
+                )
             res.status(200).json(allStudents)
 
         } catch (error) {
-
+            next(error)
         }
+    }
+
+    static async getStudentById(req: Request, res: Response, next : NextFunction){
+        try {
+            const { id } = req.params
+
+            const studentById = await prisma.user.findUnique({
+                where : { id : id as string }
+            })
+
+            if(!studentById){
+                throw { name : "NotFound"}
+            }
+        } catch (error) {
+            next(error)
+        }
+    }
+
+    static async getAllLecturers(req: Request, res: Response, next : NextFunction) {
+        try {
+            const allLecturers = await prisma.user.findMany(
+                {
+                    where : {
+                        role : "Dosen"
+                    },
+                    select : {
+                        id : true,
+                        name : true,
+                        email : true,
+                        role : true,
+                        gender : true,
+                        dosen : {
+                            select : {
+                                id : true,
+                                nidn : true,
+                                status : true,
+                                jabatan : true
+                            }
+                        }
+                    }
+                }
+            )
+        res.status(200).json(allLecturers)
+
+    } catch (error) {
+        next(error)
+    }
     }
 
 }
