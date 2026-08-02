@@ -83,36 +83,6 @@ export class Controller {
         }
     }
 
-    static async getAllStudents(req: Request, res: Response, next: NextFunction) {
-        try {
-            const allStudents = await prisma.user.findMany(
-                {
-                    where: {
-                        role: "Mahasiswa"
-                    },
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                        role: true,
-                        gender: true,
-                        mahasiswa: {
-                            select: {
-                                id: true,
-                                nim: true,
-                                status: true,
-                            }
-                        }
-                    }
-                }
-            )
-            res.status(200).json(allStudents)
-
-        } catch (error) {
-            next(error)
-        }
-    }
-
     static async getUserById(req: Request, res: Response, next: NextFunction) {
         try {
             const { id } = req.params
@@ -173,6 +143,144 @@ export class Controller {
         }
     }
 
+    static async updateUserById(req: Request, res: Response, next : NextFunction) {
+        try {
+            const {id} = req.params
+            
+            const {
+                name,
+                email,
+                username,
+                password,
+                role,
+                phoneNumber,
+                gender,
+                address,
+                nim,
+                angkatan,
+                semester,
+                status,
+                prodiId,
+                dosenId,
+                nidn,
+                jabatan,
+                birthDate
+            } = req.body
+
+            const user = await prisma.user.findUnique({
+                where : { id: id as string },
+            })
+
+            if(!user){
+                throw { name : "NotFound"}
+            }
+
+            const userUpdate = await prisma.$transaction(async (tx) => {
+                const user = await prisma.user.update({
+                    where : {id : id as string},
+                    data: {
+                        name,
+                        email,
+                        username,
+                        password,
+                        birthDate,
+                        role,
+                        phoneNumber,
+                        gender,
+                        address,
+                    }
+                })
+                if (role === "Mahasiswa") {
+                    await tx.mahasiswa.update({
+                        where : {userId: user.id},
+                        data: {
+                            nim,
+                            angkatan,
+                            semester,
+                            status,
+                            prodiId,
+                            userId: user.id
+                        }
+                    })
+                }
+                if (role === "Dosen") {
+                    await tx.dosen.update({
+                        where : {userId: user.id},
+                        data: {
+                            nidn,
+                            jabatan,
+                            status,
+                            prodiId,
+                        }
+                    })
+                }
+                return user
+            })
+
+            res.status(200).json({
+                message: "User berhasil diperbarui",
+                data: user.name,
+            });
+        } catch (error) {
+            next(error)
+        }
+    }
+
+    // BELUM PAGINATION
+    static async getAllStudents(req: Request, res: Response, next: NextFunction) {
+        try {
+            const allStudents = await prisma.user.findMany(
+                {
+                    where: {
+                        role: "Mahasiswa"
+                    },
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        role: true,
+                        gender: true,
+                        mahasiswa: {
+                            select: {
+                                id: true,
+                                nim: true,
+                                status: true,
+                            }
+                        }
+                    }
+                }
+            )
+            res.status(200).json(allStudents)
+
+        } catch (error) {
+            next(error)
+        }
+    }
+
+    static async getStudentById(req: Request, res : Response, next : NextFunction) {
+        try {
+            const { id } = req.params
+
+            const student = await prisma.user.findUnique({
+                where : {
+                    id : id as string,
+                    role : 'Mahasiswa'
+                }
+            })
+
+            if(!student){
+                throw { name : 'NotFound'}
+            }
+
+            res.status(200).json(student)
+        } catch (error) {
+            next(error)
+        }
+    }
+    
+    
+
+    // BELUM PAGINATION
     static async getAllLecturers(req: Request, res: Response, next: NextFunction) {
         try {
             const allLecturers = await prisma.user.findMany(
@@ -199,6 +307,27 @@ export class Controller {
             )
             res.status(200).json(allLecturers)
 
+        } catch (error) {
+            next(error)
+        }
+    }
+
+    static async getAllLecturerById(req: Request, res : Response, next : NextFunction) {
+        try {
+            const {id} = req.params
+
+            const lecturer = await prisma.user.findUnique({
+                where : {
+                    id : id as string,
+                    role : 'Dosen'
+                }
+            })
+
+            if(!lecturer){
+                throw {name : 'NotFound'}
+            }
+
+            res.status(200).json(lecturer)
         } catch (error) {
             next(error)
         }
