@@ -10,6 +10,7 @@ import React, { useState } from "react"
 import { login } from "@/features/action/authThunk"
 import { useAppDispatch } from "@/hooks/redux"
 import { useNavigate } from "react-router"
+// import { setAccessToken } from "@/features/slice/authSlice"
 
 export function LoginForm({
   className,
@@ -19,7 +20,7 @@ export function LoginForm({
   const navigate = useNavigate()
 
   const [loginForm, setLoginForm] = useState({
-    identifier : 'pro.muliaa@gmail.com',
+    identifier : 'admin@siakad.com',
     password : 'Tasik123'
   })
 
@@ -35,8 +36,8 @@ export function LoginForm({
     e.preventDefault();
     try {
       const data = await dispatch(login(loginForm)).unwrap();
+      console.log(data, "<< PADA SUBMIT LOGIN");
       navigate('/mahasiswa')
-      console.log(data);
     } catch (error) {
       
       console.log(error);

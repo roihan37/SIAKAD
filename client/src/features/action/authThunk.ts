@@ -18,9 +18,7 @@ export const login = createAsyncThunk(
         identifier : data.identifier,
         password : data.password,
       });
-     
-      
-      console.log(response.data, "hadirin");
+      console.log(response.data, '<di thunk');
       return response.data;
       
     } catch (err: any) {

@@ -28,7 +28,8 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (response) => response,
-
+  
+  
   async (err) => {
     const originalRequest = err.config;
 
@@ -51,7 +52,7 @@ api.interceptors.response.use(
         return api(originalRequest);
 
       } catch (refreshError) {
-        console.log(refreshError);
+        console.log(refreshError,"<ERROR KENAPA");
         
         appStore.dispatch(logout());
 

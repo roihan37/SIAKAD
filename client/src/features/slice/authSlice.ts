@@ -15,9 +15,11 @@ const authSlice = createSlice({
     reducers : {
         logout(state){
             state.accessToken = null
+            console.log("LOGOUT DIPANGGIL");
         },
         setAccessToken(state, action) {
             state.accessToken = action.payload;
+            
         }
     },
     extraReducers(builder) {
@@ -28,7 +30,9 @@ const authSlice = createSlice({
         .addCase(login.fulfilled, (state, action) => {
             state.isLoading = false
             state.accessToken = action.payload.accessToken
-            console.log(action.payload.accessToken, "<< data case");
+            console.log(action.payload,'DI SLICE - PAYLOAD');
+            console.log(state.accessToken, "DI SLICE - ACCESSTOKEN");
+
         })
         .addCase(login.rejected, (state, action) =>{
             state.isLoading = false

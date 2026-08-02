@@ -39,7 +39,7 @@ export class Controller{
                 }
             })
             res.status(200).json({
-                message: "User berhasil diperbarui",
+                message: "Fakultas berhasil diperbarui",
                 newFakultas
             })
         } catch (error) {
