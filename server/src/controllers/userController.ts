@@ -4,6 +4,7 @@ import { hashPassword } from "../lib/bycript";
 import { SelectUser } from "../types/user";
 
 export class Controller {
+    // USERS
     static async addUser(
         req: Request,
         res: Response,
@@ -175,6 +176,8 @@ export class Controller {
                 throw { name : "NotFound"}
             }
 
+            const hash = await hashPassword(password)
+
             const userUpdate = await prisma.$transaction(async (tx) => {
                 const user = await prisma.user.update({
                     where : {id : id as string},
@@ -182,7 +185,7 @@ export class Controller {
                         name,
                         email,
                         username,
-                        password,
+                        password : hash,
                         birthDate,
                         role,
                         phoneNumber,
@@ -219,13 +222,22 @@ export class Controller {
 
             res.status(200).json({
                 message: "User berhasil diperbarui",
-                data: user.name,
+                data: userUpdate.id,
             });
         } catch (error) {
             next(error)
         }
     }
 
+    static async deleteUserById(req: Request, res: Response, next : NextFunction){
+        try {
+            
+        } catch (error) {
+            
+        }
+    }
+
+    // STUDENTS
     // BELUM PAGINATION
     static async getAllStudents(req: Request, res: Response, next: NextFunction) {
         try {
@@ -279,7 +291,7 @@ export class Controller {
     }
     
     
-
+    // LECTURER
     // BELUM PAGINATION
     static async getAllLecturers(req: Request, res: Response, next: NextFunction) {
         try {

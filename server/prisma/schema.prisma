@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,107 +8,86 @@ datasource db {
 }
 
 model User {
-  id        String    @id @default(uuid())
-  name      String
-  email     String    @unique
-  username  String    @unique
-  password  String
-  role      Role
-  gender    String
-  birthDate DateTime?
-
-  phoneNumber String?
-  photo       String?
-  address     String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  mahasiswa     Mahasiswa?
+  id            String         @id @default(uuid())
+  name          String
+  email         String         @unique
+  username      String         @unique
+  password      String
+  role          Role
+  phoneNumber   String?
+  photo         String?
+  address       String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  birthDate     DateTime?
+  gender        String
   dosen         Dosen?
+  mahasiswa     Mahasiswa?
   refreshTokens RefreshToken[]
 }
 
 model Mahasiswa {
-  id String @id @default(uuid())
-
-  nim String @unique
-
-  angkatan Int
-  semester Int
-
-  status Status
-
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  prodiId Int
-  prodi   Prodi @relation(fields: [prodiId], references: [id])
-
-  dosenId String?
-  dosen   Dosen?  @relation(fields: [dosenId], references: [id])
-
+  id        String   @id @default(uuid())
+  nim       String   @unique
+  angkatan  Int
+  semester  Int
+  status    Status
+  userId    String   @unique
+  prodiId   Int
+  dosenId   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  dosen     Dosen?   @relation(fields: [dosenId], references: [id])
+  prodi     Prodi    @relation(fields: [prodiId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Dosen {
-  id String @id @default(uuid())
-
-  nidn String @unique
-
-  status  Status
-  jabatan JabatanDosen @default(Dosen)
-
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  prodiId Int
-  prodi   Prodi @relation(fields: [prodiId], references: [id])
-
+  id        String       @id @default(uuid())
+  nidn      String       @unique
+  status    Status
+  jabatan   JabatanDosen @default(Dosen)
+  userId    String       @unique
+  prodiId   Int
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  prodi     Prodi        @relation(fields: [prodiId], references: [id])
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   mahasiswa Mahasiswa[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
 
 model RefreshToken {
   id          String   @id @default(uuid())
   hashedToken String   @unique
   userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   revoked     Boolean  @default(false)
   device      String?
   ip          String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   expireAt    DateTime
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Fakultas {
-  id   Int    @id @default(autoincrement())
-  kode String @unique
-  nama String
-
-  prodi Prodi[]
-
+  id        Int      @id @default(autoincrement())
+  kode      String   @unique
+  name      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  prodi     Prodi[]
 }
 
 model Prodi {
-  id   Int    @id @default(autoincrement())
-  kode String @unique
-  nama String
-
+  id         Int         @id @default(autoincrement())
+  kode       String      @unique
+  name       String
   fakultasId Int
-  fakultas   Fakultas @relation(fields: [fakultasId], references: [id])
-
-  dosen     Dosen[]
-  mahasiswa Mahasiswa[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  dosen      Dosen[]
+  mahasiswa  Mahasiswa[]
+  fakultas   Fakultas    @relation(fields: [fakultasId], references: [id])
 }
 
 enum Role {

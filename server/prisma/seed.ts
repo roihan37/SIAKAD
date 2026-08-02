@@ -19,7 +19,7 @@ async function main() {
   const fakultas = await prisma.fakultas.create({
     data: {
       kode: "FT",
-      nama: "Fakultas Teknik",
+      name: "Fakultas Teknik",
     },
   });
 
@@ -29,7 +29,7 @@ async function main() {
   const prodi = await prisma.prodi.create({
     data: {
       kode: "IF",
-      nama: "Teknik Informatika",
+      name: "Teknik Informatika",
       fakultasId: fakultas.id,
     },
   });
