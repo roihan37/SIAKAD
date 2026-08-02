@@ -76,10 +76,9 @@ export function DataTable<TData, TValue>({
         />
         <div className="pl-2">
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="ml-auto">
+            <DropdownMenuTrigger render={<Button variant="outline" className="ml-auto">
                 Columns
-              </Button>
+              </Button>} >
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               {table

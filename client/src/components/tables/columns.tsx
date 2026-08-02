@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import type { Fakultas } from "@/types/campus"
 import type { Matkul, ProgramStudi } from "./data"
+import { Button } from "../ui/button"
 
 export const columnMhs: ColumnDef<Mahasiswa>[] = [
   {
@@ -41,7 +42,7 @@ export const columnMhs: ColumnDef<Mahasiswa>[] = [
 
       return (
         <DropdownMenu>
-          <DropdownMenuTrigger render={<MoreHorizontal className="h-4 w-4" />} />
+          <DropdownMenuTrigger render={<Button variant="outline"><MoreHorizontal /></Button>} />
           <DropdownMenuContent>
             <DropdownMenuGroup>
               <DropdownMenuItem>
