@@ -77,8 +77,8 @@ export function DataTable<TData, TValue>({
         <div className="pl-2">
           <DropdownMenu>
             <DropdownMenuTrigger render={<Button variant="outline" className="ml-auto">
-                Columns
-              </Button>} >
+              Columns
+            </Button>} >
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               {table
@@ -167,10 +167,10 @@ export function DataTable<TData, TValue>({
             Next
           </Button>
         </div>
-      <div className="flex text-sm text-muted-foreground">
-        {table.getFilteredSelectedRowModel().rows.length} of{" "}
-        {table.getFilteredRowModel().rows.length} row(s) selected.
-      </div>
+        <div className="flex text-sm text-muted-foreground">
+          {table.getFilteredSelectedRowModel().rows.length} of{" "}
+          {table.getFilteredRowModel().rows.length} row(s) selected.
+        </div>
       </div>
     </div>
   )

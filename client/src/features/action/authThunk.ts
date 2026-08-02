@@ -18,7 +18,6 @@ export const login = createAsyncThunk(
         identifier : data.identifier,
         password : data.password,
       });
-      console.log(response.data, '<di thunk');
       return response.data;
       
     } catch (err: any) {
@@ -30,3 +29,19 @@ export const login = createAsyncThunk(
     }
   }
 );
+
+export const refreshToken = createAsyncThunk(
+  "auth/refresh",
+  async (_, thunkAPI) => {
+    try {
+      const response = await api.post("/auth/refreshTokens")
+      return response.data;
+      
+    } catch (err: any) {
+    
+      return thunkAPI.rejectWithValue(
+        err.response.data.message
+      );
+    }
+  }
+)
