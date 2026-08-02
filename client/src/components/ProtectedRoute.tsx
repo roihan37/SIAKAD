@@ -4,7 +4,7 @@ import { useAppSelector } from "@/hooks/redux";
 export default function ProtectedRoute() {
   const { accessToken,
           initialized
-  } = useAppSelector((state) => state.users);
+  } = useAppSelector((state) => state.auth);
   const location = useLocation();
 
   if (!initialized) {

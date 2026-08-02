@@ -7,12 +7,4 @@ router.get("/:id", Controller.getUserById);
 router.put("/:id", Controller.updateUserById);
 router.delete(':id', Controller.deleteUserById)
 
-// students
-router.get("/students", Controller.getAllStudents);
-router.get("/students/:id", Controller.getStudentById);
-
-// lecturers
-router.get("/lecturers", Controller.getAllLecturers);
-router.get("/lecturers/:id", Controller.getAllLecturerById);
-
 export default router

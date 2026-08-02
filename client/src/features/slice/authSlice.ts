@@ -16,11 +16,9 @@ const authSlice = createSlice({
     reducers : {
         logout(state){
             state.accessToken = null
-            console.log("LOGOUT DIPANGGIL");
         },
         setAccessToken(state, action) {
-            state.accessToken = action.payload;
-            
+            state.accessToken = action.payload;   
         }
     },
     extraReducers(builder) {

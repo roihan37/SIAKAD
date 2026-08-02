@@ -4,3 +4,9 @@ export interface AuthState {
     error: string | null
     initialized: boolean
 }
+
+export interface UsersState {
+    isLoading : boolean
+    error: string | null
+    students: object | null
+}
