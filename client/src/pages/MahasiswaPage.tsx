@@ -1,6 +1,7 @@
 import {  columnMhs} from "@/components/tables/columns"
 import { mahasiswa } from "@/components/tables/data"
 import { DataTable } from "@/components/tables/data-table"
+import { mahasiswaColumns } from "@/components/tables/mahasiswa.columns"
 import { useEffect } from "react"
 
 
@@ -14,7 +15,7 @@ export default function MahasiswaPage() {
                 <div className="text-2xl">
                     Data Mahasiswa
                 </div>
-                <DataTable columns={columnMhs} data={mahasiswa} />
+                <DataTable columns={mahasiswaColumns} data={mahasiswa} />
             </div>
         </>
     )

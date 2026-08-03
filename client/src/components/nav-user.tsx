@@ -18,7 +18,10 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { logoutApi } from "@/features/action/authThunk"
+import { useAppDispatch } from "@/hooks/redux"
 import { ChevronsUpDownIcon, SparklesIcon, BadgeCheckIcon, CreditCardIcon, BellIcon, LogOutIcon } from "lucide-react"
+import { useNavigate } from "react-router"
 
 export function NavUser({
   user,
@@ -30,6 +33,18 @@ export function NavUser({
   }
 }) {
   const { isMobile } = useSidebar()
+  const dispatch = useAppDispatch()
+  const navigate = useNavigate()
+
+  const handleLogout = async () => {
+    try {
+      await dispatch(logoutApi()).unwrap();
+  
+      navigate("/");
+    } catch (error) {
+      console.error(error);
+    }
+  };
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -96,8 +111,8 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <LogOutIcon
+            <DropdownMenuItem onClick={handleLogout} >
+              <LogOutIcon 
               />
               Log out
             </DropdownMenuItem>

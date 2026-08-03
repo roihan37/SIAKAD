@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit"
-import { login, refreshToken } from "../action/authThunk"
+import { login, logoutApi, refreshToken } from "../action/authThunk"
 import type { AuthState } from "@/types/state"
 
 
@@ -14,11 +14,11 @@ const authSlice = createSlice({
     name : 'auth',
     initialState,
     reducers : {
-        logout(state){
-            state.accessToken = null
-        },
         setAccessToken(state, action) {
             state.accessToken = action.payload;   
+        },
+        logout(state){
+            state.accessToken = null
         }
     },
     extraReducers(builder) {
@@ -43,10 +43,16 @@ const authSlice = createSlice({
             state.initialized = true;
             state.error = action.payload as string;
         })
+        .addCase(logoutApi.fulfilled, (state)=>{
+            state.accessToken = null
+        })
+        .addCase(logoutApi.rejected, (state, action)=>{
+            state.error = action.payload as string;
+        })
     }
 })
 
-export const { logout, setAccessToken } = authSlice.actions;
+export const { setAccessToken, logout } = authSlice.actions;
 
 export default authSlice.reducer
 

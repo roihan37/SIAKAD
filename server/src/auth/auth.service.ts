@@ -54,3 +54,14 @@ export const deleteRefreshTokenById = (
         }
     })
 }
+
+export async function revokeRefreshTokenById(id: string) {
+    return prisma.refreshToken.update({
+        where: {
+            id,
+        },
+        data: {
+            revoked: true,
+        },
+    });
+}

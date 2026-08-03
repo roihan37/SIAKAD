@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { comparePassword } from "../lib/bycript";
 import { generateTokens } from "../lib/sendToken";
-import { addRefreshtokenToWishlist, deleteRefreshTokenById, findRefreshToken, revokeTokensOnReuse } from "../auth/auth.service";
+import { addRefreshtokenToWishlist, deleteRefreshTokenById, findRefreshToken, revokeRefreshTokenById, revokeTokensOnReuse } from "../auth/auth.service";
 
 export class Controller {
     static async login(
@@ -102,6 +102,37 @@ export class Controller {
             })
             .status(200)
             .json({ accessToken });
+
+        } catch (error) {
+            next(error)
+        }
+    }
+
+    static async revokeRefreshTokens(
+        req: Request,
+        res: Response,
+        next: NextFunction
+    ) {
+        try {
+            const refreshToken = req.cookies.refreshToken;
+
+        if (refreshToken) {
+            const token = await findRefreshToken(refreshToken);
+
+            if (token && !token.revoked) {
+                await revokeRefreshTokenById(token.id);
+            }
+        }
+
+        res.clearCookie("refreshToken", {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+        });
+
+        return res.status(200).json({
+            message: "Logout successfully."
+        });
 
         } catch (error) {
             next(error)

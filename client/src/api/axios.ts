@@ -14,8 +14,6 @@ export const api = axios.create({
 
 
 api.interceptors.request.use((config) => {
-
-  // console.log(config, "ISI CONFIG");
   
   const token = appStore.getState().auth.accessToken;
 
