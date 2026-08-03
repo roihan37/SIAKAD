@@ -8,9 +8,11 @@ export const getAllStudents = createAsyncThunk(
       
       try {
         const response = await api.get("/students")
+        console.log(response.data);
         return response.data;
         
       } catch (err: any) {
+       console.log(err);
        
         return thunkAPI.rejectWithValue(
           err.response.data.message

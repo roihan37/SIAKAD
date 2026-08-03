@@ -4,7 +4,7 @@ import { Controller } from "../controllers/userController";
 const router = express.Router()
 
 // lecturers
-router.get("/lecturers", Controller.getAllLecturers);
-router.get("/lecturers/:id", Controller.getAllLecturerById);
+router.get("/", Controller.getAllLecturers);
+router.get("/:id", Controller.getAllLecturerById);
 
 export default router

@@ -1,21 +1,28 @@
-import {  columnMhs} from "@/components/tables/columns"
+
 import { mahasiswa } from "@/components/tables/data"
 import { DataTable } from "@/components/tables/data-table"
-import { mahasiswaColumns } from "@/components/tables/mahasiswa.columns"
+import { mhsColumns } from "@/components/tables/mhsColumns"
+import { getAllStudents } from "@/features/action/usersThunk"
+import { useAppDispatch, useAppSelector } from "@/hooks/redux"
 import { useEffect } from "react"
 
 
 
 export default function MahasiswaPage() {
-    
-    useEffect(()=>{},[])
+    const dispatch = useAppDispatch()
+    const {students} = useAppSelector((state)=>state.users)
+    useEffect(()=>{
+        dispatch(getAllStudents())
+        console.log(students, '<< INI STUDENT');
+        
+    },[dispatch])
     return (
         <>
             <div className="container mx-auto mt-4">
                 <div className="text-2xl">
                     Data Mahasiswa
                 </div>
-                <DataTable columns={mahasiswaColumns} data={mahasiswa} />
+                <DataTable columns={mhsColumns} data={mahasiswa} />
             </div>
         </>
     )

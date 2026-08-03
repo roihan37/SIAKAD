@@ -249,22 +249,29 @@ export class Controller {
                     select: {
                         id: true,
                         name: true,
-                        email: true,
                         role: true,
-                        gender: true,
                         mahasiswa: {
                             select: {
                                 id: true,
                                 nim: true,
                                 status: true,
+                                prodi : {
+                                    select : {
+                                        name : true
+                                    }
+                                }
                             }
-                        }
+                        },
                     }
                 }
             )
+            console.log(allStudents, "<<<");
+            
             res.status(200).json(allStudents)
 
         } catch (error) {
+            console.log(error, '<<<');
+            
             next(error)
         }
     }

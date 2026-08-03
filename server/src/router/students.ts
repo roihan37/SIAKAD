@@ -3,7 +3,7 @@ import { Controller } from "../controllers/userController";
 
 const router = express.Router()
 // students
-router.get("/students", Controller.getAllStudents);
-router.get("/students/:id", Controller.getStudentById);
+router.get("/", Controller.getAllStudents);
+router.get("/:id", Controller.getStudentById);
 
 export default router

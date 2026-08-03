@@ -1,6 +1,6 @@
-import {  columnFk } from "@/components/tables/columns"
 import {  fakultas } from "@/components/tables/data"
 import { DataTable } from "@/components/tables/data-table"
+import { fkColumns } from "@/components/tables/fkColumns"
 
 
 
@@ -12,7 +12,7 @@ export default function FakultasPage() {
                 <div className="text-2xl">
                     Fakultas
                 </div>
-                <DataTable columns={columnFk} data={fakultas} />
+                <DataTable columns={fkColumns} data={fakultas} />
             </div>
         </>
     )

@@ -1,6 +1,6 @@
-import { columnDosen } from "@/components/tables/columns"
 import { dosen } from "@/components/tables/data"
 import { DataTable } from "@/components/tables/data-table"
+import { dosenColumns } from "@/components/tables/dosenColumns"
 
 
 
@@ -12,7 +12,7 @@ export default function DosenPage() {
                 <div className="text-2xl">
                     Data Dosen
                 </div>
-                <DataTable columns={columnDosen} data={dosen} />
+                <DataTable columns={dosenColumns} data={dosen} />
             </div>
         </>
     )

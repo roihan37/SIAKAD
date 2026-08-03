@@ -2,8 +2,8 @@ import express, { Request, Response } from "express";
 import routerUser from "./users";
 import routerProdi from "./prodi";
 import routerAunth from "./auth";
-import routerStudents from "./users";
-import routerLecturers from "./users";
+import routerStudents from "./students";
+import routerLecturers from "./lecturers";
 import routerFakultas from "./fakultas";
 import { authMiddleware } from "../middleware/authMid";
 

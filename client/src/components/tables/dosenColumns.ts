@@ -1,30 +1,30 @@
 import { type ColumnDef } from "@tanstack/react-table";
 import { createActionColumn } from "./action-column";
 import { createSelectColumn } from "./select-column";
-import type { Mahasiswa } from "@/types/user";
+import type { Dosen } from "@/types/campus";
 
-export const mahasiswaColumns: ColumnDef<Mahasiswa>[] = [
+export const dosenColumns: ColumnDef<Dosen>[] = [
 
     {
-        accessorKey: "nim",
-        header: "NIM",
-    },
-    {
+        accessorKey: "nidn",
+        header: "NIDN",
+      },
+      {
         accessorKey: "name",
         header: "Nama",
-    },
-    {
+      },
+      {
         accessorKey: "prodi",
         header: "Prodi",
-    },
-    {
-        accessorKey: "semester",
-        header: "Semester",
-    },
-    {
+      },
+      {
+        accessorKey: "jabatan",
+        header: "Jabatan",
+      },
+      {
         accessorKey: "status",
         header: "Status",
-    },
+      },
     createActionColumn(),
     createSelectColumn(),
 

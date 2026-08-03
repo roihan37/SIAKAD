@@ -1,6 +1,6 @@
-import { columnMatkul } from "@/components/tables/columns"
 import {  matkul } from "@/components/tables/data"
 import { DataTable } from "@/components/tables/data-table"
+import { matkulColumns } from "@/components/tables/matkulColumns"
 
 
 
@@ -12,7 +12,7 @@ export default function MatkulPage() {
                 <div className="text-2xl">
                     Data Mata Kuliah
                 </div>
-                <DataTable columns={columnMatkul} data={matkul} />
+                <DataTable columns={matkulColumns} data={matkul} />
             </div>
         </>
     )
