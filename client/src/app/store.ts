@@ -1,6 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit'
 import authReducer from '@/features/slice/authSlice'
 import usersReducer from '@/features/slice/usersSlice'
+import campusReducer from '@/features/slice/campusSlice'
 import { injectStore } from '@/api/axios'
 // ...
 
@@ -8,6 +9,7 @@ export const store = configureStore({
   reducer: {
     auth: authReducer,
     users: usersReducer,
+    campus: campusReducer
   },
 })
 

@@ -1,15 +1,5 @@
 import type { Dosen, Fakultas, Mahasiswa, Matkul, ProgramStudi } from "@/types/campus"
 
-export const mahasiswa: Mahasiswa[] = [
-  {
-    id: "728ed52f",
-    nim: "2403912082",
-    name: "cahyadi",
-    semester: "5 (Ganjil)",
-    status: "active",
-    prodi: "Teknik Sipil"
-  },
-]
 
 export const dosen: Dosen[] = [
   {

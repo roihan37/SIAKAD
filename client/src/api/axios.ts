@@ -51,8 +51,8 @@ api.interceptors.response.use(
 
       } catch (refreshError) {
         
-        
         appStore.dispatch(logout());
+        window.location.href = "/";
 
         return Promise.reject(refreshError);
       }

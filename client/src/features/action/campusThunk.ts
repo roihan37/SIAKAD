@@ -1,13 +1,11 @@
 import { api } from "@/api/axios";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
-export const getAllStudents = createAsyncThunk(
-    "students",
+export const getAllFakultas = createAsyncThunk(
+    "fakultas",
     async (_, thunkAPI) => {
-      
-      
       try {
-        const response = await api.get("/students")
+        const response = await api.get("/fakultas")
         return response.data;
         
       } catch (err: any) {
@@ -19,11 +17,11 @@ export const getAllStudents = createAsyncThunk(
     }
   );
 
-  export const getAllLecturers = createAsyncThunk(
-    "lecturers",
+  export const getAllProdi = createAsyncThunk(
+    "prodi",
     async (_, thunkAPI) => {
       try {
-        const response = await api.get("/lecturers")
+        const response = await api.get("/prodi")
         return response.data;
         
       } catch (err: any) {

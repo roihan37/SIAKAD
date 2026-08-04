@@ -6,7 +6,7 @@ import type { Dosen } from "@/types/campus";
 export const dosenColumns: ColumnDef<Dosen>[] = [
 
     {
-        accessorKey: "nidn",
+        accessorKey: "dosen.nidn",
         header: "NIDN",
       },
       {
@@ -14,15 +14,15 @@ export const dosenColumns: ColumnDef<Dosen>[] = [
         header: "Nama",
       },
       {
-        accessorKey: "prodi",
+        accessorKey: "dosen.prodi.name",
         header: "Prodi",
       },
       {
-        accessorKey: "jabatan",
+        accessorKey: "dosen.jabatan",
         header: "Jabatan",
       },
       {
-        accessorKey: "status",
+        accessorKey: "dosen.status",
         header: "Status",
       },
     createActionColumn(),

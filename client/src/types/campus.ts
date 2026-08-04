@@ -1,10 +1,15 @@
 export type Mahasiswa = {
-  id: string
-  nim: string
-  name: string
-  status: "active" | "inactive" | "success" | "failed"
-  semester: string,
-  prodi: string
+  id: string,
+  name: string,
+  role: string,
+  mahasiswa: {
+    id: string,
+    nim: string,
+    status: string,
+    prodi: {
+      name : string
+    }
+  }
 }
 
 export type Dosen = {

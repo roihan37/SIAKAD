@@ -49,7 +49,19 @@ export class Controller{
 
     static async getAllFakultas(req: Request, res: Response, next: NextFunction){
         try {
-            const fakultas = await prisma.fakultas.findMany()
+
+            const fakultas = await prisma.fakultas.findMany({
+                select : {
+                    kode : true,
+                    name : true,
+                    prodi : {
+                        select : {
+                            dosen : true
+                        }
+                    }
+                }
+            })
+            
             res.status(200).json(fakultas)
         } catch (error) {
             next(error)

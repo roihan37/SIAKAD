@@ -15,7 +15,7 @@ router.use(authMiddleware)
 router.use('/api/v1/users',routerUser)
 router.use('/api/v1/students',routerStudents)
 router.use('/api/v1/lecturers',routerLecturers)
-router.use('/api/v1/fakutas',routerFakultas)
+router.use('/api/v1/fakultas',routerFakultas)
 router.use('/api/v1/prodi',routerProdi)
 
 export default router

@@ -6,7 +6,7 @@ import type { Mahasiswa } from "@/types/campus";
 export const mhsColumns: ColumnDef<Mahasiswa>[] = [
 
     {
-        accessorKey: "nim",
+        accessorKey: "mahasiswa.nim",
         header: "NIM",
     },
     {
@@ -14,15 +14,15 @@ export const mhsColumns: ColumnDef<Mahasiswa>[] = [
         header: "Nama",
     },
     {
-        accessorKey: "prodi",
+        accessorKey: "mahasiswa.prodi.name",
         header: "Prodi",
     },
     {
-        accessorKey: "semester",
+        accessorKey: "mahasiswa.semester",
         header: "Semester",
     },
     {
-        accessorKey: "status",
+        accessorKey: "mahasiswa.status",
         header: "Status",
     },
     createActionColumn(),

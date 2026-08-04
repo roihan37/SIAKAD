@@ -255,6 +255,7 @@ export class Controller {
                                 id: true,
                                 nim: true,
                                 status: true,
+                                semester: true,
                                 prodi : {
                                     select : {
                                         name : true
@@ -265,7 +266,6 @@ export class Controller {
                     }
                 }
             )
-            console.log(allStudents, "<<<");
             
             res.status(200).json(allStudents)
 
@@ -310,20 +310,25 @@ export class Controller {
                     select: {
                         id: true,
                         name: true,
-                        email: true,
                         role: true,
-                        gender: true,
                         dosen: {
                             select: {
                                 id: true,
                                 nidn: true,
                                 status: true,
-                                jabatan: true
+                                jabatan: true,
+                                prodi : {
+                                    select : {
+                                        name : true
+                                    }
+                                }
                             }
                         }
                     }
                 }
             )
+            
+            
             res.status(200).json(allLecturers)
 
         } catch (error) {
