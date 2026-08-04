@@ -9,7 +9,7 @@ export const prodiColumns: ColumnDef<ProgramStudi>[] = [
         header: "KODE",
       },
       {
-        accessorKey: "name_ps",
+        accessorKey: "name",
         header: "Nama Prodi",
       },
       {
@@ -17,7 +17,7 @@ export const prodiColumns: ColumnDef<ProgramStudi>[] = [
         header: "Fakultas",
       },
       {
-        accessorKey: "kaProdi",
+        accessorKey: "kaprodi",
         header: "Kaprodi",
       },
     createActionColumn(),

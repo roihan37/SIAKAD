@@ -10,7 +10,7 @@ export const fkColumns: ColumnDef<Fakultas>[] = [
         header: "KODE",
       },
       {
-        accessorKey: "name_fk",
+        accessorKey: "name",
         header: "Nama Fakultas",
       },
       {

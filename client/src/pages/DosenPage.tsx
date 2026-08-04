@@ -1,4 +1,3 @@
-import { dosen } from "@/components/tables/data"
 import { DataTable } from "@/components/tables/data-table"
 import { dosenColumns } from "@/components/tables/dosenColumns"
 import { getAllLecturers } from "@/features/action/usersThunk"

@@ -5,7 +5,7 @@ import MahasiswaPage from "@/pages/MahasiswaPage";
 import DosenPage from "@/pages/DosenPage";
 import FakultasPage from "@/pages/FakultasPage";
 import MatkulPage from "@/pages/MatkulPage";
-import PStudiPage from "@/pages/PStudiPage";
+import PStudiPage from "@/pages/ProdiPage";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import PublicRoute from "@/components/PublicRoute";
 

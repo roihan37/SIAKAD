@@ -53,8 +53,41 @@ export class Controller{
 
     static async getAllProdi(req: Request, res: Response, next: NextFunction){
         try {
-            const prodi = await prisma.prodi.findMany()
-            res.status(200).json(prodi)
+            const prodi = await prisma.prodi.findMany({
+                select : {
+                    id : true,
+                    kode : true,
+                    name : true,
+                    fakultas : {
+                        select : {
+                            name : true
+                        }
+                    },
+                    dosen : {
+                        select : {
+                            user : {
+                                select : {
+                                    name : true
+                                }
+                            }
+                        },
+                        where : {
+                            jabatan : 'Kaprodi'
+                        }
+                    }
+                }
+            })
+
+            const result = prodi.map((el)=>({
+                id : el.id,
+                kode : el.kode,
+                name : el.name,
+                fakultas : el.fakultas.name,
+                kaprodi : el.dosen[0]?.user.name ?? "-"
+            }))
+
+            console.log(result);
+            res.status(200).json(result)
         } catch (error) {
             next(error)
         }

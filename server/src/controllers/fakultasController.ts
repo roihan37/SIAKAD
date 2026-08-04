@@ -52,17 +52,38 @@ export class Controller{
 
             const fakultas = await prisma.fakultas.findMany({
                 select : {
+                    id : true,
                     kode : true,
                     name : true,
                     prodi : {
                         select : {
-                            dosen : true
+                            dosen : {
+                                where : {
+                                    jabatan : 'Dekan'
+                                },
+                                select : {
+                                    user : {
+                                        select : {
+                                            name : true
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
             })
+
+            const result = fakultas.map((fk)=>({
+                id : fk?.id,
+                kode : fk?.kode,
+                name : fk?.name,
+                dekan : fk.prodi
+                .flatMap((p) => p.dosen)[0]
+                ?.user.name ?? "-"
+            }))
             
-            res.status(200).json(fakultas)
+            res.status(200).json(result)
         } catch (error) {
             next(error)
         }
