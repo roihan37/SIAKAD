@@ -241,8 +241,15 @@ export class Controller {
     // BELUM PAGINATION
     static async getAllStudents(req: Request, res: Response, next: NextFunction) {
         try {
-            const allStudents = await prisma.user.findMany(
-                {
+            const page = Number(req.query.page) || 1;
+            const limit = Number(req.query.limit) || 10;
+
+            const skip = (page - 1) * limit;
+
+            const [students, totalRows] = await Promise.all([
+                prisma.user.findMany({
+                    skip,
+                    take: limit,
                     where: {
                         role: "Mahasiswa"
                     },
@@ -264,10 +271,20 @@ export class Controller {
                             }
                         },
                     }
-                }
-            )
+                }),
+                prisma.user.count()
+            ]);
+
             
-            res.status(200).json(allStudents)
+            res.status(200).json({
+                students,
+                pagination: {
+                    page,
+                    limit,
+                    totalRows,
+                    totalPages: Math.ceil(totalRows / limit)
+                }
+        })
 
         } catch (error) {
             console.log(error, '<<<');

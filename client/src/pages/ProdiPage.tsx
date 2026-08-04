@@ -1,4 +1,4 @@
-import { programStudi } from "@/components/tables/data"
+
 import { DataTable } from "@/components/tables/data-table"
 import { prodiColumns } from "@/components/tables/prodiColumns"
 import { getAllProdi } from "@/features/action/campusThunk"

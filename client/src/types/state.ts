@@ -7,7 +7,7 @@ export interface AuthState {
     initialized: boolean
 }
 
-export interface UsersState {
+export interface UsersState extends Pagination{
     isLoading : boolean
     error: string | null
     students: Mahasiswa[]
@@ -19,4 +19,11 @@ export interface CampusState {
     error: string | null
     fakultas: Fakultas[]
     prodi: ProgramStudi[]
+}
+
+export interface Pagination {
+    page: number
+    limit: number
+    totalPages: number
+    totalRows: number
 }

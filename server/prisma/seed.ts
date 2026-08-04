@@ -44,9 +44,9 @@ async function main() {
       name: "Super Admin",
       email: "admin@siakad.com",
       username: "admin",
-      password : password,
+      password: password,
       role: Role.Admin,
-      gender : "Male",
+      gender: "Male",
       phoneNumber: "081111111111",
       address: "Tasikmalaya",
     },
@@ -60,9 +60,9 @@ async function main() {
       name: "Dr. Budi Santoso",
       email: "budi@siakad.com",
       username: "budi",
-      password : "Tasik123",
+      password: "Tasik123",
       role: Role.Dosen,
-      gender : "Male",
+      gender: "Male",
       phoneNumber: "082222222222",
       address: "Bandung",
     },
@@ -82,38 +82,38 @@ async function main() {
   });
 
   // ==========================
-  // User Mahasiswa
+  // Users & Mahasiswa
   // ==========================
-  const userMahasiswa = await prisma.user.create({
-    data: {
-      name: "Roihan Salsabila",
-      email: "roihan@student.com",
-      username: "roihan",
-      password : "Tasik123",
-      gender : "Male",
-      role: Role.Mahasiswa,
-      phoneNumber: "083333333333",
-      address: "Tasikmalaya",
-    },
-  });
+  const defaultPassword = hashPassword("Tasik123");
 
-  // ==========================
-  // Mahasiswa
-  // ==========================
-  await prisma.mahasiswa.create({
-    data: {
-      nim: "2024001001",
-      angkatan: 2024,
-      semester: 2,
-      status: Status.Aktif,
+  for (let i = 1; i <= 50; i++) {
+    const user = await prisma.user.create({
+      data: {
+        name: `Mahasiswa ${i}`,
+        email: `mahasiswa${i}@student.com`,
+        username: `mahasiswa${i}`,
+        password: defaultPassword,
+        gender: i % 2 === 0 ? "Female" : "Male",
+        role: Role.Mahasiswa,
+        phoneNumber: `08120000${String(i).padStart(4, "0")}`,
+        address: `Alamat Mahasiswa ${i}`,
+      },
+    });
 
-      userId: userMahasiswa.id,
-      prodiId: prodi.id,
-      dosenId: dosen.id,
-    },
-  });
+    await prisma.mahasiswa.create({
+      data: {
+        nim: `202400${String(i).padStart(4, "0")}`,
+        angkatan: 2024,
+        semester: 2,
+        status: Status.Aktif,
+        userId: user.id,
+        prodiId: prodi.id,
+        dosenId: dosen.id,
+      },
+    });
+  }
 
-  console.log("✅ Database seeded successfully");
+  console.log("✅ 50 Mahasiswa seeded successfully");
 }
 
 main()

@@ -86,7 +86,7 @@ export class Controller{
                 kaprodi : el.dosen[0]?.user.name ?? "-"
             }))
 
-            console.log(result);
+            // console.log(result);
             res.status(200).json(result)
         } catch (error) {
             next(error)

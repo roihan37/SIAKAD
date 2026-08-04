@@ -10,8 +10,11 @@ export default function DosenPage() {
     const dispatch = useAppDispatch()
     const {lecturers} = useAppSelector((state)=> state.users)
     useEffect(()=>{
+        console.log("DosenPage mounted");
+
         dispatch(getAllLecturers())
-    },[dispatch])
+        
+    },[])
     return (
         <>
             <div className="container mx-auto mt-4">

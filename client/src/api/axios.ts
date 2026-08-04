@@ -36,16 +36,19 @@ api.interceptors.response.use(
       err.response?.data?.code === "TOKEN_EXPIRED" &&
       !originalRequest._retry
     ) {
+      console.log("Refresh dipanggil");
+
       originalRequest._retry = true;
 
       try {
-        const { data } = await api.post("/auth/refresh");
-        console.log(data, 'MMM');
+        const { data } = await api.post("/auth/refreshTokens");
+        console.log("Refresh berhasil", data);
+
         
-        appStore.dispatch(setAccessToken(data.access_token));
+        appStore.dispatch(setAccessToken(data.accessToken));
         
         originalRequest.headers.Authorization =
-          `Bearer ${data.access_token}`;
+          `Bearer ${data.accessToken}`;
 
         return api(originalRequest);
 

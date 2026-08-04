@@ -4,8 +4,6 @@ import { getAllFakultas } from "@/features/action/campusThunk"
 import { useAppDispatch, useAppSelector } from "@/hooks/redux"
 import { useEffect } from "react"
 
-
-
 export default function FakultasPage() {
     const dispatch = useAppDispatch()
     const {fakultas} = useAppSelector((state)=> state.campus)

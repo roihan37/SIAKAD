@@ -1,14 +1,24 @@
 import { api } from "@/api/axios";
+import type { PaginationParams } from "@/types/param";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
 export const getAllStudents = createAsyncThunk(
     "students",
-    async (_, thunkAPI) => {
-      
+    async (
+      { page, limit }: PaginationParams,
+      thunkAPI
+    ) => {
       
       try {
-        const response = await api.get("/students")
+        const response = await api.get("/students",{
+          params : {
+            page,
+            limit
+          }
+        })
+        console.log(response.data, "NN");
         return response.data;
+        
         
       } catch (err: any) {
        

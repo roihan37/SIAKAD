@@ -6,7 +6,11 @@ const initialState : UsersState ={
     isLoading : false,
     error : null,
     students : [],
-    lecturers : []
+    lecturers : [],
+    page: 1,
+    limit: 10,
+    totalPages: 1,
+    totalRows: 0,
 }
 const usersSilce = createSlice({
     name : 'users',
@@ -23,7 +27,11 @@ const usersSilce = createSlice({
         })
         .addCase(getAllStudents.fulfilled, (state, action) => {
             state.isLoading = false
-            state.students = action.payload
+            state.students = action.payload.students
+            state.page = action.payload.pagination.page;
+            state.limit = action.payload.pagination.limit;
+            state.totalPages = action.payload.pagination.totalPages;
+            state.totalRows = action.payload.pagination.totalRows;
         })
         .addCase(getAllStudents.rejected, (state, action) =>{
             state.isLoading = false
