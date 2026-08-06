@@ -5,7 +5,6 @@ import {
   type ColumnFiltersState,
   flexRender,
   getCoreRowModel,
-  getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
   type SortingState,
@@ -23,8 +22,27 @@ import {
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import React from "react"
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu"
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Field, FieldGroup } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Label } from "@/components/ui/label"
+import { DialogForm } from "../dialog-form"
+
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -50,9 +68,8 @@ export function DataTable<TData, TValue>({
   onPageChange,
   sorting,
   onSortingChange,
-  isLoading,
+  // isLoading,
 }: DataTableProps<TData, TValue>) {
-  // const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   )
@@ -74,7 +91,6 @@ export function DataTable<TData, TValue>({
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     onColumnFiltersChange: setColumnFilters,
-    // getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     state: {
@@ -89,7 +105,7 @@ export function DataTable<TData, TValue>({
     <div>
       <div className="flex items-center py-4 justify-between">
         <Input
-          placeholder="Filter Nama & NIM..."
+          placeholder="Filter Nama, NIM, NIDN, Code..."
           // value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
           // onChange={(event) =>
           //   table.getColumn("name")?.setFilterValue(event.target.value)
@@ -98,7 +114,7 @@ export function DataTable<TData, TValue>({
           onChange={(e) => onSearchChange(e.target.value)}
           className="max-w-sm"
         />
-        <div className="pl-2">
+        <div className="pl-2 flex gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger render={<Button variant="outline" className="ml-auto">
               Columns
@@ -126,6 +142,8 @@ export function DataTable<TData, TValue>({
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
+          {/* FORM */}
+          <DialogForm />
         </div>
       </div>
       <div className="overflow-hidden rounded-md border">
@@ -160,7 +178,7 @@ export function DataTable<TData, TValue>({
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}
-                    className={(cell.column.columnDef.meta as any)?.align === "center" ? "text-center" : ""}
+                      className={(cell.column.columnDef.meta as any)?.align === "center" ? "text-center" : ""}
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>

@@ -1,11 +1,21 @@
 import { api } from "@/api/axios";
+import type { PaginationParams } from "@/types/param";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
 export const getAllFakultas = createAsyncThunk(
     "fakultas",
-    async (_, thunkAPI) => {
+    async ({ page, limit, search, sortBy, sortOrder }: PaginationParams
+      , thunkAPI) => {
       try {
-        const response = await api.get("/fakultas")
+        const response = await api.get("/fakultas",{
+          params : {
+            page,
+            limit,
+            search,
+            sortBy, 
+            sortOrder
+          }
+        })
         return response.data;
         
       } catch (err: any) {
@@ -19,9 +29,18 @@ export const getAllFakultas = createAsyncThunk(
 
   export const getAllProdi = createAsyncThunk(
     "prodi",
-    async (_, thunkAPI) => {
+    async ({ page, limit, search, sortBy, sortOrder }: PaginationParams
+      , thunkAPI) => {
       try {
-        const response = await api.get("/prodi")
+        const response = await api.get("/prodi",{
+          params : {
+            page,
+            limit,
+            search,
+            sortBy, 
+            sortOrder
+          }
+        })
         return response.data;
         
       } catch (err: any) {

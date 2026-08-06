@@ -24,12 +24,12 @@ const usersSilce = createSlice({
         },
         setSearch: (state, action: PayloadAction<string>) => {
           state.search = action.payload
-          state.page = 1 // reset ke halaman 1 tiap kali search berubah
+          state.page = 1 
         },
         setSorting: (state, action: PayloadAction<{ sortBy: string; sortOrder: "asc" | "desc" }>) => {
             state.sortBy = action.payload.sortBy
             state.sortOrder = action.payload.sortOrder
-            state.page = 1   // reset ke halaman 1 tiap ganti sorting, biar nggak nyasar
+            state.page = 1   
           },
       },
     extraReducers(builder) {
@@ -58,7 +58,11 @@ const usersSilce = createSlice({
         })
         .addCase(getAllLecturers.fulfilled, (state, action) => {
             state.isLoading = false
-            state.lecturers = action.payload
+            state.lecturers = action.payload.lecturers
+            state.page = action.payload.pagination.page;
+            state.limit = action.payload.pagination.limit;
+            state.totalPages = action.payload.pagination.totalPages;
+            state.totalRows = action.payload.pagination.totalRows;
         })
         .addCase(getAllLecturers.rejected, (state, action) =>{
             state.isLoading = false

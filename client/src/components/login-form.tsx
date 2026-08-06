@@ -36,7 +36,7 @@ export function LoginForm({
     e.preventDefault();
     try {
       const data = await dispatch(login(loginForm)).unwrap();
-      console.log(data, "<< PADA SUBMIT LOGIN");
+      // console.log(data, "<< PADA SUBMIT LOGIN");
       navigate('/mahasiswa')
     } catch (error) {
       

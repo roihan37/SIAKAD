@@ -14,7 +14,7 @@ export interface UsersState extends Pagination{
     lecturers: Dosen[]
 }
 
-export interface CampusState {
+export interface CampusState extends Pagination {
     isLoading : boolean
     error: string | null
     fakultas: Fakultas[]

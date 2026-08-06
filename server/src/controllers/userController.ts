@@ -267,8 +267,6 @@ export class Controller {
                 name: { name: sortOrder },
                 nim: { mahasiswa: { nim: sortOrder } },
                 semester: { mahasiswa: { semester: sortOrder } },
-                status: { mahasiswa: { status: sortOrder } },
-                prodi: { mahasiswa: { prodi: { name: sortOrder } } },
             };
 
             const orderBy = sortableFields[sortBy] ?? { name: sortOrder };
@@ -299,9 +297,6 @@ export class Controller {
                 }),
                 prisma.user.count({ where }),
             ]);
-
-            console.log(students);
-            
     
             res.status(200).json({
                 students,
@@ -343,34 +338,72 @@ export class Controller {
     // BELUM PAGINATION
     static async getAllLecturers(req: Request, res: Response, next: NextFunction) {
         try {
-            const allLecturers = await prisma.user.findMany(
-                {
-                    where: {
-                        role: "Dosen"
-                    },
-                    select: {
-                        id: true,
-                        name: true,
-                        role: true,
-                        dosen: {
-                            select: {
-                                id: true,
-                                nidn: true,
-                                status: true,
-                                jabatan: true,
-                                prodi : {
-                                    select : {
-                                        name : true
+            const page = Number(req.query.page) || 1;
+            const limit = Number(req.query.limit) || 10;
+            const search = String(req.query.search ?? "");
+            const sortBy = String(req.query.sortBy ?? "name"); 
+            const sortOrder = req.query.sortOrder === "desc" ? "desc" : "asc";
+
+            const skip = (page - 1) * limit;
+            
+            
+            const where: Prisma.UserWhereInput = {
+                role : "Dosen", 
+                ...(search
+                    ? {
+                          OR: [
+                              { name: { contains: search, mode: Prisma.QueryMode.insensitive } },
+                              { dosen: { nidn: { contains: search, mode: Prisma.QueryMode.insensitive } } },
+                          ],
+                      }
+                    : {}),
+            };
+            const sortableFields: Record<string, Prisma.UserOrderByWithRelationInput> = {
+                name: { name: sortOrder },
+                nidn: { dosen: { nidn: sortOrder } },
+            };
+
+            const orderBy = sortableFields[sortBy] ?? { name: sortOrder };
+
+            const [lecturers, totalRows] = await Promise.all([
+             await prisma.user.findMany(
+                    {
+                        where,
+                        skip,
+                        take: limit,
+                        orderBy,
+                        select: {
+                            id: true,
+                            name: true,
+                            role: true,
+                            dosen: {
+                                select: {
+                                    id: true,
+                                    nidn: true,
+                                    status: true,
+                                    jabatan: true,
+                                    prodi : {
+                                        select : {
+                                            name : true
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
-            )
+                ),
+                prisma.user.count({ where }),
+            ])
             
-            
-            res.status(200).json(allLecturers)
+            res.status(200).json({
+                lecturers,
+                pagination: {
+                    page,
+                    limit,
+                    totalRows,
+                    totalPages: Math.max(1, Math.ceil(totalRows / limit)),
+                },
+            });
 
         } catch (error) {
             next(error)
