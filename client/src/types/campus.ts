@@ -3,6 +3,7 @@ export type Mahasiswa = {
   name: string,
   role: string,
   mahasiswa: {
+    semester: ReactNode
     id: string,
     nim: string,
     status: string,

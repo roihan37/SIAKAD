@@ -5,7 +5,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 export const getAllStudents = createAsyncThunk(
     "students",
     async (
-      { page, limit }: PaginationParams,
+      { page, limit, search, sortBy, sortOrder }: PaginationParams,
       thunkAPI
     ) => {
       
@@ -13,10 +13,13 @@ export const getAllStudents = createAsyncThunk(
         const response = await api.get("/students",{
           params : {
             page,
-            limit
+            limit,
+            search,
+            sortBy, 
+            sortOrder
           }
         })
-        console.log(response.data, "NN");
+        // console.log(response.data, "NN");
         return response.data;
         
         

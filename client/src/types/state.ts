@@ -25,5 +25,8 @@ export interface Pagination {
     page: number
     limit: number
     totalPages: number
-    totalRows: number
+    totalRows?: number
+    search : string,
+    sortBy: string
+    sortOrder: "asc" | "desc"
 }

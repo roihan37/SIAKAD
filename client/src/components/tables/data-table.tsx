@@ -29,29 +29,52 @@ import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMe
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
+  searchValue: string
+  onSearchChange: (value: string) => void
+  pageIndex: number       // 0-based
+  pageCount: number
+  onPageChange: (pageIndex: number) => void
+  sorting: SortingState
+  onSortingChange: (sorting: SortingState) => void
+  isLoading?: boolean
 }
 
 
 export function DataTable<TData, TValue>({
   columns,
   data,
+  searchValue,
+  onSearchChange,
+  pageIndex,
+  pageCount,
+  onPageChange,
+  sorting,
+  onSortingChange,
+  isLoading,
 }: DataTableProps<TData, TValue>) {
-  const [sorting, setSorting] = React.useState<SortingState>([])
+  // const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   )
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
+
   const table = useReactTable({
     data,
     columns,
-    onSortingChange: setSorting,
+    manualPagination: true,
+    manualFiltering: true,
+    manualSorting: true,
+    onSortingChange: (updater) => {
+      const next = typeof updater === "function" ? updater(sorting) : updater
+      onSortingChange(next)
+    },
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     onColumnFiltersChange: setColumnFilters,
-    getFilteredRowModel: getFilteredRowModel(),
+    // getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     state: {
@@ -59,18 +82,20 @@ export function DataTable<TData, TValue>({
       columnFilters,
       columnVisibility,
       rowSelection,
-
+      pagination: { pageIndex, pageSize: 10 },
     },
   })
   return (
     <div>
       <div className="flex items-center py-4 justify-between">
         <Input
-          placeholder="Filter Nama..."
-          value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-          onChange={(event) =>
-            table.getColumn("name")?.setFilterValue(event.target.value)
-          }
+          placeholder="Filter Nama & NIM..."
+          // value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
+          // onChange={(event) =>
+          //   table.getColumn("name")?.setFilterValue(event.target.value)
+          // }
+          value={searchValue}
+          onChange={(e) => onSearchChange(e.target.value)}
           className="max-w-sm"
         />
         <div className="pl-2">
@@ -110,7 +135,10 @@ export function DataTable<TData, TValue>({
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id}>
+                    <TableHead key={header.id}
+                      className={(header.column.columnDef.meta as any)?.align === "center" ? "text-center" : ""}
+                    >
+
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -131,7 +159,9 @@ export function DataTable<TData, TValue>({
                   data-state={row.getIsSelected() && "selected"}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell key={cell.id}
+                    className={(cell.column.columnDef.meta as any)?.align === "center" ? "text-center" : ""}
+                    >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
@@ -152,16 +182,20 @@ export function DataTable<TData, TValue>({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
+            // onClick={() => table.previousPage()}
+            // disabled={!table.getCanPreviousPage()}
+            onClick={() => onPageChange(pageIndex - 1)}
+            disabled={pageIndex <= 0}
           >
             Previous
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
+            // onClick={() => table.nextPage()}
+            // disabled={!table.getCanNextPage()}
+            onClick={() => onPageChange(pageIndex + 1)}
+            disabled={pageIndex + 1 >= pageCount}
           >
             Next
           </Button>
@@ -169,6 +203,7 @@ export function DataTable<TData, TValue>({
         <div className="flex text-sm text-muted-foreground">
           {table.getFilteredSelectedRowModel().rows.length} of{" "}
           {table.getFilteredRowModel().rows.length} row(s) selected.
+          Halaman {pageIndex + 1} dari {pageCount || 1}
         </div>
       </div>
     </div>

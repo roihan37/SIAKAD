@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { hashPassword } from "../lib/bycript";
 import { SelectUser } from "../types/user";
+import { Prisma } from "@prisma/client";
 
 export class Controller {
     // USERS
@@ -243,16 +244,42 @@ export class Controller {
         try {
             const page = Number(req.query.page) || 1;
             const limit = Number(req.query.limit) || 10;
+            const search = String(req.query.search ?? "");
+            const sortBy = String(req.query.sortBy ?? "name"); 
+            const sortOrder = req.query.sortOrder === "desc" ? "desc" : "asc";
 
+    
             const skip = (page - 1) * limit;
+    
+            const where: Prisma.UserWhereInput = {
+                role : "Mahasiswa", 
+                ...(search
+                    ? {
+                          OR: [
+                              { name: { contains: search, mode: Prisma.QueryMode.insensitive } },
+                              { mahasiswa: { nim: { contains: search, mode: Prisma.QueryMode.insensitive } } },
+                          ],
+                      }
+                    : {}),
+            };
+    
+            const sortableFields: Record<string, Prisma.UserOrderByWithRelationInput> = {
+                name: { name: sortOrder },
+                nim: { mahasiswa: { nim: sortOrder } },
+                semester: { mahasiswa: { semester: sortOrder } },
+                status: { mahasiswa: { status: sortOrder } },
+                prodi: { mahasiswa: { prodi: { name: sortOrder } } },
+            };
 
+            const orderBy = sortableFields[sortBy] ?? { name: sortOrder };
+
+    
             const [students, totalRows] = await Promise.all([
                 prisma.user.findMany({
+                    where,
                     skip,
                     take: limit,
-                    where: {
-                        role: "Mahasiswa"
-                    },
+                    orderBy,
                     select: {
                         id: true,
                         name: true,
@@ -263,33 +290,30 @@ export class Controller {
                                 nim: true,
                                 status: true,
                                 semester: true,
-                                prodi : {
-                                    select : {
-                                        name : true
-                                    }
-                                }
-                            }
+                                prodi: {
+                                    select: { name: true },
+                                },
+                            },
                         },
-                    }
+                    },
                 }),
-                prisma.user.count()
+                prisma.user.count({ where }),
             ]);
 
+            console.log(students);
             
+    
             res.status(200).json({
                 students,
                 pagination: {
                     page,
                     limit,
                     totalRows,
-                    totalPages: Math.ceil(totalRows / limit)
-                }
-        })
-
+                    totalPages: Math.max(1, Math.ceil(totalRows / limit)),
+                },
+            });
         } catch (error) {
-            console.log(error, '<<<');
-            
-            next(error)
+            next(error);
         }
     }
 

@@ -1,5 +1,5 @@
 import type { UsersState } from "@/types/state";
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { getAllLecturers, getAllStudents } from "../action/usersThunk";
 
 const initialState : UsersState ={
@@ -7,17 +7,31 @@ const initialState : UsersState ={
     error : null,
     students : [],
     lecturers : [],
+    search: "",
     page: 1,
     limit: 10,
     totalPages: 1,
     totalRows: 0,
+    sortBy: "name",
+    sortOrder: "asc",
 }
 const usersSilce = createSlice({
     name : 'users',
     initialState,
-    reducers : {
-
-    },
+    reducers: {
+        setPage: (state, action: PayloadAction<number>) => {
+          state.page = action.payload
+        },
+        setSearch: (state, action: PayloadAction<string>) => {
+          state.search = action.payload
+          state.page = 1 // reset ke halaman 1 tiap kali search berubah
+        },
+        setSorting: (state, action: PayloadAction<{ sortBy: string; sortOrder: "asc" | "desc" }>) => {
+            state.sortBy = action.payload.sortBy
+            state.sortOrder = action.payload.sortOrder
+            state.page = 1   // reset ke halaman 1 tiap ganti sorting, biar nggak nyasar
+          },
+      },
     extraReducers(builder) {
         builder
 
@@ -54,5 +68,5 @@ const usersSilce = createSlice({
 
     }
 })
-
+export const { setPage, setSearch, setSorting } = usersSilce.actions;
 export default usersSilce.reducer
