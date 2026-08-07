@@ -103,45 +103,43 @@ export function DataTable<TData, TValue>({
   })
   return (
     <div>
-      <div className="flex items-center py-4 justify-between">
-        <Input
-          placeholder="Filter Nama, NIM, NIDN, Code..."
-          // value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-          // onChange={(event) =>
-          //   table.getColumn("name")?.setFilterValue(event.target.value)
-          // }
-          value={searchValue}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="max-w-sm"
-        />
-        <div className="pl-2 flex gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger render={<Button variant="outline" className="ml-auto">
-              Columns
-            </Button>} >
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {table
-                .getAllColumns()
-                .filter(
-                  (column) => column.getCanHide()
-                )
-                .map((column) => {
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(!!value)
-                      }
-                    >
-                      {(column.columnDef.meta as any)?.label ?? column.id}
-                    </DropdownMenuCheckboxItem>
+      <div className="flex items-center py-4 justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Input
+            placeholder="Filter Nama, NIM, NIDN, Kode..."
+            value={searchValue}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="max-w-sm w-xl"
+          />
+            <DropdownMenu>
+              <DropdownMenuTrigger render={<Button variant="outline" className="ml-auto">
+                Columns
+              </Button>} >
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {table
+                  .getAllColumns()
+                  .filter(
+                    (column) => column.getCanHide()
                   )
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                  .map((column) => {
+                    return (
+                      <DropdownMenuCheckboxItem
+                        key={column.id}
+                        className="capitalize"
+                        checked={column.getIsVisible()}
+                        onCheckedChange={(value) =>
+                          column.toggleVisibility(!!value)
+                        }
+                      >
+                        {(column.columnDef.meta as any)?.label ?? column.id}
+                      </DropdownMenuCheckboxItem>
+                    )
+                  })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+        </div>
+        <div className="">
           {/* FORM */}
           <DialogForm />
         </div>

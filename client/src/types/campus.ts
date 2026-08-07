@@ -3,7 +3,7 @@ export type Mahasiswa = {
   name: string,
   role: string,
   mahasiswa: {
-    semester: ReactNode
+    semester: number
     id: string,
     nim: string,
     status: string,
@@ -25,7 +25,7 @@ export type Dosen = {
 export type Fakultas = {
   id: string,
   kode: string,
-  name_fk: string,
+  name: string,
   dekan: string
 }
 

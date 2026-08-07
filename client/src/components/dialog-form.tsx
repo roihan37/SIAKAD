@@ -10,25 +10,59 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Calendar } from "@/components/ui/calendar"
-// import { Field, FieldLabel } from "@/components/ui/field"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { Field, FieldContent, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
-import { useState } from "react"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useEffect, useState } from "react"
+import { Checkbox } from "./ui/checkbox"
+import { useAppDispatch, useAppSelector } from "@/hooks/redux"
+import { getAllFakultas, getAllProdi } from "@/features/action/campusThunk"
 
 export function DialogForm() {
-  const countries = [
-    { label: "United States", value: "us" },
-    { label: "United Kingdom", value: "uk" },
-    { label: "Canada", value: "ca" },
+  const dispatch = useAppDispatch()
+  const { fakultas } = useAppSelector((state) => state.campus)
+  const [selectedFakultasId, setSelectedFakultasId] = useState<number | null>(null)
+  useEffect(() => {
+    dispatch(getAllFakultas())
+  }, [dispatch])
+
+  useEffect(() => {
+    if (selectedFakultasId) {
+      dispatch(getAllProdi({ fakultasId: selectedFakultasId }))
+    }
+  }, [selectedFakultasId, dispatch])
+
+  const genderList = [
+    { label: "Laki-laki", value: "Male" },
+    { label: "Perempuan", value: "Female" },
   ]
+  // const fakultasList = [
+  //   { label: "Fakultas Teknik", value: "FT" },
+  //   { label: "Fakultas Ekonomi", value: "FE" },
+  // ]
+  const prodiList = [
+    { label: "Teknik Informatika", value: "IF" },
+    { label: "Sistem Informasi", value: "SI" },
+  ]
+  const statusList = [
+    { label: "Aktif", value: "Aktif" },
+    { label: "Cuti", value: "Cuti" },
+    { label: "Lulus", value: "Lulus" },
+    { label: "DO", value: "DO" },
+  ]
+  const dosenList = [
+    { label: "Dr. Budi Santoso", value: "dosen-1" },
+    { label: "Dr. Siti Wijaya", value: "dosen-2" },
+  ]
+
   const [open, setOpen] = useState(false)
   const [date, setDate] = useState<Date | undefined>(undefined)
+  const [isConfirmed, setIsConfirmed] = useState(false)
 
   return (
     <Dialog>
@@ -38,147 +72,207 @@ export function DialogForm() {
           <DialogHeader className="p-6 pb-4">
             <DialogTitle>Add Mahasiswa</DialogTitle>
             <DialogDescription>
-              Make changes to your profile here. Click save when you&apos;re
-              done.
+              Isi data mahasiswa baru di bawah ini. Klik simpan jika sudah selesai.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto px-6">
-          <FieldGroup>
+          <div className="flex-1 overflow-y-auto px-6 mb-5">
+            <FieldGroup>
 
-            {/* ONE COLUMN */}
-            <div className="grid grid-cols-2 gap-4">
-              {/* NIM */}
+              {/* NAMA LENGKAP */}
               <Field>
-                <FieldLabel htmlFor="form-name">NIM</FieldLabel>
-                <Input
-                  id="form-name"
-                  type="text"
-                  placeholder="21933212"
-                  required
-                />
+                <FieldLabel htmlFor="form-fullname">Nama Lengkap</FieldLabel>
+                <Input id="form-fullname" type="text" placeholder="Evil Rabbit" required />
               </Field>
-              {/* USERNAME */}
-              <Field>
-                <FieldLabel htmlFor="form-name">Username</FieldLabel>
-                <Input
-                  id="form-name"
-                  type="text"
-                  placeholder="evilrabit123"
-                  required
-                />
-              </Field>
-            </div>
 
-
-            {/* NAME */}
-            <Field>
-              <FieldLabel htmlFor="form-name">Name</FieldLabel>
-              <Input
-                id="form-name"
-                type="text"
-                placeholder="Evil Rabbit"
-                required
-              />
-            </Field>
-            {/* EMAIL */}
-            <Field>
-              <FieldLabel htmlFor="form-email">Email</FieldLabel>
-              <Input id="form-email" type="email" placeholder="john@example.com" />
-            </Field>
-
-            {/* PASSWORD */}
-            <Field>
-              <div className="flex items-center">
-                <FieldLabel htmlFor="password">Password</FieldLabel>
+              {/* USERNAME + EMAIL */}
+              <div className="grid grid-cols-2 gap-4">
+                <Field>
+                  <FieldLabel htmlFor="form-username">Username</FieldLabel>
+                  <Input id="form-username" type="text" placeholder="evilrabit123" required />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="form-email">Email</FieldLabel>
+                  <Input id="form-email" type="email" placeholder="john@example.com" required />
+                </Field>
               </div>
-              <Input id="password" name="password" type="password" required />
-            </Field>
-            <div className="grid grid-cols-2 gap-4">
-              <Field>
-                <FieldLabel htmlFor="form-phone">Phone</FieldLabel>
-                <Input id="form-phone" type="tel" placeholder="+1 (555) 123-4567" />
-              </Field>
-              {/* BIRTH DAY */}
-              <Field className="mx-auto w-44">
-              <FieldLabel htmlFor="date">Date of birth</FieldLabel>
-              <Popover open={open} onOpenChange={setOpen}>
-                <PopoverTrigger render={<Button variant="outline" id="date" className="justify-start font-normal">{date ? date.toLocaleDateString() : "Select date"}</Button>} />
-                <PopoverContent className="w-auto overflow-hidden p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={date}
-                    defaultMonth={date}
-                    captionLayout="dropdown"
-                    onSelect={(date) => {
-                      setDate(date)
-                      setOpen(false)
-                    }}
-                  />
-                </PopoverContent>
-              </Popover>
-            </Field>
-            </div>
-            <Field>
-              <FieldLabel htmlFor="form-address">Address</FieldLabel>
-              <Input id="form-address" type="text" placeholder="123 Main St" />
-            </Field>
 
-            
-
-            <div className="grid grid-cols-2 gap-4">
+              {/* PASSWORD */}
               <Field>
-                <FieldLabel htmlFor="form-phone">Semester</FieldLabel>
-                <Input id="form-phone" type="tel" placeholder="+1 (555) 123-4567" />
+                <FieldLabel htmlFor="form-password">Password</FieldLabel>
+                <Input id="form-password" type="password" required />
               </Field>
+
+              {/* JENIS KELAMIN + NOMOR TELEPON */}
+              <div className="grid grid-cols-2 gap-4">
+                <Field>
+                  <FieldLabel htmlFor="form-gender">Jenis Kelamin</FieldLabel>
+                  <Select items={genderList}>
+                    <SelectTrigger id="form-gender">
+                      <SelectValue placeholder="Pilih jenis kelamin" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {genderList.map((g) => (
+                          <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="form-phone">Nomor Telepon</FieldLabel>
+                  <Input id="form-phone" type="tel" placeholder="+62 812-3456-7890" />
+                </Field>
+              </div>
+
+              {/* TANGGAL LAHIR */}
               <Field>
-                <FieldLabel htmlFor="form-country">Angkatan</FieldLabel>
-                <Select items={countries} defaultValue="us">
-                  <SelectTrigger id="form-country">
-                    <SelectValue />
+                <FieldLabel htmlFor="date">Tanggal Lahir</FieldLabel>
+                <Popover open={open} onOpenChange={setOpen}>
+                  <PopoverTrigger render={
+                    <Button variant="outline" id="date" className="w-full justify-start font-normal">
+                      {date ? date.toLocaleDateString() : "Pilih tanggal"}
+                    </Button>
+                  } />
+                  <PopoverContent className="w-auto overflow-hidden p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={date}
+                      defaultMonth={date}
+                      captionLayout="dropdown"
+                      onSelect={(date) => {
+                        setDate(date)
+                        setOpen(false)
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </Field>
+
+              {/* ALAMAT */}
+              <Field>
+                <FieldLabel htmlFor="form-address">Alamat</FieldLabel>
+                <Input id="form-address" type="text" placeholder="123 Main St" />
+              </Field>
+
+              {/* FOTO PROFIL */}
+              <Field>
+                <FieldLabel htmlFor="form-photo">Foto Profil</FieldLabel>
+                <Input id="form-photo" type="file" accept="image/*" />
+                <FieldDescription>Format JPG/PNG, maks 2MB.</FieldDescription>
+              </Field>
+
+              {/* NIM + FAKULTAS */}
+              <div className="grid grid-cols-2 gap-4">
+                <Field>
+                  <FieldLabel htmlFor="form-nim">NIM</FieldLabel>
+                  <Input id="form-nim" type="text" placeholder="21933212" required />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="form-fakultas">Fakultas</FieldLabel>
+                  <Select 
+                  items={fakultas.map((f) => ({ label: f.name, value: f.id }))}
+                  value={selectedFakultasId}
+                  onValueChange={(value) => setSelectedFakultasId(value)}
+                  >
+                    <SelectTrigger id="form-fakultas" className="w-full max-w-xs">
+                      <SelectValue placeholder="Pilih fakultas" />
+                    </SelectTrigger>
+                    <SelectContent className="min-w-[var(--anchor-width)] w-auto">
+                      <SelectGroup>
+                        {fakultas.map((f) => (
+                          <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </Field>
+              </div>
+
+              {/* PROGRAM STUDI + ANGKATAN */}
+              <div className="grid grid-cols-2 gap-4">
+                <Field>
+                  <FieldLabel htmlFor="form-prodi">Program Studi</FieldLabel>
+                  <Select items={prodiList}>
+                    <SelectTrigger id="form-prodi">
+                      <SelectValue placeholder="Pilih prodi" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {prodiList.map((p) => (
+                          <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="form-angkatan">Angkatan</FieldLabel>
+                  <Input id="form-angkatan" type="number" placeholder="2024" required />
+                </Field>
+              </div>
+
+              {/* SEMESTER + STATUS */}
+              <div className="grid grid-cols-2 gap-4">
+                <Field>
+                  <FieldLabel htmlFor="form-semester">Semester</FieldLabel>
+                  <Input id="form-semester" type="number" placeholder="1" min={1} max={14} required />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="form-status">Status</FieldLabel>
+                  <Select items={statusList}>
+                    <SelectTrigger id="form-status">
+                      <SelectValue placeholder="Pilih status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {statusList.map((s) => (
+                          <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </Field>
+              </div>
+              {/* DOSEN WALI */}
+              <Field>
+                <FieldLabel htmlFor="form-dosen">Dosen Wali</FieldLabel>
+                <Select items={dosenList}>
+                  <SelectTrigger id="form-dosen">
+                    <SelectValue placeholder="Pilih dosen wali" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      {countries.map((country) => (
-                        <SelectItem key={country.value} value={country.value}>
-                          {country.label}
-                        </SelectItem>
+                      {dosenList.map((d) => (
+                        <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
                       ))}
                     </SelectGroup>
                   </SelectContent>
                 </Select>
               </Field>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <Field>
-                <FieldLabel htmlFor="form-phone">Status</FieldLabel>
-                <Input id="form-phone" type="tel" placeholder="+1 (555) 123-4567" />
+              {/* KONFIRMASI DATA — syarat wajib sebelum bisa Save */}
+              <Field orientation="horizontal" className="items-start gap-2 pt-2 pb-4">
+                <Checkbox
+                  id="confirm-checkbox-desc"
+                  checked={isConfirmed}
+                  onCheckedChange={(checked) => setIsConfirmed(checked === true)}
+                />
+                <FieldContent>
+                  <FieldLabel htmlFor="confirm-checkbox-desc">
+                    Data yang saya masukkan sudah benar
+                  </FieldLabel>
+                  <FieldDescription>
+                    Dengan mencentang kotak ini, saya menyatakan bahwa seluruh data mahasiswa di atas sudah diperiksa dan benar.
+                  </FieldDescription>
+                </FieldContent>
               </Field>
-              <Field>
-                <FieldLabel htmlFor="form-country">Wali Dosen</FieldLabel>
-                <Select items={countries} defaultValue="us">
-                  <SelectTrigger id="form-country">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {countries.map((country) => (
-                        <SelectItem key={country.value} value={country.value}>
-                          {country.label}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </Field>
-            </div>
-          </FieldGroup>
+            </FieldGroup>
           </div>
-
-          <DialogFooter>
+          <DialogFooter className="p-6 pt-4 border-t">
             <DialogClose render={<Button variant="outline">Cancel</Button>} />
-            <Button type="submit">Save changes</Button>
+            <Button type="submit" disabled={!isConfirmed}>Save changes</Button>
           </DialogFooter>
         </DialogContent>
       </form>
