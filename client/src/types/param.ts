@@ -4,4 +4,6 @@ export interface PaginationParams {
     search? : string | '';
     sortBy?: string
     sortOrder?: "asc" | "desc"
+    prodiId? : number
+    fakultasId? : number
   }

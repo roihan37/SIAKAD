@@ -14,12 +14,18 @@ export type Mahasiswa = {
 }
 
 export type Dosen = {
-  id: string
-  nidn: string
-  name: string
-  prodi: string
-  jabatan: string,
-  status: "active" | "inactive" | "success" | "failed"
+  name: string;
+    id: string;
+    role: 'Dosen'
+    dosen: {
+      nidn: string;
+      id: string;
+      status:  'Aktif' | 'Cuti' | 'Lulus'| 'Nonaktif'
+      jabatan: 'Dosen' | 'Kaprodi' | 'Dekan' | 'Rektor'
+      prodi: {
+          name: string;
+      };
+  }
 }
 
 export type Fakultas = {
@@ -32,7 +38,7 @@ export type Fakultas = {
 export type ProgramStudi = {
   id: string
   kode: string
-  name_ps: string
+  name: string
   fakultas: string
   kaProdi: string
 }

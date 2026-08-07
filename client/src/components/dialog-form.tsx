@@ -22,32 +22,44 @@ import { useEffect, useState } from "react"
 import { Checkbox } from "./ui/checkbox"
 import { useAppDispatch, useAppSelector } from "@/hooks/redux"
 import { getAllFakultas, getAllProdi } from "@/features/action/campusThunk"
+import { getAllLecturers } from "@/features/action/usersThunk"
 
 export function DialogForm() {
   const dispatch = useAppDispatch()
-  const { fakultas } = useAppSelector((state) => state.campus)
+  const { fakultas, prodi } = useAppSelector((state) => state.campus)
+  const { lecturers } = useAppSelector((state) => state.users)
+
+  // pakai string | null (bukan number | null) — id dari Prisma biasanya cuid/uuid berupa string
   const [selectedFakultasId, setSelectedFakultasId] = useState<number | null>(null)
+  const [selectedProdiId, setSelectedProdiId] = useState<number | null>(null)
+  const [selectedDosenId, setSelectedDosenId] = useState<string | null>(null)
+
+  // fetch semua fakultas sekali saat komponen mount
   useEffect(() => {
     dispatch(getAllFakultas())
   }, [dispatch])
 
+  // fetch prodi setiap kali fakultas berubah; reset prodi & dosen yang sudah dipilih sebelumnya
   useEffect(() => {
+    setSelectedProdiId(null)
+    setSelectedDosenId(null)
     if (selectedFakultasId) {
       dispatch(getAllProdi({ fakultasId: selectedFakultasId }))
     }
+    
   }, [selectedFakultasId, dispatch])
+
+  // fetch dosen setiap kali prodi berubah; reset dosen yang sudah dipilih sebelumnya
+  useEffect(() => {
+    setSelectedDosenId(null)
+    if (selectedProdiId) {
+      dispatch(getAllLecturers({ prodiId: selectedProdiId }))
+    }
+  }, [selectedProdiId, dispatch])
 
   const genderList = [
     { label: "Laki-laki", value: "Male" },
     { label: "Perempuan", value: "Female" },
-  ]
-  // const fakultasList = [
-  //   { label: "Fakultas Teknik", value: "FT" },
-  //   { label: "Fakultas Ekonomi", value: "FE" },
-  // ]
-  const prodiList = [
-    { label: "Teknik Informatika", value: "IF" },
-    { label: "Sistem Informasi", value: "SI" },
   ]
   const statusList = [
     { label: "Aktif", value: "Aktif" },
@@ -55,15 +67,13 @@ export function DialogForm() {
     { label: "Lulus", value: "Lulus" },
     { label: "DO", value: "DO" },
   ]
-  const dosenList = [
-    { label: "Dr. Budi Santoso", value: "dosen-1" },
-    { label: "Dr. Siti Wijaya", value: "dosen-2" },
-  ]
 
   const [open, setOpen] = useState(false)
   const [date, setDate] = useState<Date | undefined>(undefined)
   const [isConfirmed, setIsConfirmed] = useState(false)
 
+  // console.log(prodi, '<<');
+  
   return (
     <Dialog>
       <form>
@@ -171,10 +181,10 @@ export function DialogForm() {
                 </Field>
                 <Field>
                   <FieldLabel htmlFor="form-fakultas">Fakultas</FieldLabel>
-                  <Select 
-                  items={fakultas.map((f) => ({ label: f.name, value: f.id }))}
-                  value={selectedFakultasId}
-                  onValueChange={(value) => setSelectedFakultasId(value)}
+                  <Select
+                    items={fakultas.map((f) => ({ label: f.name, value: f.id }))}
+                    value={selectedFakultasId}
+                    onValueChange={(value) => setSelectedFakultasId(value)}
                   >
                     <SelectTrigger id="form-fakultas" className="w-full max-w-xs">
                       <SelectValue placeholder="Pilih fakultas" />
@@ -194,14 +204,19 @@ export function DialogForm() {
               <div className="grid grid-cols-2 gap-4">
                 <Field>
                   <FieldLabel htmlFor="form-prodi">Program Studi</FieldLabel>
-                  <Select items={prodiList}>
+                  <Select
+                    items={prodi.map((p) => ({ label: p.name, value: p.id }))}
+                    value={selectedProdiId}
+                    onValueChange={(value) => setSelectedProdiId(value)}
+                    disabled={!selectedFakultasId}
+                  >
                     <SelectTrigger id="form-prodi">
-                      <SelectValue placeholder="Pilih prodi" />
+                      <SelectValue placeholder={selectedFakultasId ? "Pilih prodi" : "Pilih fakultas dulu"} />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="min-w-[var(--anchor-width)] w-auto">
                       <SelectGroup>
-                        {prodiList.map((p) => (
-                          <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                        {prodi.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                         ))}
                       </SelectGroup>
                     </SelectContent>
@@ -235,17 +250,23 @@ export function DialogForm() {
                   </Select>
                 </Field>
               </div>
+
               {/* DOSEN WALI */}
               <Field>
                 <FieldLabel htmlFor="form-dosen">Dosen Wali</FieldLabel>
-                <Select items={dosenList}>
+                <Select
+                  items={lecturers.map((d) => ({ label: d.name, value: d.id }))}
+                  value={selectedDosenId}
+                  onValueChange={(value) => setSelectedDosenId(value)}
+                  disabled={!selectedProdiId}
+                >
                   <SelectTrigger id="form-dosen">
-                    <SelectValue placeholder="Pilih dosen wali" />
+                    <SelectValue placeholder={selectedProdiId ? "Pilih dosen wali" : "Pilih prodi dulu"} />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="min-w-[var(--anchor-width)] w-auto">
                     <SelectGroup>
-                      {dosenList.map((d) => (
-                        <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
+                      {lecturers.map((d) => (
+                        <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                       ))}
                     </SelectGroup>
                   </SelectContent>

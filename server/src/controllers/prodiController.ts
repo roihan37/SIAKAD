@@ -87,7 +87,9 @@ export class Controller{
                 fakultas: el.fakultas.name,
                 kaprodi: el.dosen[0]?.user.name ?? "-",
             }));
-    
+            
+            // console.log(result);
+            
             res.status(200).json(result);
         } catch (error) {
             next(error);

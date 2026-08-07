@@ -48,7 +48,14 @@ export const getAllFakultas = createAsyncThunk(
 
   export const getAllProdi = createAsyncThunk(
     "prodi",
-    async ({ page, limit, search, sortBy, sortOrder }: PaginationParams
+    async ({ 
+      page, 
+      limit, 
+      search, 
+      sortBy, 
+      sortOrder, 
+      fakultasId
+     }: PaginationParams
       , thunkAPI) => {
       try {
         const response = await api.get("/prodi",{
@@ -57,9 +64,12 @@ export const getAllFakultas = createAsyncThunk(
             limit,
             search,
             sortBy, 
-            sortOrder
+            sortOrder,
+            fakultasId
           }
         })
+        
+        
         return response.data;
         
       } catch (err: any) {

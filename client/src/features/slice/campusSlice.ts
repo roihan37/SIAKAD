@@ -59,10 +59,6 @@ const campusSilce = createSlice({
         .addCase(getAllProdi.fulfilled, (state, action) => {
             state.isLoading = false
             state.prodi = action.payload
-            state.page = action.payload.pagination.page;
-            state.limit = action.payload.pagination.limit;
-            state.totalPages = action.payload.pagination.totalPages;
-            state.totalRows = action.payload.pagination.totalRows;
         })
         .addCase(getAllProdi.rejected, (state, action) =>{
             state.isLoading = false

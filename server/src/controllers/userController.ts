@@ -343,12 +343,15 @@ export class Controller {
             const search = String(req.query.search ?? "");
             const sortBy = String(req.query.sortBy ?? "name"); 
             const sortOrder = req.query.sortOrder === "desc" ? "desc" : "asc";
-
+            const prodiId = Number(req.query.prodiId);
             const skip = (page - 1) * limit;
             
             
             const where: Prisma.UserWhereInput = {
                 role : "Dosen", 
+                ...(prodiId
+                    ? { dosen: { prodiId: Number(prodiId) } }
+                    : {}),
                 ...(search
                     ? {
                           OR: [
@@ -394,7 +397,7 @@ export class Controller {
                 ),
                 prisma.user.count({ where }),
             ])
-            
+           
             res.status(200).json({
                 lecturers,
                 pagination: {
@@ -404,7 +407,8 @@ export class Controller {
                     totalPages: Math.max(1, Math.ceil(totalRows / limit)),
                 },
             });
-
+            
+            
         } catch (error) {
             next(error)
         }
