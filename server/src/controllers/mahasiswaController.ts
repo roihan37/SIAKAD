@@ -8,7 +8,7 @@ import { s3 } from "../config/s3";
 import { S3Service } from "../services/s3.service";
 
 export class Controller {
-    // USERS
+
     static async createStudent(
         req: Request,
         res: Response,
@@ -17,10 +17,10 @@ export class Controller {
         try {
             const {
                 name, email, username, password, phoneNumber, gender, address,
-                nim, angkatan, semester, status, prodiId, birthDate, avatarKey
+                nim, angkatan, semester, status, prodiId, birthDate, avatarKey, dosenId
             } = req.body
 
-
+            console.log(req.body);
             const hash = await hashPassword(password)
             let avatarUrl: string | undefined;
 
@@ -56,17 +56,18 @@ export class Controller {
                         semester,
                         status,
                         prodiId,
-                        userId: user.id
+                        userId: user.id,
+                        dosenId
                     }
                 })
-
                 return user
             })
 
+            console.log(newUser, '<< NEW USERS');
+            
             res.status(201).json({
                 message: `${newUser.name} created successfully`
             })
-
 
         } catch (error) {
             next(error)
@@ -93,6 +94,8 @@ export class Controller {
                 birthDate,
                 avatarKey
             } = req.body
+
+            
 
             const existingUser = await prisma.user.findUnique({
                 where: { id: id as string },
@@ -146,9 +149,6 @@ export class Controller {
             if (oldAvatarKey) {
                 await S3Service.deleteUrl(oldAvatarKey)
             }
-
-
-
 
             res.status(200).json({
                 message: "User berhasil diperbarui",

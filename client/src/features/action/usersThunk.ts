@@ -1,5 +1,5 @@
 import { api } from "@/api/axios";
-import type { PaginationParams } from "@/types/param";
+import type { CreateStudentPayload, PaginationParams } from "@/types/param";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
 export const getAllStudents = createAsyncThunk(
@@ -57,4 +57,38 @@ export const getAllStudents = createAsyncThunk(
         );
       }
     }
+
+    
   );
+
+export const createStudent = createAsyncThunk(
+    "students/create",
+    async (payload: CreateStudentPayload, thunkAPI) => {
+        try {
+            const response = await api.post("/students", payload)
+            console.log(response.data);
+            return response.data
+            
+        } catch (err: any) {
+          console.log(err);
+          
+            return thunkAPI.rejectWithValue(
+                err.response?.data?.message ?? "Gagal membuat mahasiswa"
+            )
+        }
+    }
+)
+
+export const getAvatarUploadUrl = createAsyncThunk(
+    "students/avatarUploadUrl",
+    async (contentType: string, thunkAPI) => {
+        try {
+            const response = await api.post("/students/avatar/upload-url", { contentType })
+            return response.data as { uploadUrl: string; key: string }
+        } catch (err: any) {
+            return thunkAPI.rejectWithValue(
+                err.response?.data?.message ?? "Gagal menyiapkan upload foto"
+            )
+        }
+    }
+)

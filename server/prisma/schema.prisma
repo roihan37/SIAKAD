@@ -22,7 +22,7 @@ model User {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   birthDate     DateTime?
-  gender        String
+  gender        Gender
   dosen         Dosen?
   mahasiswa     Mahasiswa?
   refreshTokens RefreshToken[]
@@ -110,4 +110,9 @@ enum JabatanDosen {
   Kaprodi
   Dekan
   Rektor
+}
+
+enum Gender {
+  Male
+  Female
 }
