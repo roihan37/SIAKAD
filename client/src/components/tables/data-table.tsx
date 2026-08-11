@@ -41,7 +41,7 @@ import {
 import { Field, FieldGroup } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { DialogForm } from "../dialog-form"
+import { DialogForm } from "../form-add-data/dialog-form"
 
 
 interface DataTableProps<TData, TValue> {
@@ -111,33 +111,33 @@ export function DataTable<TData, TValue>({
             onChange={(e) => onSearchChange(e.target.value)}
             className="max-w-sm w-xl"
           />
-            <DropdownMenu>
-              <DropdownMenuTrigger render={<Button variant="outline" className="ml-auto">
-                Columns
-              </Button>} >
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {table
-                  .getAllColumns()
-                  .filter(
-                    (column) => column.getCanHide()
+          <DropdownMenu>
+            <DropdownMenuTrigger render={<Button variant="outline" className="ml-auto">
+              Columns
+            </Button>} >
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {table
+                .getAllColumns()
+                .filter(
+                  (column) => column.getCanHide()
+                )
+                .map((column) => {
+                  return (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      className="capitalize"
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(value) =>
+                        column.toggleVisibility(!!value)
+                      }
+                    >
+                      {(column.columnDef.meta as any)?.label ?? column.id}
+                    </DropdownMenuCheckboxItem>
                   )
-                  .map((column) => {
-                    return (
-                      <DropdownMenuCheckboxItem
-                        key={column.id}
-                        className="capitalize"
-                        checked={column.getIsVisible()}
-                        onCheckedChange={(value) =>
-                          column.toggleVisibility(!!value)
-                        }
-                      >
-                        {(column.columnDef.meta as any)?.label ?? column.id}
-                      </DropdownMenuCheckboxItem>
-                    )
-                  })}
-              </DropdownMenuContent>
-            </DropdownMenu>
+                })}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         <div className="">
           {/* FORM */}

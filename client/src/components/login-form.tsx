@@ -35,7 +35,7 @@ export function LoginForm({
   const submitLogin = async (e: React.SubmitEvent<Element>) => {
     e.preventDefault();
     try {
-      const data = await dispatch(login(loginForm)).unwrap();
+      await dispatch(login(loginForm)).unwrap();
       // console.log(data, "<< PADA SUBMIT LOGIN");
       navigate('/mahasiswa')
     } catch (error) {

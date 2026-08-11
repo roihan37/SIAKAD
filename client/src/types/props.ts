@@ -1,0 +1,44 @@
+import type { Dosen } from "./campus";
+
+export interface MahasiswaFieldProps {
+    // form data sederhana (text/number input)
+    formData: {
+      name: string; email: string; username: string; password: string;
+      gender: string; phoneNumber: string; address: string;
+      nim: string; angkatan: string; semester: string; status: string;
+    }
+    setFormData: React.Dispatch<React.SetStateAction<MahasiswaFieldProps["formData"]>>
+  
+    // dropdown data dari Redux
+    fakultas: { id: string; name: string }[]
+    prodi: { id: string; name: string }[]
+    lecturers: Dosen[]
+  
+    // dependent-select state
+    selectedFakultasId: number | null
+    setSelectedFakultasId: (id: number | null) => void
+    selectedProdiId: number | null
+    setSelectedProdiId: (id: number | null) => void
+    selectedDosenId: string | null
+    setSelectedDosenId: (id: string | null) => void
+  
+    // date picker
+    date: Date | undefined
+    setDate: (date: Date | undefined) => void
+    open: boolean
+    setOpen: (open: boolean) => void
+  
+    // foto profil
+    selectedFile: File | null
+    croppedImage: string | null
+    onFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void
+    onResetPhoto: () => void
+    onCropped: (dataUrl: string) => void
+  
+    // checkbox konfirmasi
+    isConfirmed: boolean
+    setIsConfirmed: (checked: boolean) => void
+  
+    // error submit (opsional ditampilkan di sini)
+    submitError: string | null
+  }
