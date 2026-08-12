@@ -3,7 +3,7 @@ import { Prisma } from "@prisma/client";
 import { hashPassword } from "../lib/bycript";
 import { prisma } from "../lib/prisma";
 import { S3Service } from "../services/s3.service";
-import { LecturerService } from "../services/lecturer.service";
+import { AvatarService } from "../services/avatar.service";
 
 export class Controller {
     static async createLecturer(req: Request, res: Response, next: NextFunction) {
@@ -15,8 +15,8 @@ export class Controller {
 
             let avatarUrl: string | undefined;
             if (avatarKey) {
-                await LecturerService.verifyAvatarKey(avatarKey);
-                avatarUrl = LecturerService.getAvatarUrl(avatarKey);
+                await AvatarService.verifyKey(avatarKey);
+                avatarUrl = AvatarService.getPublicUrl(avatarKey);
             }
 
             const lecturer = await prisma.$transaction(async (tx) => {
@@ -67,8 +67,8 @@ export class Controller {
             let avatarUrl: string | undefined;
             let oldAvatarKey: string | null = null;
             if (avatarKey) {
-                await LecturerService.verifyAvatarKey(avatarKey);
-                avatarUrl = LecturerService.getAvatarUrl(avatarKey);
+                await AvatarService.verifyKey(avatarKey);
+                avatarUrl = AvatarService.getPublicUrl(avatarKey);
                 oldAvatarKey = existingUser.avatarKey;
             }
 
@@ -186,24 +186,4 @@ export class Controller {
         }
     }
 
-    static async createAvatarUpload(req: Request, res: Response, next: NextFunction) {
-        try {
-            const { contentType } = req.body;
-            const result = await LecturerService.createAvatarUpload(contentType);
-            res.status(201).json(result);
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    static async createAvatarUploadForEdit(req: Request, res: Response, next: NextFunction) {
-        try {
-            const id = String(req.params.id);
-            const { contentType } = req.body;
-            const result = await LecturerService.createAvatarUploadForEdit(id, contentType);
-            res.status(201).json(result);
-        } catch (error) {
-            next(error);
-        }
-    }
 }

@@ -1,10 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
-import { comparePassword, hashPassword } from "../lib/bycript";
-import { SelectUser } from "../types/user";
+import { hashPassword } from "../lib/bycript";
 import { Prisma } from "@prisma/client";
-import { StudentService } from "../services/student.service";
-import { s3 } from "../config/s3";
+import { AvatarService } from "../services/avatar.service";
 import { S3Service } from "../services/s3.service";
 
 export class Controller {
@@ -25,11 +23,8 @@ export class Controller {
             let avatarUrl: string | undefined;
 
             if (avatarKey) {
-                const exists = await S3Service.checkObjectExists(avatarKey);
-                if (!exists) {
-                    throw { name: "BadRequest", message: "File avatar tidak ditemukan. Silakan upload ulang." };
-                }
-                avatarUrl = `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${avatarKey}`;
+                await AvatarService.verifyKey(avatarKey);
+                avatarUrl = AvatarService.getPublicUrl(avatarKey);
             }
 
             const newUser = await prisma.$transaction(async (tx) => {
@@ -109,11 +104,8 @@ export class Controller {
             let oldAvatarKey: string | null = null;
 
             if (avatarKey) {
-                const exists = await S3Service.checkObjectExists(avatarKey);
-                if (!exists) {
-                    throw { name: "BadRequest", message: "File avatar tidak ditemukan. Silakan upload ulang." };
-                }
-                avatarUrl = `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${avatarKey}`;
+                await AvatarService.verifyKey(avatarKey);
+                avatarUrl = AvatarService.getPublicUrl(avatarKey);
                 oldAvatarKey = existingUser.avatarKey; // simpan referensi foto lama untuk dihapus setelah update sukses
             }
 
@@ -266,30 +258,4 @@ export class Controller {
         }
     }
 
-    static async createAvatarUpload(req: Request, res: Response, next: NextFunction) {
-        try {
-            // const {id} = req.params
-            const { contentType } = req.body;
-
-            const result = await StudentService.createAvatarUpload(contentType)
-            res.status(201).json(result);
-        } catch (error) {
-            next(error)
-        }
-    }
-
-    static async createAvatarUploadForEdit(req: Request, res: Response, next: NextFunction) {
-        try {
-            const { id } = req.params;
-            const { contentType } = req.body;
-            const result = await StudentService.createAvatarUploadForEdit(id as string, contentType);
-            res.status(201).json(result);
-        } catch (error) {
-            next(error);
-        }
-    }
-
-
-
 }
-

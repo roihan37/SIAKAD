@@ -42,3 +42,34 @@ export interface MahasiswaFieldProps {
     // error submit (opsional ditampilkan di sini)
     submitError: string | null
   }
+
+export interface DosenFieldProps {
+  formData: {
+    name: string; email: string; username: string; password: string;
+    gender: string; phoneNumber: string; address: string;
+    nidn: string; status: string; jabatan: string;
+  }
+  setFormData: React.Dispatch<React.SetStateAction<DosenFieldProps["formData"]>>
+
+  fakultas: { id: string; name: string }[]
+  prodi: { id: string; name: string }[]
+  selectedFakultasId: number | null
+  setSelectedFakultasId: (id: number | null) => void
+  selectedProdiId: number | null
+  setSelectedProdiId: (id: number | null) => void
+
+  date: Date | undefined
+  setDate: (date: Date | undefined) => void
+  open: boolean
+  setOpen: (open: boolean) => void
+
+  selectedFile: File | null
+  croppedImage: string | null
+  onFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void
+  onResetPhoto: () => void
+  onCropped: (dataUrl: string) => void
+
+  isConfirmed: boolean
+  setIsConfirmed: (checked: boolean) => void
+  submitError: string | null
+}

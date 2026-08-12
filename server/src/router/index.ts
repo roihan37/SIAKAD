@@ -5,6 +5,7 @@ import routerAunth from "./auth";
 import routerStudents from "./students";
 import routerLecturers from "./lecturers";
 import routerFakultas from "./fakultas";
+import routerAvatars from "./avatars";
 import { authMiddleware } from "../middleware/authMid";
 
 const router = express.Router()
@@ -17,5 +18,6 @@ router.use('/api/v1/students',routerStudents)
 router.use('/api/v1/lecturers',routerLecturers)
 router.use('/api/v1/fakultas',routerFakultas)
 router.use('/api/v1/prodi',routerProdi)
+router.use('/api/v1/avatars',routerAvatars)
 
 export default router

@@ -1,5 +1,5 @@
 import { api } from "@/api/axios";
-import type { CreateStudentPayload, PaginationParams } from "@/types/param";
+import type { CreateLecturerPayload, CreateStudentPayload, PaginationParams } from "@/types/param";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
 export const getAllStudents = createAsyncThunk(
@@ -83,7 +83,7 @@ export const getAvatarUploadUrl = createAsyncThunk(
     "students/avatarUploadUrl",
     async (contentType: string, thunkAPI) => {
         try {
-            const response = await api.post("/students/avatar/upload-url", { contentType })
+            const response = await api.post("/avatars/students/upload-url", { contentType })
             return response.data as { uploadUrl: string; key: string }
         } catch (err: any) {
             return thunkAPI.rejectWithValue(
@@ -91,4 +91,28 @@ export const getAvatarUploadUrl = createAsyncThunk(
             )
         }
     }
+)
+
+export const createLecturer = createAsyncThunk(
+  "lecturers/create",
+  async (payload: CreateLecturerPayload, thunkAPI) => {
+    try {
+      const response = await api.post("/lecturers", payload)
+      return response.data
+    } catch (err: any) {
+      return thunkAPI.rejectWithValue(err.response?.data?.message ?? "Gagal membuat dosen")
+    }
+  }
+)
+
+export const getLecturerAvatarUploadUrl = createAsyncThunk(
+  "lecturers/avatarUploadUrl",
+  async (contentType: string, thunkAPI) => {
+    try {
+      const response = await api.post("/avatars/lecturers/upload-url", { contentType })
+      return response.data as { uploadUrl: string; key: string }
+    } catch (err: any) {
+      return thunkAPI.rejectWithValue(err.response?.data?.message ?? "Gagal menyiapkan upload foto")
+    }
+  }
 )

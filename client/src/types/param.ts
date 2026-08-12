@@ -14,3 +14,9 @@ export interface PaginationParams {
     nim: string; angkatan: number; semester: number; status: string;
     prodiId: number; dosenId: string; avatarKey?: string;
 }
+
+export interface CreateLecturerPayload {
+  name: string; email: string; username: string; password: string;
+  gender: string; phoneNumber: string; address: string; birthDate?: string;
+  nidn: string; status: string; jabatan: string; prodiId: number; avatarKey?: string;
+}

@@ -10,10 +10,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react"
+import { useLocation } from "react-router"
 import { useAppDispatch, useAppSelector } from "@/hooks/redux"
 import { getAllFakultas, getAllProdi } from "@/features/action/campusThunk"
-import { createStudent, getAllLecturers, getAvatarUploadUrl } from "@/features/action/usersThunk"
+import { createLecturer, createStudent, getAllLecturers, getAvatarUploadUrl, getLecturerAvatarUploadUrl } from "@/features/action/usersThunk"
 import { MahasiswaField } from "./mahasiswa-form"
+import { DosenField } from "./dosen-form"
+import { AlertDestructive } from "../alert-form"
 
 function dataUrlToBlob(dataUrl: string): Blob {
   const [header, base64] = dataUrl.split(",")
@@ -25,19 +28,30 @@ function dataUrlToBlob(dataUrl: string): Blob {
   return new Blob([array], { type: mime })
 }
 
-const initialFormData = {
+const initialStudentFormData = {
   name: "", email: "", username: "", password: "",
   gender: "", phoneNumber: "", address: "",
   nim: "", angkatan: "", semester: "", status: "",
 }
 
+const initialLecturerFormData = {
+  name: "", email: "", username: "", password: "",
+  gender: "", phoneNumber: "", address: "",
+  nidn: "", status: "", jabatan: "",
+}
+
 export function DialogForm() {
+  const { pathname } = useLocation()
+  const isLecturer = pathname.startsWith("/dosen")
+  const entityName = isLecturer ? "Dosen" : "Mahasiswa"
+  const entityNameLower = isLecturer ? "dosen" : "mahasiswa"
   const dispatch = useAppDispatch()
   const { fakultas, prodi } = useAppSelector((state) => state.campus)
   const { lecturers } = useAppSelector((state) => state.users)
 
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [formData, setFormData] = useState(initialFormData)
+  const [studentFormData, setStudentFormData] = useState(initialStudentFormData)
+  const [lecturerFormData, setLecturerFormData] = useState(initialLecturerFormData)
 
   const [selectedFakultasId, setSelectedFakultasId] = useState<number | null>(null)
   const [selectedProdiId, setSelectedProdiId] = useState<number | null>(null)
@@ -59,18 +73,18 @@ export function DialogForm() {
 
   useEffect(() => {
     setSelectedProdiId(null)
-    setSelectedDosenId(null)
+    if (!isLecturer) setSelectedDosenId(null)
     if (selectedFakultasId) {
       dispatch(getAllProdi({ fakultasId: selectedFakultasId }))
     }
-  }, [selectedFakultasId, dispatch])
+  }, [selectedFakultasId, dispatch, isLecturer])
 
   useEffect(() => {
     setSelectedDosenId(null)
-    if (selectedProdiId) {
+    if (!isLecturer && selectedProdiId) {
       dispatch(getAllLecturers({ prodiId: selectedProdiId }))
     }
-  }, [selectedProdiId, dispatch])
+  }, [selectedProdiId, dispatch, isLecturer])
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -86,7 +100,8 @@ export function DialogForm() {
   }
 
   const resetForm = () => {
-    setFormData(initialFormData)
+    setStudentFormData(initialStudentFormData)
+    setLecturerFormData(initialLecturerFormData)
     setSelectedFakultasId(null)
     setSelectedProdiId(null)
     setSelectedDosenId(null)
@@ -101,14 +116,12 @@ export function DialogForm() {
     e.preventDefault()
     setSubmitError(null)
 
-    console.log("MASUK NIH");
-
 
     if (!selectedProdiId) {
       setSubmitError("Program Studi wajib dipilih.")
       return
     }
-    if (!selectedDosenId) {
+    if (!isLecturer && !selectedDosenId) {
       setSubmitError("Dosen Wali wajib dipilih.")
       return
     }
@@ -121,7 +134,8 @@ export function DialogForm() {
         const blob = dataUrlToBlob(croppedImage)
         const contentType = blob.type || "image/png"
 
-        const { uploadUrl, key } = await dispatch(getAvatarUploadUrl(contentType)).unwrap()
+        const uploadAction = isLecturer ? getLecturerAvatarUploadUrl : getAvatarUploadUrl
+        const { uploadUrl, key } = await dispatch(uploadAction(contentType)).unwrap()
 
         const putResponse = await fetch(uploadUrl, {
           method: "PUT",
@@ -136,25 +150,24 @@ export function DialogForm() {
         avatarKey = key
       }
 
-      await dispatch(
-        createStudent({
-          name: formData.name,
-          email: formData.email,
-          username: formData.username,
-          password: formData.password,
-          gender: formData.gender,
-          phoneNumber: formData.phoneNumber,
-          address: formData.address,
+      if (isLecturer) {
+        await dispatch(createLecturer({
+          ...lecturerFormData,
           birthDate: date ? date.toISOString() : undefined,
-          nim: formData.nim,
-          angkatan: Number(formData.angkatan),
-          semester: Number(formData.semester),
-          status: formData.status,
           prodiId: selectedProdiId,
-          dosenId: selectedDosenId,
           avatarKey,
-        })
-      ).unwrap()
+        })).unwrap()
+      } else {
+        await dispatch(createStudent({
+          ...studentFormData,
+          birthDate: date ? date.toISOString() : undefined,
+          angkatan: Number(studentFormData.angkatan),
+          semester: Number(studentFormData.semester),
+          prodiId: selectedProdiId,
+          dosenId: selectedDosenId!,
+          avatarKey,
+        })).unwrap()
+      }
 
       resetForm()
       setDialogOpen(false)
@@ -167,20 +180,42 @@ export function DialogForm() {
 
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-      <form id="mahasiswa-form" onSubmit={handleSubmit}>
-        <DialogTrigger render={<Button variant="outline" type="button">Add Mahasiswa</Button>} />
+      <form id={`${entityNameLower}-form`} onSubmit={handleSubmit}>
+        <DialogTrigger render={<Button variant="outline" type="button">Add {entityName}</Button>} />
         <DialogContent className="sm:max-w-sm flex max-h-[85vh] flex-col p-0 gap-0">
           <DialogHeader className="p-6 pb-4">
-            <DialogTitle>Add Mahasiswa</DialogTitle>
+            <DialogTitle>Add {entityName}</DialogTitle>
             <DialogDescription>
-              Isi data mahasiswa baru di bawah ini. Klik simpan jika sudah selesai.
+              Isi data {entityNameLower} baru di bawah ini. Klik simpan jika sudah selesai.
             </DialogDescription>
+            {submitError && <AlertDestructive title={submitError} />}
           </DialogHeader>
 
           <div className="flex-1 overflow-y-auto px-6 mb-5">
-            <MahasiswaField
-              formData={formData}
-              setFormData={setFormData}
+            {isLecturer ? <DosenField
+              formData={lecturerFormData}
+              setFormData={setLecturerFormData}
+              fakultas={fakultas}
+              prodi={prodi}
+              selectedFakultasId={selectedFakultasId}
+              setSelectedFakultasId={setSelectedFakultasId}
+              selectedProdiId={selectedProdiId}
+              setSelectedProdiId={setSelectedProdiId}
+              date={date}
+              setDate={setDate}
+              open={open}
+              setOpen={setOpen}
+              selectedFile={selectedFile}
+              croppedImage={croppedImage}
+              onFileChange={handleFileChange}
+              onResetPhoto={handleResetPhoto}
+              onCropped={setCroppedImage}
+              isConfirmed={isConfirmed}
+              setIsConfirmed={setIsConfirmed}
+              submitError={submitError}
+            /> : <MahasiswaField
+              formData={studentFormData}
+              setFormData={setStudentFormData}
               fakultas={fakultas}
               prodi={prodi}
               lecturers={lecturers}
@@ -202,11 +237,11 @@ export function DialogForm() {
               isConfirmed={isConfirmed}
               setIsConfirmed={setIsConfirmed}
               submitError={submitError}
-            />
+            />}
           </div>
           <DialogFooter className="p-6 pt-4 border-t">
             <DialogClose render={<Button variant="outline" type="button">Cancel</Button>} />
-            <Button type="submit" form="mahasiswa-form" disabled={!isConfirmed || isSubmitting}>
+            <Button type="submit" form={`${entityNameLower}-form`} disabled={!isConfirmed || isSubmitting}>
               {isSubmitting ? "Menyimpan..." : "Save changes"}
             </Button>
           </DialogFooter>

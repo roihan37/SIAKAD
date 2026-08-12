@@ -313,8 +313,6 @@ export function MahasiswaField({
           </FieldDescription>
         </FieldContent>
       </Field>
-
-      {submitError && <p className="text-sm text-destructive">{submitError}</p>}
     </FieldGroup>
   )
 }
