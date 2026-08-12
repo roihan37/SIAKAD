@@ -3,7 +3,7 @@ import { prisma } from "../lib/prisma";
 import { comparePassword, hashPassword } from "../lib/bycript";
 import { SelectUser } from "../types/user";
 import { Prisma } from "@prisma/client";
-import { StudentService } from "../services/studen.service";
+import { StudentService } from "../services/student.service";
 import { s3 } from "../config/s3";
 import { S3Service } from "../services/s3.service";
 
