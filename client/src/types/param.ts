@@ -31,3 +31,11 @@ export interface CreateProdiPayload {
   name: string;
   fakultasId: number;
 }
+
+export interface CreateMatkulPayload {
+  kode: string;
+  name_mk: string;
+  sks: number;
+  semester: number;
+  prodiId: number;
+}

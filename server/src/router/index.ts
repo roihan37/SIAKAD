@@ -12,6 +12,7 @@ import routerTahunAkademik from "./tahun-akademik";
 import routerKelas from "./kelas";
 import routerKurikulum from "./kurikulum";
 import routerKelasMataKuliah from "./kelas-mata-kuliah";
+import routerMataKuliah from "./mata-kuliah";
 import routerJadwal from "./jadwal";
 import routerKRS from "./krs";
 
@@ -30,6 +31,7 @@ router.use('/api/v1/ruangan', routerRuangan)
 router.use('/api/v1/tahun-akademik', routerTahunAkademik)
 router.use('/api/v1/kelas', routerKelas)
 router.use('/api/v1/kurikulum', routerKurikulum)
+router.use('/api/v1/mata-kuliah', routerMataKuliah)
 router.use('/api/v1/kelas-mata-kuliah', routerKelasMataKuliah)
 router.use('/api/v1/jadwal', routerJadwal)
 router.use('/api/v1/krs', routerKRS)

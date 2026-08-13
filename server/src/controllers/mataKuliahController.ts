@@ -32,15 +32,28 @@ export class Controller {
       const skip = (page - 1) * limit;
 
       const where: Prisma.MataKuliahWhereInput = search
-        ? { OR: [{ kode: { contains: search, mode: Prisma.QueryMode.insensitive } }, { nama: { contains: search, mode: Prisma.QueryMode.insensitive } }] }
+        ? { OR: [{ kode: { contains: search, mode: Prisma.QueryMode.insensitive } }, 
+          { nama: { contains: search, mode: Prisma.QueryMode.insensitive } }] }
         : {};
 
       const [rows, total] = await Promise.all([
-        prisma.mataKuliah.findMany({ where, skip, take: limit }),
+        prisma.mataKuliah.findMany({ where, skip, take: limit, include: { kurikulum: { include: { prodi: true } } } }),
         prisma.mataKuliah.count({ where }),
       ]);
 
-      res.status(200).json({ mataKuliah: rows, pagination: { page, limit, totalPages: Math.max(1, Math.ceil(total / limit)), totalRows: total } });
+      // Flatten results so each output row contains: Kode | Mata Kuliah | SKS | Prodi | Semester
+      const flattened = [] as Array<{ kode: string; nama: string; sks: number; prodi: string | null; semester: number | null }>;
+      for (const mk of rows) {
+        if (mk.kurikulum && mk.kurikulum.length > 0) {
+          for (const k of mk.kurikulum) {
+            flattened.push({ kode: mk.kode, nama: mk.nama, sks: mk.sks, prodi: k.prodi?.name ?? null, semester: k.semester ?? null });
+          }
+        } else {
+          flattened.push({ kode: mk.kode, nama: mk.nama, sks: mk.sks, prodi: null, semester: null });
+        }
+      }
+
+      res.status(200).json({ mataKuliah: flattened, pagination: { page, limit, totalPages: Math.max(1, Math.ceil(total / limit)), totalRows: total } });
     } catch (error) {
       next(error);
     }

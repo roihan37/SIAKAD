@@ -43,7 +43,7 @@ export type ProgramStudi = {
   kaProdi: string
 }
 
-export type Matkul = {
+export type MataKuliah = {
   id: string
   kode: string
   name_mk: string

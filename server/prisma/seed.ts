@@ -205,7 +205,7 @@ async function main() {
     for (let i = 0; i < mkTemplates.length; i++) {
       try {
         const kode = `${p.kode}-MK${String(i + 1).padStart(2, "0")}`;
-        const nama = `${mkTemplates[i]} (${p.name})`;
+        const nama = mkTemplates[i];
         const sks = [2,3,4][i % 3];
         const mk = await prisma.mataKuliah.create({ data: { kode, nama, sks } });
         // buat relasi kurikulum (prodi -> mata kuliah), tempatkan di semester 1..8 round-robin
