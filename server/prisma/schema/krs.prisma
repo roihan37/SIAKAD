@@ -1,0 +1,16 @@
+model KRS {
+  id              String   @id @default(uuid())
+
+  mahasiswaId     String
+  tahunAkademikId Int
+
+  mahasiswa       Mahasiswa      @relation(fields: [mahasiswaId], references: [id])
+  tahunAkademik   TahunAkademik  @relation(fields: [tahunAkademikId], references: [id])
+
+  details         KRSDetail[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([mahasiswaId, tahunAkademikId])
+}

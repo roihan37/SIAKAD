@@ -1,0 +1,18 @@
+model Transkrip {
+  id                String   @id @default(uuid())
+
+  mahasiswaId       String
+  krsDetailId       String
+
+  nilaiAngka        Decimal? @db.Decimal(5, 2)
+  nilaiHuruf        String?
+  bobot             Decimal? @db.Decimal(3, 2)
+
+  mahasiswa         Mahasiswa @relation(fields: [mahasiswaId], references: [id])
+  krsDetail         KRSDetail @relation(fields: [krsDetailId], references: [id])
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([mahasiswaId, krsDetailId])
+}

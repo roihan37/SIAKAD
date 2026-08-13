@@ -1,0 +1,21 @@
+model KRSDetail {
+  id                  String   @id @default(uuid())
+
+  krsId               String
+  kelasMataKuliahId   Int
+
+  status              KRSStatus @default(MENUNGGU)
+
+  approvedBy          String?
+  approvedAt          DateTime?
+
+  krs                 KRS                @relation(fields: [krsId], references: [id])
+  kelasMataKuliah     KelasMataKuliah    @relation(fields: [kelasMataKuliahId], references: [id])
+
+  transkrip           Transkrip[]
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([krsId, kelasMataKuliahId])
+}

@@ -27,3 +27,9 @@ enum Semester {
   GANJIL
   GENAP
 }
+
+enum KRSStatus {
+  MENUNGGU
+  DISETUJUI
+  DITOLAK
+}
