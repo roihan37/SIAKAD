@@ -1,0 +1,18 @@
+model KelasMataKuliah {
+  id              Int   @id @default(autoincrement())
+
+  kelasId         Int
+  mataKuliahId    Int
+  dosenId         String
+
+  kelas           Kelas       @relation(fields: [kelasId], references: [id])
+  mataKuliah      MataKuliah  @relation(fields: [mataKuliahId], references: [id])
+  dosen           Dosen       @relation(fields: [dosenId], references: [id])
+
+  jadwal           Jadwal[]
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([kelasId, mataKuliahId])
+}

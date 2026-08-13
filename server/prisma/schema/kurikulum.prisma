@@ -1,0 +1,12 @@
+model Kurikulum {
+  id            Int   @id @default(autoincrement())
+  prodiId       Int
+  mataKuliahId  Int
+  semester      Int
+  wajib         Boolean  @default(true)
+
+  prodi         Prodi       @relation(fields: [prodiId], references: [id])
+  mataKuliah    MataKuliah  @relation(fields: [mataKuliahId], references: [id])
+
+  @@unique([prodiId, mataKuliahId])
+}

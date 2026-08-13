@@ -1,0 +1,14 @@
+model TahunAkademik {
+  id          Int   @id @default(autoincrement())
+  tahun       String
+  semester    Semester
+
+  kelas       Kelas[]
+  jadwal      Jadwal[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([tahun, semester])
+}
+

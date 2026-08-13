@@ -1,0 +1,12 @@
+model Ruangan {
+  id          Int   @id @default(autoincrement())
+  kode        String   @unique
+  nama        String
+  kapasitas   Int
+  gedung      String?
+
+  jadwal      Jadwal[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

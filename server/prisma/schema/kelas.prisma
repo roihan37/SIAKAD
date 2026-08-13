@@ -1,0 +1,16 @@
+model Kelas {
+  id              Int   @id @default(autoincrement())
+  nama            String
+  prodiId         Int
+  tahunAkademikId Int
+  tingkat         Int
+
+  prodi           Prodi          @relation(fields: [prodiId], references: [id])
+  tahunAkademik   TahunAkademik  @relation(fields: [tahunAkademikId], references: [id])
+  kelasMK         KelasMataKuliah[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([nama, prodiId, tahunAkademikId])
+}

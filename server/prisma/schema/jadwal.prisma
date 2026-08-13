@@ -1,0 +1,33 @@
+model Jadwal {
+  id                 Int   @id @default(autoincrement())
+
+  kelasMataKuliahId  Int
+  tahunAkademikId    Int
+  ruanganId          Int
+
+  hari               Hari
+  jamMulai           String
+  jamSelesai         String
+
+  kelasMataKuliah    KelasMataKuliah @relation(fields: [kelasMataKuliahId], references: [id])
+
+  tahunAkademik      TahunAkademik @relation(fields: [tahunAkademikId],references: [id])
+
+  ruangan            Ruangan @relation(fields: [ruanganId],references: [id])
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([hari, jamMulai])
+  @@index([kelasMataKuliahId])
+  @@index([ruanganId])
+}
+
+enum Hari {
+  SENIN
+  SELASA
+  RABU
+  KAMIS
+  JUMAT
+  SABTU
+}

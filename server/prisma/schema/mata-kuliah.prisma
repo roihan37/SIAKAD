@@ -1,0 +1,12 @@
+model MataKuliah {
+  id          Int   @id @default(autoincrement())
+  kode        String   @unique
+  nama        String
+  sks         Int
+
+  kurikulum   Kurikulum[]
+  kelasMK     KelasMataKuliah[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

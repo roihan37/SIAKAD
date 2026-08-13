@@ -10,4 +10,6 @@ model Dosen {
   prodi     Prodi        @relation(fields: [prodiId], references: [id])
   user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   mahasiswa Mahasiswa[]
+
+  kelasMataKuliahs KelasMataKuliah[]
 }
