@@ -31,7 +31,6 @@ export function MahasiswaField({
   date, setDate, open, setOpen,
   selectedFile, croppedImage, onFileChange, onResetPhoto, onCropped,
   isConfirmed, setIsConfirmed,
-  submitError,
 }: MahasiswaFieldProps) {
   return (
     <FieldGroup>

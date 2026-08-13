@@ -20,3 +20,14 @@ export interface CreateLecturerPayload {
   gender: string; phoneNumber: string; address: string; birthDate?: string;
   nidn: string; status: string; jabatan: string; prodiId: number; avatarKey?: string;
 }
+
+export interface CreateFakultasPayload {
+  kode: string;
+  name: string;
+}
+
+export interface CreateProdiPayload {
+  kode: string;
+  name: string;
+  fakultasId: number;
+}

@@ -1,0 +1,12 @@
+model RefreshToken {
+  id          String   @id @default(uuid())
+  hashedToken String   @unique
+  userId      String
+  revoked     Boolean  @default(false)
+  device      String?
+  ip          String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  expireAt    DateTime
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

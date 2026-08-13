@@ -21,8 +21,8 @@ function createSortableHeader(label: string) {
 }
 
 export const fkColumns: ColumnDef<Fakultas>[] = [
+  createSelectColumn(),
 
-  createActionColumn(),
   {
     id: 'kode',
     accessorKey: "kode",
@@ -43,6 +43,6 @@ export const fkColumns: ColumnDef<Fakultas>[] = [
     accessorKey: "dekan",
     header: "Dekan",
   },
-  createSelectColumn(),
+  createActionColumn(),
 
 ];

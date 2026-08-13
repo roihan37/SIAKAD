@@ -1,0 +1,20 @@
+model User {
+  id            String         @id @default(uuid())
+  name          String
+  email         String         @unique
+  username      String         @unique
+  password      String
+  avatarKey     String?
+  avatarUrl     String?
+  role          Role
+  phoneNumber   String?
+  photo         String?
+  address       String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  birthDate     DateTime?
+  gender        Gender
+  dosen         Dosen?
+  mahasiswa     Mahasiswa?
+  refreshTokens RefreshToken[]
+}

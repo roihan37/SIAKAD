@@ -1,9 +1,4 @@
 
-import { DataTable } from "@/components/tables/data-table"
-import { matkulColumns } from "@/components/tables/matkulColumns"
-
-
-
 export default function MatkulPage() {
     
     return (

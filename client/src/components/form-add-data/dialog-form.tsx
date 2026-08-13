@@ -12,10 +12,12 @@ import {
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react"
 import { useLocation } from "react-router"
 import { useAppDispatch, useAppSelector } from "@/hooks/redux"
-import { getAllFakultas, getAllProdi } from "@/features/action/campusThunk"
+import { createFakultas, createProdi, getAllFakultas, getAllProdi } from "@/features/action/campusThunk"
 import { createLecturer, createStudent, getAllLecturers, getAvatarUploadUrl, getLecturerAvatarUploadUrl } from "@/features/action/usersThunk"
 import { MahasiswaField } from "./mahasiswa-form"
 import { DosenField } from "./dosen-form"
+import { FakultasField } from "./fakultas-form"
+import { ProdiField } from "./prodi-form"
 import { AlertDestructive } from "../alert-form"
 
 function dataUrlToBlob(dataUrl: string): Blob {
@@ -40,11 +42,16 @@ const initialLecturerFormData = {
   nidn: "", status: "", jabatan: "",
 }
 
+const initialFakultasFormData = { kode: "", name: "" }
+const initialProdiFormData = { kode: "", name: "" }
+
 export function DialogForm() {
   const { pathname } = useLocation()
+  const isFakultas = pathname.startsWith("/fakultas")
+  const isProdi = pathname.startsWith("/program-studi") || pathname.startsWith("/prodi")
   const isLecturer = pathname.startsWith("/dosen")
-  const entityName = isLecturer ? "Dosen" : "Mahasiswa"
-  const entityNameLower = isLecturer ? "dosen" : "mahasiswa"
+  const entityName = isFakultas ? "Fakultas" : isLecturer ? "Dosen" : isProdi ? "Prodi" : "Mahasiswa"
+  const entityNameLower = isFakultas ? "fakultas" : isLecturer ? "dosen" : isProdi ? "prodi" : "mahasiswa"
   const dispatch = useAppDispatch()
   const { fakultas, prodi } = useAppSelector((state) => state.campus)
   const { lecturers } = useAppSelector((state) => state.users)
@@ -52,6 +59,8 @@ export function DialogForm() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [studentFormData, setStudentFormData] = useState(initialStudentFormData)
   const [lecturerFormData, setLecturerFormData] = useState(initialLecturerFormData)
+  const [fakultasFormData, setFakultasFormData] = useState(initialFakultasFormData)
+  const [prodiFormData, setProdiFormData] = useState(initialProdiFormData)
 
   const [selectedFakultasId, setSelectedFakultasId] = useState<number | null>(null)
   const [selectedProdiId, setSelectedProdiId] = useState<number | null>(null)
@@ -73,18 +82,18 @@ export function DialogForm() {
 
   useEffect(() => {
     setSelectedProdiId(null)
-    if (!isLecturer) setSelectedDosenId(null)
-    if (selectedFakultasId) {
+    if (!isLecturer && !isFakultas) setSelectedDosenId(null)
+    if (!isFakultas && selectedFakultasId) {
       dispatch(getAllProdi({ fakultasId: selectedFakultasId }))
     }
-  }, [selectedFakultasId, dispatch, isLecturer])
+  }, [selectedFakultasId, dispatch, isLecturer, isFakultas])
 
   useEffect(() => {
     setSelectedDosenId(null)
-    if (!isLecturer && selectedProdiId) {
+    if (!isLecturer && !isFakultas && selectedProdiId) {
       dispatch(getAllLecturers({ prodiId: selectedProdiId }))
     }
-  }, [selectedProdiId, dispatch, isLecturer])
+  }, [selectedProdiId, dispatch, isLecturer, isFakultas])
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -102,6 +111,8 @@ export function DialogForm() {
   const resetForm = () => {
     setStudentFormData(initialStudentFormData)
     setLecturerFormData(initialLecturerFormData)
+    setFakultasFormData(initialFakultasFormData)
+    setProdiFormData(initialProdiFormData)
     setSelectedFakultasId(null)
     setSelectedProdiId(null)
     setSelectedDosenId(null)
@@ -117,17 +128,38 @@ export function DialogForm() {
     setSubmitError(null)
 
 
-    if (!selectedProdiId) {
+    if (isProdi && !selectedFakultasId) {
+      setSubmitError("Fakultas induk wajib dipilih.")
+      return
+    }
+    if (!isFakultas && !isProdi && !selectedProdiId) {
       setSubmitError("Program Studi wajib dipilih.")
       return
     }
-    if (!isLecturer && !selectedDosenId) {
+    if (!isFakultas && !isProdi && !isLecturer && !selectedDosenId) {
       setSubmitError("Dosen Wali wajib dipilih.")
       return
     }
 
     setIsSubmitting(true)
     try {
+      if (isFakultas) {
+        await dispatch(createFakultas(fakultasFormData)).unwrap()
+        resetForm()
+        setDialogOpen(false)
+        return
+      }
+
+      if (isProdi) {
+        await dispatch(createProdi({
+          ...prodiFormData,
+          fakultasId: Number(selectedFakultasId),
+        })).unwrap()
+        resetForm()
+        setDialogOpen(false)
+        return
+      }
+
       let avatarKey: string | undefined
 
       if (croppedImage) {
@@ -154,7 +186,7 @@ export function DialogForm() {
         await dispatch(createLecturer({
           ...lecturerFormData,
           birthDate: date ? date.toISOString() : undefined,
-          prodiId: selectedProdiId,
+          prodiId: selectedProdiId!,
           avatarKey,
         })).unwrap()
       } else {
@@ -163,7 +195,7 @@ export function DialogForm() {
           birthDate: date ? date.toISOString() : undefined,
           angkatan: Number(studentFormData.angkatan),
           semester: Number(studentFormData.semester),
-          prodiId: selectedProdiId,
+          prodiId: selectedProdiId!,
           dosenId: selectedDosenId!,
           avatarKey,
         })).unwrap()
@@ -192,7 +224,20 @@ export function DialogForm() {
           </DialogHeader>
 
           <div className="flex-1 overflow-y-auto px-6 mb-5">
-            {isLecturer ? <DosenField
+            {isFakultas ? <FakultasField
+              formData={fakultasFormData}
+              setFormData={setFakultasFormData}
+              isConfirmed={isConfirmed}
+              setIsConfirmed={setIsConfirmed}
+            /> : isProdi ? <ProdiField
+              formData={prodiFormData}
+              setFormData={setProdiFormData}
+              fakultas={fakultas}
+              selectedFakultasId={selectedFakultasId}
+              setSelectedFakultasId={setSelectedFakultasId}
+              isConfirmed={isConfirmed}
+              setIsConfirmed={setIsConfirmed}
+            /> : isLecturer ? <DosenField
               formData={lecturerFormData}
               setFormData={setLecturerFormData}
               fakultas={fakultas}

@@ -4,23 +4,24 @@ import { createSelectColumn } from "./select-column";
 import type { ProgramStudi } from "@/types/campus";
 
 export const prodiColumns: ColumnDef<ProgramStudi>[] = [
-    {
-        accessorKey: "kode",
-        header: "KODE",
-      },
-      {
-        accessorKey: "name",
-        header: "Nama Prodi",
-      },
-      {
-        accessorKey: "fakultas",
-        header: "Fakultas",
-      },
-      {
-        accessorKey: "kaprodi",
-        header: "Kaprodi",
-      },
-    createActionColumn(),
-    createSelectColumn(),
+  createSelectColumn(),
+  {
+    accessorKey: "kode",
+    header: "KODE",
+  },
+  {
+    accessorKey: "name",
+    header: "Nama Prodi",
+  },
+  {
+    accessorKey: "fakultas",
+    header: "Fakultas",
+  },
+  {
+    accessorKey: "kaprodi",
+    header: "Kaprodi",
+  },
+  createActionColumn(),
+
 
 ];

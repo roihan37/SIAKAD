@@ -73,3 +73,20 @@ export interface DosenFieldProps {
   setIsConfirmed: (checked: boolean) => void
   submitError: string | null
 }
+
+export interface FakultasFieldProps {
+  formData: { kode: string; name: string }
+  setFormData: React.Dispatch<React.SetStateAction<FakultasFieldProps["formData"]>>
+  isConfirmed: boolean
+  setIsConfirmed: (checked: boolean) => void
+}
+
+export interface ProdiFieldProps {
+  formData: { kode: string; name: string }
+  setFormData: React.Dispatch<React.SetStateAction<ProdiFieldProps["formData"]>>
+  fakultas: { id: number | string; name: string }[]
+  selectedFakultasId: number | null
+  setSelectedFakultasId: (id: number | null) => void
+  isConfirmed: boolean
+  setIsConfirmed: (checked: boolean) => void
+}

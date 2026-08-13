@@ -1,0 +1,13 @@
+model Dosen {
+  id        String       @id @default(uuid())
+  nidn      String       @unique
+  status    Status
+  jabatan   JabatanDosen @default(Dosen)
+  userId    String       @unique
+  prodiId   Int
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  prodi     Prodi        @relation(fields: [prodiId], references: [id])
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mahasiswa Mahasiswa[]
+}

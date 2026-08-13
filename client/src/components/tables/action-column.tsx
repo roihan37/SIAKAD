@@ -13,24 +13,21 @@ import {
   MoreHorizontal,
   PencilIcon,
   TrashIcon,
-  EyeIcon,
   ShareIcon,
 } from "lucide-react";
 
 import { type ColumnDef } from "@tanstack/react-table";
 
 export function createActionColumn<T>(
-  onEdit?: (row: T) => void,
-  onDelete?: (row: T) => void,
-  onDetail?: (row: T) => void
+  _onEdit?: (row: T) => void,
+  _onDelete?: (row: T) => void,
+  _onDetail?: (row: T) => void
 ): ColumnDef<T> {
 
   return {
     id: "actions",
 
-    cell: ({ row }) => {
-
-      const data = row.original;
+    cell: () => {
 
       return (
 

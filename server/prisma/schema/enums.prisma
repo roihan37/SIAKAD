@@ -1,0 +1,24 @@
+enum Role {
+  Admin
+  Dosen
+  Mahasiswa
+}
+
+enum Status {
+  Aktif
+  Cuti
+  Lulus
+  Nonaktif
+}
+
+enum JabatanDosen {
+  Dosen
+  Kaprodi
+  Dekan
+  Rektor
+}
+
+enum Gender {
+  Male
+  Female
+}
