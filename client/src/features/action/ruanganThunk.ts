@@ -1,5 +1,6 @@
 import { api } from "@/api/axios";
-import type { CreateMatkulPayload, PaginationParams } from "@/types/param";
+import type { Ruangan } from "@/types/campus";
+import type { PaginationParams } from "@/types/param";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
 export const getAllRuangan = createAsyncThunk(
@@ -40,7 +41,7 @@ export const getAllRuangan = createAsyncThunk(
 
 export const createRuangan = createAsyncThunk(
   "ruangan/create",
-  async (payload: CreateMatkulPayload, thunkAPI) => {
+  async (payload: Ruangan, thunkAPI) => {
     try {
       const response = await api.post("/ruangan", payload);
       return response.data;

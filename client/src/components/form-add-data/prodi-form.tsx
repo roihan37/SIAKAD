@@ -1,5 +1,5 @@
 import { Checkbox } from "@/components/ui/checkbox"
-import { Field, FieldContent, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { Field, FieldContent, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { ProdiFieldProps } from "@/types/props"
@@ -12,39 +12,42 @@ export function ProdiField({
   setSelectedFakultasId,
   isConfirmed,
   setIsConfirmed,
+  errors,
 }: ProdiFieldProps) {
   return (
     <FieldGroup>
-      <Field>
+      <Field data-invalid={!!errors?.kode}>
         <FieldLabel htmlFor="prodi-kode">Kode Program Studi</FieldLabel>
         <Input
           id="prodi-kode"
           placeholder="TI"
-          required
           value={formData.kode}
+          aria-invalid={!!errors?.kode}
           onChange={(event) => setFormData((data) => ({ ...data, kode: event.target.value }))}
         />
         <FieldDescription>Kode harus unik, misalnya TI, SI, atau AK.</FieldDescription>
+        <FieldError>{errors?.kode}</FieldError>
       </Field>
 
-      <Field>
+      <Field data-invalid={!!errors?.name}>
         <FieldLabel htmlFor="prodi-name">Nama Program Studi</FieldLabel>
         <Input
           id="prodi-name"
           placeholder="Teknik Informatika"
-          required
           value={formData.name}
+          aria-invalid={!!errors?.name}
           onChange={(event) => setFormData((data) => ({ ...data, name: event.target.value }))}
         />
+        <FieldError>{errors?.name}</FieldError>
       </Field>
 
-      <Field>
+      <Field data-invalid={!!errors?.fakultasId}>
         <FieldLabel htmlFor="prodi-fakultas">Fakultas Induk</FieldLabel>
         <Select
           value={selectedFakultasId === null ? undefined : String(selectedFakultasId)}
           onValueChange={(value) => setSelectedFakultasId(Number(value))}
         >
-          <SelectTrigger id="prodi-fakultas">
+          <SelectTrigger id="prodi-fakultas" aria-invalid={!!errors?.fakultasId}>
             <SelectValue placeholder="Pilih fakultas induk" />
           </SelectTrigger>
           <SelectContent>
@@ -57,6 +60,7 @@ export function ProdiField({
             </SelectGroup>
           </SelectContent>
         </Select>
+        <FieldError>{errors?.fakultasId}</FieldError>
       </Field>
 
       <Field orientation="horizontal" className="items-start gap-2 pt-2 pb-4">

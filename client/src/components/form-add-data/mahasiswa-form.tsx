@@ -5,7 +5,7 @@ import {
   ImageCrop, ImageCropApply, ImageCropContent, ImageCropReset,
 } from "@/components/kibo-ui/image-crop"
 import { XIcon } from "lucide-react"
-import { Field, FieldContent, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { Field, FieldContent, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "../ui/checkbox"
@@ -30,54 +30,58 @@ export function MahasiswaField({
   selectedDosenId, setSelectedDosenId,
   date, setDate, open, setOpen,
   selectedFile, croppedImage, onFileChange, onResetPhoto, onCropped,
-  isConfirmed, setIsConfirmed,
+  isConfirmed, setIsConfirmed, errors,
 }: MahasiswaFieldProps) {
   return (
     <FieldGroup>
 
       {/* NAMA LENGKAP */}
-      <Field>
+      <Field data-invalid={!!errors?.name}>
         <FieldLabel htmlFor="form-fullname">Nama Lengkap</FieldLabel>
         <Input
-          id="form-fullname" type="text" placeholder="Evil Rabbit" required
-          value={formData.name}
+          id="form-fullname" type="text" placeholder="Evil Rabbit"
+          value={formData.name} aria-invalid={!!errors?.name}
           onChange={(e) => setFormData((f) => ({ ...f, name: e.target.value }))}
         />
+        <FieldError>{errors?.name}</FieldError>
       </Field>
 
       {/* USERNAME + EMAIL */}
       <div className="grid grid-cols-2 gap-4">
-        <Field>
+        <Field data-invalid={!!errors?.username}>
           <FieldLabel htmlFor="form-username">Username</FieldLabel>
           <Input
-            id="form-username" type="text" placeholder="evilrabit123" required
-            value={formData.username}
+            id="form-username" type="text" placeholder="evilrabit123"
+            value={formData.username} aria-invalid={!!errors?.username}
             onChange={(e) => setFormData((f) => ({ ...f, username: e.target.value }))}
           />
+          <FieldError>{errors?.username}</FieldError>
         </Field>
-        <Field>
+        <Field data-invalid={!!errors?.email}>
           <FieldLabel htmlFor="form-email">Email</FieldLabel>
           <Input
-            id="form-email" type="email" placeholder="john@example.com" required
-            value={formData.email}
+            id="form-email" type="email" placeholder="john@example.com"
+            value={formData.email} aria-invalid={!!errors?.email}
             onChange={(e) => setFormData((f) => ({ ...f, email: e.target.value }))}
           />
+          <FieldError>{errors?.email}</FieldError>
         </Field>
       </div>
 
       {/* PASSWORD */}
-      <Field>
+      <Field data-invalid={!!errors?.password}>
         <FieldLabel htmlFor="form-password">Password</FieldLabel>
         <Input
-          id="form-password" type="password" required
-          value={formData.password}
+          id="form-password" type="password"
+          value={formData.password} aria-invalid={!!errors?.password}
           onChange={(e) => setFormData((f) => ({ ...f, password: e.target.value }))}
         />
+        <FieldError>{errors?.password}</FieldError>
       </Field>
 
       {/* JENIS KELAMIN + NOMOR TELEPON */}
       <div className="grid grid-cols-2 gap-4">
-        <Field>
+        <Field data-invalid={!!errors?.phoneNumber}>
           <FieldLabel htmlFor="form-gender">Jenis Kelamin</FieldLabel>
           <Select
             items={genderList}
@@ -100,14 +104,15 @@ export function MahasiswaField({
           <FieldLabel htmlFor="form-phone">Nomor Telepon</FieldLabel>
           <Input
             id="form-phone" type="tel" placeholder="+62 812-3456-7890"
-            value={formData.phoneNumber}
+            value={formData.phoneNumber} aria-invalid={!!errors?.phoneNumber}
             onChange={(e) => setFormData((f) => ({ ...f, phoneNumber: e.target.value }))}
           />
+          <FieldError>{errors?.phoneNumber}</FieldError>
         </Field>
       </div>
 
       {/* TANGGAL LAHIR */}
-      <Field>
+      <Field data-invalid={!!errors?.address}>
         <FieldLabel htmlFor="date">Tanggal Lahir</FieldLabel>
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger render={
@@ -135,9 +140,10 @@ export function MahasiswaField({
         <FieldLabel htmlFor="form-address">Alamat</FieldLabel>
         <Input
           id="form-address" type="text" placeholder="123 Main St"
-          value={formData.address}
+          value={formData.address} aria-invalid={!!errors?.address}
           onChange={(e) => setFormData((f) => ({ ...f, address: e.target.value }))}
         />
+        <FieldError>{errors?.address}</FieldError>
       </Field>
 
       {/* FOTO PROFIL */}
@@ -182,15 +188,16 @@ export function MahasiswaField({
 
       {/* NIM + FAKULTAS */}
       <div className="grid grid-cols-2 gap-4">
-        <Field>
+        <Field data-invalid={!!errors?.nim}>
           <FieldLabel htmlFor="form-nim">NIM</FieldLabel>
           <Input
-            id="form-nim" type="text" placeholder="21933212" required
-            value={formData.nim}
+            id="form-nim" type="text" placeholder="21933212"
+            value={formData.nim} aria-invalid={!!errors?.nim}
             onChange={(e) => setFormData((f) => ({ ...f, nim: e.target.value }))}
           />
+          <FieldError>{errors?.nim}</FieldError>
         </Field>
-        <Field>
+        <Field data-invalid={!!errors?.angkatan}>
           <FieldLabel htmlFor="form-fakultas">Fakultas</FieldLabel>
           <Select
             items={fakultas.map((f) => ({ label: f.name, value: f.id }))}
@@ -236,31 +243,33 @@ export function MahasiswaField({
         <Field>
           <FieldLabel htmlFor="form-angkatan">Angkatan</FieldLabel>
           <Input
-            id="form-angkatan" type="number" placeholder="2024" required
-            value={formData.angkatan}
+            id="form-angkatan" type="number" placeholder="2024"
+            value={formData.angkatan} aria-invalid={!!errors?.angkatan}
             onChange={(e) => setFormData((f) => ({ ...f, angkatan: e.target.value }))}
           />
+          <FieldError>{errors?.angkatan}</FieldError>
         </Field>
       </div>
 
       {/* SEMESTER + STATUS */}
       <div className="grid grid-cols-2 gap-4">
-        <Field>
+        <Field data-invalid={!!errors?.semester}>
           <FieldLabel htmlFor="form-semester">Semester</FieldLabel>
           <Input
-            id="form-semester" type="number" placeholder="1" min={1} max={14} required
-            value={formData.semester}
+            id="form-semester" type="number" placeholder="1"
+            value={formData.semester} aria-invalid={!!errors?.semester}
             onChange={(e) => setFormData((f) => ({ ...f, semester: e.target.value }))}
           />
+          <FieldError>{errors?.semester}</FieldError>
         </Field>
-        <Field>
+        <Field data-invalid={!!errors?.status}>
           <FieldLabel htmlFor="form-status">Status</FieldLabel>
           <Select
             items={statusList}
             value={formData.status}
             onValueChange={(value) => setFormData((f) => ({ ...f, status: value ?? "" }))}
           >
-            <SelectTrigger id="form-status">
+            <SelectTrigger id="form-status" aria-invalid={!!errors?.status}>
               <SelectValue placeholder="Pilih status" />
             </SelectTrigger>
             <SelectContent>
@@ -271,11 +280,12 @@ export function MahasiswaField({
               </SelectGroup>
             </SelectContent>
           </Select>
+          <FieldError>{errors?.status}</FieldError>
         </Field>
       </div>
 
       {/* DOSEN WALI */}
-      <Field>
+      <Field data-invalid={!!errors?.dosenId}>
         <FieldLabel htmlFor="form-dosen">Dosen Wali</FieldLabel>
         <Select
           items={lecturers.map((d) => ({ label: d.name, value: d.dosen.id }))}
@@ -283,7 +293,7 @@ export function MahasiswaField({
           onValueChange={(value) => setSelectedDosenId(value)}
           disabled={!selectedProdiId}
         >
-          <SelectTrigger id="form-dosen">
+          <SelectTrigger id="form-dosen" aria-invalid={!!errors?.dosenId}>
             <SelectValue placeholder={selectedProdiId ? "Pilih dosen wali" : "Pilih prodi dulu"} />
           </SelectTrigger>
           <SelectContent className="min-w-[var(--anchor-width)] w-auto">
@@ -294,6 +304,7 @@ export function MahasiswaField({
             </SelectGroup>
           </SelectContent>
         </Select>
+        <FieldError>{errors?.dosenId}</FieldError>
       </Field>
 
       {/* KONFIRMASI DATA */}

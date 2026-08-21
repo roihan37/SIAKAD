@@ -21,6 +21,33 @@ import { FakultasField } from "./fakultas-form"
 import { ProdiField } from "./prodi-form"
 import { MatkulField } from "./matkul-form"
 import { AlertDestructive } from "../alert-form"
+import RuanganField from "./ruangan-form"
+import { createRuangan } from "@/features/action/ruanganThunk"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
+// import {
+//   dosenSchema,
+//   confirmationSchema,
+//   fakultasSchema,
+//   mahasiswaSchema,
+//   matkulSchema,
+//   prodiSchema,
+//   ruanganSchema,
+// } from "./validation"
+
+import {
+  fakultasSchema,
+  prodiSchema,
+  matkulSchema,
+  ruanganSchema,
+  dosenSchema,
+  mahasiswaSchema,
+  type RuanganFormValues,
+  type RuanganFormInput,
+} from "@/schemas"
+
+
 
 // Utility: convert a base64 data URL to a Blob for uploading images
 function dataUrlToBlob(dataUrl: string): Blob {
@@ -49,6 +76,9 @@ const initialLecturerFormData = {
   nidn: "", status: "", jabatan: "",
 }
 
+// const initialRuanganFormData = { kode: "", nama: "", kapasitas: 0, gedung: "" }
+
+
 const initialFakultasFormData = { kode: "", name: "" }
 const initialProdiFormData = { kode: "", name: "" }
 const initialMatkulFormData = { kode: "", name_mk: "", sks: "3", semester: "1" }
@@ -56,15 +86,31 @@ const initialMatkulFormData = { kode: "", name_mk: "", sks: "3", semester: "1" }
 export function DialogForm() {
   const { pathname } = useLocation()
 
+  const ruanganForm = useForm<
+  RuanganFormInput,
+  unknown,
+  RuanganFormValues
+>({
+  resolver: zodResolver(ruanganSchema),
+  mode: "onChange",
+  defaultValues: {
+    kode: "",
+    nama: "",
+    kapasitas: 0,
+    gedung: "",
+  },
+})
+
   // Route detection: which page we're on determines the dialog form
   const isFakultas = pathname.startsWith("/fakultas")
   const isProdi = pathname.startsWith("/program-studi") || pathname.startsWith("/prodi")
   const isLecturer = pathname.startsWith("/dosen")
   const isMatkul = pathname.startsWith("/mata-kuliah")
+  const isRuangan = pathname.startsWith("/ruangan")
 
   // Labels used in UI (title, button text, and form id)
-  const entityName = isFakultas ? "Fakultas" : isLecturer ? "Dosen" : isProdi ? "Prodi" : isMatkul ? "Mata Kuliah" : "Mahasiswa"
-  const entityNameLower = isFakultas ? "fakultas" : isLecturer ? "dosen" : isProdi ? "prodi" : isMatkul ? "mata-kuliah" : "mahasiswa"
+  const entityName = isFakultas ? "Fakultas" : isLecturer ? "Dosen" : isProdi ? "Prodi" : isMatkul ? "Mata Kuliah" : isRuangan ? "Ruangan" : "Mahasiswa"
+  const entityNameLower = isFakultas ? "fakultas" : isLecturer ? "dosen" : isProdi ? "prodi" : isMatkul ? "mata-kuliah" : isRuangan ? "ruangan" : "mahasiswa"
   
   const dispatch = useAppDispatch()
   const { fakultas, prodi } = useAppSelector((state) => state.campus)
@@ -76,6 +122,7 @@ export function DialogForm() {
   const [fakultasFormData, setFakultasFormData] = useState(initialFakultasFormData)
   const [prodiFormData, setProdiFormData] = useState(initialProdiFormData)
   const [matkulFormData, setMatkulFormData] = useState(initialMatkulFormData)
+  // const [ruanganFormData, setRuanganFormData] = useState(initialRuanganFormData)
 
   const [selectedFakultasId, setSelectedFakultasId] = useState<number | null>(null)
   const [selectedProdiId, setSelectedProdiId] = useState<number | null>(null)
@@ -90,6 +137,7 @@ export function DialogForm() {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   // Load fakultas once so dependent selects (prodi) are available
   useEffect(() => {
@@ -125,78 +173,93 @@ export function DialogForm() {
   }
 
   const resetForm = () => {
+  setStudentFormData(initialStudentFormData)
+  setLecturerFormData(initialLecturerFormData)
+  setFakultasFormData(initialFakultasFormData)
+  setProdiFormData(initialProdiFormData)
+  setMatkulFormData(initialMatkulFormData)
 
-    // Reset all form fragments and UI state when dialog is closed or after submit
-    setStudentFormData(initialStudentFormData)
-    setLecturerFormData(initialLecturerFormData)
-    setFakultasFormData(initialFakultasFormData)
-    setProdiFormData(initialProdiFormData)
-    setMatkulFormData(initialMatkulFormData)
-    setSelectedFakultasId(null)
-    setSelectedProdiId(null)
-    setSelectedDosenId(null)
-    setDate(undefined)
-    setIsConfirmed(false)
-    setSelectedFile(null)
-    setCroppedImage(null)
-    setSubmitError(null)
-  }
+  ruanganForm.reset()
+
+  setSelectedFakultasId(null)
+  setSelectedProdiId(null)
+  setSelectedDosenId(null)
+  setDate(undefined)
+  setIsConfirmed(false)
+  setSelectedFile(null)
+  setCroppedImage(null)
+  setSubmitError(null)
+  setFieldErrors({})
+}
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setSubmitError(null)
+    setFieldErrors({})
 
 
-    if (isProdi && !selectedFakultasId) {
-      setSubmitError("Fakultas induk wajib dipilih.")
-      return
+    const showValidationError = <T,>(result: z.ZodSafeParseResult<T>): result is z.ZodSafeParseError<T> => {
+      if (!result.success) {
+        setFieldErrors(Object.fromEntries(
+          result.error.issues.map((issue) => [String(issue.path[0] ?? "form"), issue.message]),
+        ))
+        return true
+      }
+      return false
     }
-    if (!isFakultas && !isProdi && !selectedProdiId) {
-      setSubmitError("Program Studi wajib dipilih.")
-      return
-    }
-    if (!isFakultas && !isProdi && !isLecturer && !selectedDosenId) {
-      setSubmitError("Dosen Wali wajib dipilih.")
-      return
-    }
+
+    // if (showValidationError(confirmationSchema.safeParse(isConfirmed))) return
 
     // Submit flow: choose the correct thunk depending on active form
     // Each branch should `unwrap()` the promise so errors are caught here
     setIsSubmitting(true)
     try {
       if (isFakultas) {
-        await dispatch(createFakultas(fakultasFormData)).unwrap()
+        const result = fakultasSchema.safeParse(fakultasFormData)
+        if (showValidationError(result)) return
+        await dispatch(createFakultas(result.data)).unwrap()
         resetForm()
         setDialogOpen(false)
         return
       }
 
       if (isProdi) {
-        await dispatch(createProdi({
+        const result = prodiSchema.safeParse({
           ...prodiFormData,
           fakultasId: Number(selectedFakultasId),
-        })).unwrap()
+        })
+        if (showValidationError(result)) return
+        await dispatch(createProdi(result.data)).unwrap()
         resetForm()
         setDialogOpen(false)
         return
       }
 
       if (isMatkul) {
-        if (!selectedProdiId) {
-          setSubmitError("Program Studi wajib dipilih untuk mata kuliah.")
-          return
-        }
-        await dispatch(createMatkul({
+        const result = matkulSchema.safeParse({
           kode: matkulFormData.kode,
           name_mk: matkulFormData.name_mk,
           sks: Number(matkulFormData.sks),
           semester: Number(matkulFormData.semester),
           prodiId: Number(selectedProdiId),
-        })).unwrap()
+        })
+        if (showValidationError(result)) return
+        await dispatch(createMatkul(result.data)).unwrap()
         resetForm()
         setDialogOpen(false)
         return
       }
+
+      // if (isRuangan) {
+      //   const result = ruanganSchema.safeParse({
+      //     ...ruanganFormData,
+      //   })
+      //   if (showValidationError(result)) return
+      //   await dispatch(createRuangan(result.data)).unwrap()
+      //   resetForm()
+      //   setDialogOpen(false)
+      //   return
+      // }
 
       let avatarKey: string | undefined
 
@@ -221,20 +284,30 @@ export function DialogForm() {
       }
 
       if (isLecturer) {
-        await dispatch(createLecturer({
+        const result = dosenSchema.safeParse({
           ...lecturerFormData,
-          birthDate: date ? date.toISOString() : undefined,
+          birthDate: date,
           prodiId: selectedProdiId!,
+        })
+        if (showValidationError(result)) return
+        await dispatch(createLecturer({
+          ...result.data,
+          birthDate: result.data.birthDate?.toISOString(),
           avatarKey,
         })).unwrap()
       } else {
-        await dispatch(createStudent({
+        const result = mahasiswaSchema.safeParse({
           ...studentFormData,
-          birthDate: date ? date.toISOString() : undefined,
-          angkatan: Number(studentFormData.angkatan),
-          semester: Number(studentFormData.semester),
+          birthDate: date,
+          angkatan: studentFormData.angkatan,
+          semester: studentFormData.semester,
           prodiId: selectedProdiId!,
           dosenId: selectedDosenId!,
+        })
+        if (showValidationError(result)) return
+        await dispatch(createStudent({
+          ...result.data,
+          birthDate: result.data.birthDate?.toISOString(),
           avatarKey,
         })).unwrap()
       }
@@ -248,9 +321,35 @@ export function DialogForm() {
     }
   }
 
+  const submitRuangan = async (
+  data: RuanganFormValues
+) => {
+  setSubmitError(null)
+
+  try {
+    setIsSubmitting(true)
+
+    await dispatch(
+      createRuangan(data)
+    ).unwrap()
+
+    ruanganForm.reset()
+    setDialogOpen(false)
+  } catch (err: any) {
+    setSubmitError(
+      typeof err === "string"
+        ? err
+        : err?.message ?? "Terjadi kesalahan, coba lagi."
+    )
+  } finally {
+    setIsSubmitting(false)
+  }
+}
+
   return (
-    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-      <form id={`${entityNameLower}-form`} onSubmit={handleSubmit}>
+    // <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      // <form id={`${entityNameLower}-form`} onSubmit={handleSubmit}>
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogTrigger render={<Button variant="outline" type="button">Add {entityName}</Button>} />
         <DialogContent className="sm:max-w-sm flex max-h-[85vh] flex-col p-0 gap-0">
           <DialogHeader className="p-6 pb-4">
@@ -268,6 +367,7 @@ export function DialogForm() {
               setFormData={setFakultasFormData}
               isConfirmed={isConfirmed}
               setIsConfirmed={setIsConfirmed}
+              errors={fieldErrors}
             /> 
             
             : isProdi ? <ProdiField
@@ -278,6 +378,7 @@ export function DialogForm() {
               setSelectedFakultasId={setSelectedFakultasId}
               isConfirmed={isConfirmed}
               setIsConfirmed={setIsConfirmed}
+              errors={fieldErrors}
             /> 
             
             : isMatkul ? <MatkulField
@@ -288,6 +389,7 @@ export function DialogForm() {
               setSelectedProdiId={setSelectedProdiId}
               isConfirmed={isConfirmed}
               setIsConfirmed={setIsConfirmed}
+              errors={fieldErrors}
             /> 
             
             : isLecturer ? <DosenField
@@ -311,7 +413,17 @@ export function DialogForm() {
               isConfirmed={isConfirmed}
               setIsConfirmed={setIsConfirmed}
               submitError={submitError}
+              errors={fieldErrors}
             /> 
+
+            : isRuangan ? (
+  <RuanganField
+    form={ruanganForm}
+    onSubmit={submitRuangan}
+    isConfirmed={isConfirmed}
+    setIsConfirmed={setIsConfirmed}
+  />
+)
             
             : <MahasiswaField
               formData={studentFormData}
@@ -337,18 +449,33 @@ export function DialogForm() {
               isConfirmed={isConfirmed}
               setIsConfirmed={setIsConfirmed}
               submitError={submitError}
+              errors={fieldErrors}
             />}
 
             
           </div>
           <DialogFooter className="p-6 pt-4 border-t">
-            <DialogClose render={<Button variant="outline" type="button">Cancel</Button>} />
-            <Button type="submit" form={`${entityNameLower}-form`} disabled={!isConfirmed || isSubmitting}>
-              {isSubmitting ? "Menyimpan..." : "Save changes"}
-            </Button>
-          </DialogFooter>
+  <DialogClose
+    render={
+      <Button
+        variant="outline"
+        type="button"
+      >
+        Cancel
+      </Button>
+    }
+  />
+
+  <Button
+    type="submit"
+    form={`${entityNameLower}-form`}
+    disabled={!isConfirmed || isSubmitting}
+  >
+    {isSubmitting ? "Menyimpan..." : "Save changes"}
+  </Button>
+</DialogFooter>
         </DialogContent>
-      </form>
+      {/* </form> */}
     </Dialog>
   )
 }

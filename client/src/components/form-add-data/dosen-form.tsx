@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Field, FieldContent, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { Field, FieldContent, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -23,25 +23,29 @@ export function DosenField({
   formData, setFormData, fakultas, prodi,
   selectedFakultasId, setSelectedFakultasId, selectedProdiId, setSelectedProdiId,
   date, setDate, open, setOpen, selectedFile, croppedImage,
-  onFileChange, onResetPhoto, onCropped, isConfirmed, setIsConfirmed,
+  onFileChange, onResetPhoto, onCropped, isConfirmed, setIsConfirmed, errors,
 }: DosenFieldProps) {
   return <FieldGroup>
-    <Field>
+    <Field data-invalid={!!errors?.name}>
       <FieldLabel htmlFor="lecturer-fullname">Nama Lengkap</FieldLabel>
-      <Input id="lecturer-fullname" placeholder="Dr. Budi Santoso" required value={formData.name} onChange={(e) => setFormData((data) => ({ ...data, name: e.target.value }))} />
+      <Input id="lecturer-fullname" placeholder="Dr. Budi Santoso" value={formData.name} aria-invalid={!!errors?.name} onChange={(e) => setFormData((data) => ({ ...data, name: e.target.value }))} />
+      <FieldError>{errors?.name}</FieldError>
     </Field>
 
     <div className="grid grid-cols-2 gap-4">
-      <Field><FieldLabel htmlFor="lecturer-username">Username</FieldLabel>
-        <Input id="lecturer-username" placeholder="budi.santoso" required value={formData.username} onChange={(e) => setFormData((data) => ({ ...data, username: e.target.value }))} />
+      <Field data-invalid={!!errors?.username}><FieldLabel htmlFor="lecturer-username">Username</FieldLabel>
+        <Input id="lecturer-username" placeholder="budi.santoso" value={formData.username} aria-invalid={!!errors?.username} onChange={(e) => setFormData((data) => ({ ...data, username: e.target.value }))} />
+        <FieldError>{errors?.username}</FieldError>
       </Field>
-      <Field><FieldLabel htmlFor="lecturer-email">Email</FieldLabel>
-        <Input id="lecturer-email" type="email" placeholder="budi@example.com" required value={formData.email} onChange={(e) => setFormData((data) => ({ ...data, email: e.target.value }))} />
+      <Field data-invalid={!!errors?.email}><FieldLabel htmlFor="lecturer-email">Email</FieldLabel>
+        <Input id="lecturer-email" type="email" placeholder="budi@example.com" value={formData.email} aria-invalid={!!errors?.email} onChange={(e) => setFormData((data) => ({ ...data, email: e.target.value }))} />
+        <FieldError>{errors?.email}</FieldError>
       </Field>
     </div>
 
-    <Field><FieldLabel htmlFor="lecturer-password">Password</FieldLabel>
-      <Input id="lecturer-password" type="password" required value={formData.password} onChange={(e) => setFormData((data) => ({ ...data, password: e.target.value }))} />
+    <Field data-invalid={!!errors?.password}><FieldLabel htmlFor="lecturer-password">Password</FieldLabel>
+      <Input id="lecturer-password" type="password" value={formData.password} aria-invalid={!!errors?.password} onChange={(e) => setFormData((data) => ({ ...data, password: e.target.value }))} />
+      <FieldError>{errors?.password}</FieldError>
     </Field>
 
     <div className="grid grid-cols-2 gap-4">
@@ -51,8 +55,9 @@ export function DosenField({
           <SelectContent><SelectGroup>{genderList.map((item) => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}</SelectGroup></SelectContent>
         </Select>
       </Field>
-      <Field><FieldLabel htmlFor="lecturer-phone">Nomor Telepon</FieldLabel>
-        <Input id="lecturer-phone" type="tel" placeholder="+62 812-3456-7890" value={formData.phoneNumber} onChange={(e) => setFormData((data) => ({ ...data, phoneNumber: e.target.value }))} />
+      <Field data-invalid={!!errors?.phoneNumber}><FieldLabel htmlFor="lecturer-phone">Nomor Telepon</FieldLabel>
+        <Input id="lecturer-phone" type="tel" placeholder="+62 812-3456-7890" value={formData.phoneNumber} aria-invalid={!!errors?.phoneNumber} onChange={(e) => setFormData((data) => ({ ...data, phoneNumber: e.target.value }))} />
+        <FieldError>{errors?.phoneNumber}</FieldError>
       </Field>
     </div>
 
@@ -63,8 +68,9 @@ export function DosenField({
       </Popover>
     </Field>
 
-    <Field><FieldLabel htmlFor="lecturer-address">Alamat</FieldLabel>
-      <Input id="lecturer-address" placeholder="123 Main St" value={formData.address} onChange={(e) => setFormData((data) => ({ ...data, address: e.target.value }))} />
+    <Field data-invalid={!!errors?.address}><FieldLabel htmlFor="lecturer-address">Alamat</FieldLabel>
+      <Input id="lecturer-address" placeholder="123 Main St" value={formData.address} aria-invalid={!!errors?.address} onChange={(e) => setFormData((data) => ({ ...data, address: e.target.value }))} />
+      <FieldError>{errors?.address}</FieldError>
     </Field>
 
     <Field><FieldLabel htmlFor="lecturer-photo">Foto Profil</FieldLabel>
@@ -77,8 +83,9 @@ export function DosenField({
     </Field>
 
     <div className="grid grid-cols-2 gap-4">
-      <Field><FieldLabel htmlFor="lecturer-nidn">NIDN</FieldLabel>
-        <Input id="lecturer-nidn" placeholder="0123456789" required value={formData.nidn} onChange={(e) => setFormData((data) => ({ ...data, nidn: e.target.value }))} />
+      <Field data-invalid={!!errors?.nidn}><FieldLabel htmlFor="lecturer-nidn">NIDN</FieldLabel>
+        <Input id="lecturer-nidn" placeholder="0123456789" value={formData.nidn} aria-invalid={!!errors?.nidn} onChange={(e) => setFormData((data) => ({ ...data, nidn: e.target.value }))} />
+        <FieldError>{errors?.nidn}</FieldError>
       </Field>
       <Field><FieldLabel htmlFor="lecturer-fakultas">Fakultas</FieldLabel>
         <Select items={fakultas.map((item) => ({ label: item.name, value: item.id }))} value={selectedFakultasId} onValueChange={(value) => setSelectedFakultasId(value)}>
@@ -89,11 +96,12 @@ export function DosenField({
     </div>
 
     <div className="grid grid-cols-2 gap-4">
-      <Field><FieldLabel htmlFor="lecturer-prodi">Program Studi</FieldLabel>
+      <Field data-invalid={!!errors?.prodiId}><FieldLabel htmlFor="lecturer-prodi">Program Studi</FieldLabel>
         <Select items={prodi.map((item) => ({ label: item.name, value: item.id }))} value={selectedProdiId} onValueChange={(value) => setSelectedProdiId(value)} disabled={!selectedFakultasId}>
-          <SelectTrigger id="lecturer-prodi"><SelectValue placeholder={selectedFakultasId ? "Pilih prodi" : "Pilih fakultas dulu"} /></SelectTrigger>
+          <SelectTrigger id="lecturer-prodi" aria-invalid={!!errors?.prodiId}><SelectValue placeholder={selectedFakultasId ? "Pilih prodi" : "Pilih fakultas dulu"} /></SelectTrigger>
           <SelectContent><SelectGroup>{prodi.map((item) => <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>)}</SelectGroup></SelectContent>
         </Select>
+        <FieldError>{errors?.prodiId}</FieldError>
       </Field>
       <Field><FieldLabel htmlFor="lecturer-status">Status</FieldLabel>
         <Select items={statusList} value={formData.status} onValueChange={(value) => setFormData((data) => ({ ...data, status: value ?? "" }))}>

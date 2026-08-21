@@ -1,16 +1,16 @@
 import { type ColumnDef } from "@tanstack/react-table";
 import { createActionColumn } from "../action-column";
 import { createSelectColumn } from "../select-column";
-import type { ProgramStudi } from "@/types/campus";
+import type { Ruangan } from "@/types/campus";
 
-export const prodiColumns: ColumnDef<ProgramStudi>[] = [
+export const ruanganColumns: ColumnDef<Ruangan>[] = [
   createSelectColumn(),
   {
     accessorKey: "kode",
     header: "KODE",
   },
   {
-    accessorKey: "name",
+    accessorKey: "nama",
     header: "Nama Ruangan",
   },
   {
@@ -18,18 +18,8 @@ export const prodiColumns: ColumnDef<ProgramStudi>[] = [
     header: "Gedung",
   },
   {
-    accessorKey: "capacity",
+    accessorKey: "kapasitas",
     header: "Kapasitas",
   },
-  {
-    accessorKey: "status",
-    header: "Status",
-  },
-  {
-    accessorKey: "aksi",
-    header: "Aksi",
-  },
   createActionColumn(),
-
-
 ];

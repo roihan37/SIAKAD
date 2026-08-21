@@ -1,0 +1,6 @@
+export * from "./fakultas.schema"
+export * from "./prodi.schema"
+export * from "./matkul.schema"
+export * from "./ruangan.schema"
+export * from "./dosen.schema"
+export * from "./mahasiswa.schema"

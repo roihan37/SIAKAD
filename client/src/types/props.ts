@@ -1,5 +1,7 @@
 import type { Dosen } from "./campus";
 
+export type FormErrors = Record<string, string>
+
 export interface MahasiswaFieldProps {
     // form data sederhana (text/number input)
     formData: {
@@ -41,6 +43,7 @@ export interface MahasiswaFieldProps {
   
     // error submit (opsional ditampilkan di sini)
     submitError: string | null
+    errors?: FormErrors
   }
 
 export interface DosenFieldProps {
@@ -72,6 +75,7 @@ export interface DosenFieldProps {
   isConfirmed: boolean
   setIsConfirmed: (checked: boolean) => void
   submitError: string | null
+  errors?: FormErrors
 }
 
 export interface FakultasFieldProps {
@@ -79,6 +83,7 @@ export interface FakultasFieldProps {
   setFormData: React.Dispatch<React.SetStateAction<FakultasFieldProps["formData"]>>
   isConfirmed: boolean
   setIsConfirmed: (checked: boolean) => void
+  errors?: FormErrors
 }
 
 export interface ProdiFieldProps {
@@ -89,4 +94,5 @@ export interface ProdiFieldProps {
   setSelectedFakultasId: (id: number | null) => void
   isConfirmed: boolean
   setIsConfirmed: (checked: boolean) => void
+  errors?: FormErrors
 }

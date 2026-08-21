@@ -53,9 +53,9 @@ export type MataKuliah = {
 }
 
 export type Ruangan = {
-  id: string
+  id?: string
   kode: string
-  name: string
-  kapasitas: string
+  nama: string
+  kapasitas: number
   gedung: string
 }
