@@ -80,7 +80,7 @@ const data = {
         },
         {
           title: "Ruangan",
-          url: "#",
+          url: "/ruangan",
         },
         {
           title: "Tahun Akademik",

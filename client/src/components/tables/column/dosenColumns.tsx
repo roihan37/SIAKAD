@@ -1,8 +1,8 @@
 import { type ColumnDef } from "@tanstack/react-table";
-import { createActionColumn } from "./action-column";
-import { createSelectColumn } from "./select-column";
+import { createActionColumn } from "../action-column";
+import { createSelectColumn } from "../select-column";
 import type { Dosen } from "@/types/campus";
-import { Button } from "../ui/button";
+import { Button } from "../../ui/button";
 import { ArrowUpDown } from "lucide-react";
 
 // helper reusable, biar tiap header sortable nggak copy-paste JSX yang sama

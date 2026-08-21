@@ -1,6 +1,6 @@
 
 import { DataTable } from "@/components/tables/data-table"
-import { prodiColumns } from "@/components/tables/prodiColumns"
+import { prodiColumns } from "@/components/tables/column/prodiColumns"
 import { getAllProdi } from "@/features/action/campusThunk"
 import { setPage, setSearch, setSorting } from "@/features/slice/campusSlice"
 import { useAppDispatch, useAppSelector } from "@/hooks/redux"

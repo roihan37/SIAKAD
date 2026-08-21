@@ -1,5 +1,5 @@
 import { DataTable } from "@/components/tables/data-table"
-import { fkColumns } from "@/components/tables/fkColumns"
+import { fkColumns } from "@/components/tables/column/fkColumns"
 import { getAllFakultas } from "@/features/action/campusThunk"
 import { setPage, setSearch, setSorting } from "@/features/slice/campusSlice"
 import { useAppDispatch, useAppSelector } from "@/hooks/redux"

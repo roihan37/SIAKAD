@@ -3,6 +3,7 @@ import authReducer from '@/features/slice/authSlice'
 import usersReducer from '@/features/slice/usersSlice'
 import campusReducer from '@/features/slice/campusSlice'
 import matkulReducer from '@/features/slice/matkulSlice'
+import ruanganReducer from '@/features/slice/ruanganSlice'
 import { injectStore } from '@/api/axios'
 // ...
 
@@ -11,7 +12,8 @@ export const store = configureStore({
     auth: authReducer,
     users: usersReducer,
     campus: campusReducer,
-    matkul: matkulReducer
+    matkul: matkulReducer,
+    ruangan: ruanganReducer
   },
 })
 

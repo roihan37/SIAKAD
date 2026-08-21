@@ -2,8 +2,8 @@ import { api } from "@/api/axios";
 import type { CreateMatkulPayload, PaginationParams } from "@/types/param";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
-export const getAllMatkul = createAsyncThunk(
-  "matkul",
+export const getAllRuangan = createAsyncThunk(
+  "ruangan",
   async (
     params: Partial<PaginationParams> | undefined,
     thunkAPI
@@ -18,7 +18,7 @@ export const getAllMatkul = createAsyncThunk(
     } = params ?? {};
 
     try {
-      const response = await api.get("/mata-kuliah", {
+      const response = await api.get("/ruangan", {
         params: {
           page,
           limit,
@@ -38,11 +38,11 @@ export const getAllMatkul = createAsyncThunk(
   }
 );
 
-export const createMatkul = createAsyncThunk(
-  "matkul/create",
+export const createRuangan = createAsyncThunk(
+  "ruangan/create",
   async (payload: CreateMatkulPayload, thunkAPI) => {
     try {
-      const response = await api.post("/mata-kuliah", payload);
+      const response = await api.post("/ruangan", payload);
       return response.data;
     } catch (err: any) {
       return thunkAPI.rejectWithValue(err.response?.data?.message ?? "Gagal membuat mata kuliah");

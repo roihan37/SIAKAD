@@ -1,7 +1,7 @@
 import { type ColumnDef } from "@tanstack/react-table";
-import { createActionColumn } from "./action-column";
-import { createSelectColumn } from "./select-column";
-import { Button } from "../ui/button";
+import { createActionColumn } from "../action-column";
+import { createSelectColumn } from "../select-column";
+import { Button } from "../../ui/button";
 import { ArrowUpDown } from "lucide-react";
 import type { MataKuliah } from "@/types/campus";
 

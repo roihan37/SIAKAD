@@ -51,3 +51,11 @@ export type MataKuliah = {
   semester: string
   prodi: string
 }
+
+export type Ruangan = {
+  id: string
+  kode: string
+  name: string
+  kapasitas: string
+  gedung: string
+}

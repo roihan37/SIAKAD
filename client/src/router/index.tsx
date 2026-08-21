@@ -8,6 +8,7 @@ import MatkulPage from "@/pages/MatkulPage";
 import PStudiPage from "@/pages/ProdiPage";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import PublicRoute from "@/components/PublicRoute";
+import RuanganPage from "@/pages/RuanganPage";
 
 const router = createBrowserRouter([
   {
@@ -35,6 +36,10 @@ const router = createBrowserRouter([
           {
             path: "/program-studi",
             element: <PStudiPage />,
+          },
+          {
+            path: "/ruangan",
+            element: <RuanganPage />,
           },
         ],
       },

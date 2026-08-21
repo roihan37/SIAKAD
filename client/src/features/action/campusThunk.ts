@@ -2,18 +2,11 @@ import { api } from "@/api/axios";
 import type { CreateFakultasPayload, CreateProdiPayload, PaginationParams } from "@/types/param";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
-interface FakultasQuery {
-  page: number;
-  limit: number;
-  search: string;
-  sortBy: string;
-  sortOrder: "asc" | "desc";
-}
 
 export const getAllFakultas = createAsyncThunk(
   "fakultas",
   async (
-    params: Partial<FakultasQuery> | undefined,
+    params: Partial<PaginationParams> | undefined,
     thunkAPI
   ) => {
 

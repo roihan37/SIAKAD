@@ -1,6 +1,6 @@
 
 import { DataTable } from "@/components/tables/data-table"
-import { matkulColumns } from "@/components/tables/matkulColumns"
+import { matkulColumns } from "@/components/tables/column/matkulColumns"
 import { getAllMatkul } from "@/features/action/matkulThunk"
 import { setPage, setSearch, setSorting } from "@/features/slice/matkulSlice"
 import { useAppDispatch, useAppSelector } from "@/hooks/redux"

@@ -11,7 +11,7 @@ export async function authMiddleware(
   ) {
     try {
       const authHeader = req.headers.authorization;
-  
+      
       if (!authHeader || !authHeader.startsWith("Bearer ")) {
         throw { name: "TokenInvalid" };
       }

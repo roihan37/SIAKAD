@@ -1,6 +1,6 @@
 
 import { DataTable } from "@/components/tables/data-table"
-import { mhsColumns } from "@/components/tables/mhsColumns.tsx"
+import { mhsColumns } from "@/components/tables/column/mhsColumns"
 import { getAllStudents } from "@/features/action/usersThunk"
 import { setPage, setSearch, setSorting } from "@/features/slice/usersSlice"
 import { useAppDispatch, useAppSelector } from "@/hooks/redux"

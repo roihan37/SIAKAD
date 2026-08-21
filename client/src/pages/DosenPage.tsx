@@ -1,5 +1,5 @@
 import { DataTable } from "@/components/tables/data-table"
-import { dosenColumns } from "@/components/tables/dosenColumns"
+import { dosenColumns } from "@/components/tables/column/dosenColumns"
 import { getAllLecturers } from "@/features/action/usersThunk"
 import { setPage, setSearch, setSorting } from "@/features/slice/usersSlice"
 import { useAppDispatch, useAppSelector } from "@/hooks/redux"
