@@ -293,119 +293,91 @@ export function MahasiswaField({
   // =====================================================
 
   const handleSubmit = async (
-    data: MahasiswaFormValues
-  ) => {
+  data: MahasiswaFormValues
+) => {
+  try {
+    setIsSubmitting(true)
 
-    try {
+    let avatarKey: string | undefined
 
-      setIsSubmitting(true)
+    // ==========================================
+    // 1. UPLOAD AVATAR JIKA ADA
+    // ==========================================
 
+    if (croppedImage) {
+      const blob = dataUrlToBlob(croppedImage)
 
-      // =================================================
-      // 1. CREATE MAHASISWA
-      // =================================================
+      const contentType =
+        blob.type || "image/png"
 
-      const student = await dispatch(
-        createStudent({
-          ...data,
-
-          birthDate:
-            data.birthDate?.toISOString(),
-        })
+      const {
+        uploadUrl,
+        key,
+      } = await dispatch(
+        getAvatarUploadUrl(contentType)
       ).unwrap()
 
-
-      // =================================================
-      // 2. UPLOAD AVATAR
-      // =================================================
-
-      if (croppedImage) {
-
-        const blob =
-          dataUrlToBlob(croppedImage)
-
-        const contentType =
-          blob.type || "image/png"
-
-
-        const {
-          uploadUrl,
-          key,
-        } = await dispatch(
-          getAvatarUploadUrl({
-            studentId: student.id,
-            contentType,
-          })
-        ).unwrap()
-
-
-        const response = await fetch(
-          uploadUrl,
-          {
-            method: "PUT",
-
-            headers: {
-              "Content-Type":
-                contentType,
-            },
-
-            body: blob,
-          }
-        )
-
-
-        if (!response.ok) {
-
-          throw new Error(
-            "Upload foto ke storage gagal. Coba upload ulang."
-          )
-
+      const response = await fetch(
+        uploadUrl,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": contentType,
+          },
+          body: blob,
         }
-
-
-        // Jika backend membutuhkan endpoint
-        // PATCH avatarKey, lakukan di sini.
-        //
-        // await api.patch(
-        //   `/students/${student.id}/avatar`,
-        //   { avatarKey: key }
-        // )
-      }
-
-
-      // =================================================
-      // 3. RESET
-      // =================================================
-
-      reset()
-
-      setSelectedFile(null)
-      setCroppedImage(null)
-      setDatePickerOpen(false)
-
-      setIsConfirmed(false)
-
-
-      // =================================================
-      // 4. SUCCESS
-      // =================================================
-
-      onSuccess()
-
-
-    } catch (error: any) {
-
-      onError(
-        error?.message ??
-        "Terjadi kesalahan, coba lagi."
       )
 
-    } finally {
+      if (!response.ok) {
+        throw new Error(
+          "Upload foto ke storage gagal. Coba upload ulang."
+        )
+      }
 
-      setIsSubmitting(false)
-
+      avatarKey = key
     }
+
+    // ==========================================
+    // 2. CREATE MAHASISWA
+    // ==========================================
+
+    await dispatch(
+      createStudent({
+        ...data,
+        birthDate:
+          data.birthDate?.toISOString(),
+        avatarKey,
+      })
+    ).unwrap()
+
+    // ==========================================
+    // 3. RESET
+    // ==========================================
+
+    reset()
+
+    setSelectedFile(null)
+    setCroppedImage(null)
+    setDatePickerOpen(false)
+    setIsConfirmed(false)
+
+    // ==========================================
+    // 4. SUCCESS
+    // ==========================================
+
+    onSuccess()
+
+  } catch (error: any) {
+
+    onError(
+      error?.message ??
+      "Terjadi kesalahan, coba lagi."
+    )
+
+  } finally {
+    setIsSubmitting(false)
   }
+}
 
 
   // =====================================================

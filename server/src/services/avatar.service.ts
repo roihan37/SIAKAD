@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { prisma } from "../lib/prisma";
 import { S3Service } from "./s3.service";
+import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 export const AVATAR_ENTITIES = ["students", "lecturers"] as const;
 export type AvatarEntity = (typeof AVATAR_ENTITIES)[number];
@@ -42,6 +43,10 @@ export class AvatarService {
         const key = `${entity}/${userId}/avatar-${randomUUID()}.${extension}`;
         const uploadUrl = await S3Service.createUploadUrl(key, mime);
         return { uploadUrl, key };
+    }
+
+    static async deleteObject(key: string) {
+        await S3Service.deleteUrl(key)
     }
 
     private static validateMimeType(mime: string) {

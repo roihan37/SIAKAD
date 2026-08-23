@@ -12,13 +12,13 @@ export class Controller {
         res: Response,
         next: NextFunction
     ) {
+        const {
+            name, email, username, password, phoneNumber, gender, address,
+            nim, angkatan, semester, status, prodiId, birthDate, avatarKey, dosenId
+        } = req.body
         try {
-            const {
-                name, email, username, password, phoneNumber, gender, address,
-                nim, angkatan, semester, status, prodiId, birthDate, avatarKey, dosenId
-            } = req.body
 
-            console.log(req.body);
+            // console.log(req.body);
             const hash = await hashPassword(password)
             let avatarUrl: string | undefined;
 
@@ -58,13 +58,27 @@ export class Controller {
                 return user
             })
 
-            console.log(newUser, '<< NEW USERS');
-            
+            // console.log(newUser, '<< NEW USERS');
+
             res.status(201).json({
                 message: `${newUser.name} created successfully`
             })
 
         } catch (error) {
+
+            if (avatarKey) {
+                try {
+                    await AvatarService.deleteObject(
+                        avatarKey
+                    );
+                } catch (cleanupError) {
+                    console.error(
+                        "Failed to cleanup avatar:",
+                        cleanupError
+                    );
+                }
+            }
+
             next(error)
         }
     }
@@ -90,7 +104,7 @@ export class Controller {
                 avatarKey
             } = req.body
 
-            
+
 
             const existingUser = await prisma.user.findUnique({
                 where: { id: id as string },
