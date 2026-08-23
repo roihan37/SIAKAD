@@ -20,3 +20,6 @@ export const prodiSchema = z.object({
 
 export type ProdiFormValues =
   z.infer<typeof prodiSchema>
+
+export type ProdiFromInput =
+  z.infer<typeof prodiSchema>

@@ -40,6 +40,10 @@ import {
   type MahasiswaFormValues,
   type DosenFormInput,
   type DosenFormValues,
+  type FakultasFormInput,
+  type FakultasFormValues,
+  type ProdiFormValues,
+  type ProdiFromInput,
 } from "@/schemas"
 
 
@@ -124,17 +128,28 @@ export function DialogForm() {
   })
 
   const fakultasForm = useForm<
-    RuanganFormInput,
+    FakultasFormInput,
     unknown,
-    RuanganFormValues
+    FakultasFormValues
   >({
-    resolver: zodResolver(ruanganSchema),
+    resolver: zodResolver(fakultasSchema),
     mode: "onChange",
     defaultValues: {
       kode: "",
-      nama: "",
-      kapasitas: 0,
-      gedung: "",
+      name: "",
+    },
+  })
+
+  const prodiForm = useForm<
+    ProdiFromInput,
+    unknown,
+    ProdiFormValues
+  >({
+    resolver: zodResolver(prodiSchema),
+    mode: "onChange",
+    defaultValues: {
+      kode: "",
+      name: "",
     },
   })
 
@@ -237,6 +252,8 @@ export function DialogForm() {
     ruanganForm.reset()
     studentForm.reset()
     dosenForm.reset()
+    fakultasForm.reset()
+    prodiForm.reset()
 
     setSelectedFakultasId(null)
     setSelectedProdiId(null)
@@ -367,31 +384,6 @@ export function DialogForm() {
     }
   }
 
-  const submitRuangan = async (
-    data: RuanganFormValues
-  ) => {
-    setSubmitError(null)
-
-    try {
-      setIsSubmitting(true)
-
-      await dispatch(
-        createRuangan(data)
-      ).unwrap()
-
-      ruanganForm.reset()
-      setDialogOpen(false)
-    } catch (err: any) {
-      setSubmitError(
-        typeof err === "string"
-          ? err
-          : err?.message ?? "Terjadi kesalahan, coba lagi."
-      )
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
   const submitStudent = async (
     data: MahasiswaFormValues
   ) => {
@@ -439,7 +431,7 @@ export function DialogForm() {
         })
       ).unwrap()
 
-      studentForm.reset()
+      resetForm()
       setSelectedFile(null)
       setCroppedImage(null)
       setDialogOpen(false)
@@ -500,7 +492,7 @@ export function DialogForm() {
         })
       ).unwrap()
 
-      studentForm.reset()
+      resetForm()
       setSelectedFile(null)
       setCroppedImage(null)
       setDialogOpen(false)
@@ -513,6 +505,84 @@ export function DialogForm() {
       setIsSubmitting(false)
     }
   }
+
+  const submitRuangan = async (
+    data: RuanganFormValues
+  ) => {
+    setSubmitError(null)
+
+    try {
+      setIsSubmitting(true)
+
+      await dispatch(
+        createRuangan(data)
+      ).unwrap()
+
+      ruanganForm.reset()
+      setDialogOpen(false)
+    } catch (err: any) {
+      setSubmitError(
+        typeof err === "string"
+          ? err
+          : err?.message ?? "Terjadi kesalahan, coba lagi."
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const submitFakultas = async (
+    data: FakultasFormValues
+  ) => {
+    setSubmitError(null)
+
+    try {
+      setIsSubmitting(true)
+
+      await dispatch(
+        createFakultas(data)
+      ).unwrap()
+
+      resetForm()
+      setDialogOpen(false)
+    } catch (err: any) {
+      setSubmitError(
+        typeof err === "string"
+          ? err
+          : err?.message ?? "Terjadi kesalahan, coba lagi."
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const submitProdi = async (
+    data: ProdiFormValues
+  ) => {
+    setSubmitError(null)
+
+    try {
+      setIsSubmitting(true)
+
+      await dispatch(
+        createProdi(data)
+      ).unwrap()
+
+      resetForm()
+      setDialogOpen(false)
+    } catch (err: any) {
+      setSubmitError(
+        typeof err === "string"
+          ? err
+          : err?.message ?? "Terjadi kesalahan, coba lagi."
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+
+  
 
 
 
@@ -533,16 +603,15 @@ export function DialogForm() {
         <div className="flex-1 overflow-y-auto px-6 mb-5">
           {
             isFakultas ? <FakultasField
-              formData={fakultasFormData}
-              setFormData={setFakultasFormData}
+              form={fakultasForm}
+              onSubmit={submitFakultas}
               isConfirmed={isConfirmed}
               setIsConfirmed={setIsConfirmed}
-              errors={fieldErrors}
             />
 
               : isProdi ? <ProdiField
-                formData={prodiFormData}
-                setFormData={setProdiFormData}
+                form={prodiForm}
+                onSubmit={submitProdi}
                 fakultas={fakultas}
                 selectedFakultasId={selectedFakultasId}
                 setSelectedFakultasId={setSelectedFakultasId}
