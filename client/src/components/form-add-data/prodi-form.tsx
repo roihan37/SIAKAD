@@ -66,6 +66,9 @@ export function ProdiField({
                       ? String(field.value)
                       : ""
                   }
+                  onValueChange={(value) => {
+                    field.onChange(Number(value))
+                  }}
                 >
                   <SelectTrigger
                     id="lecturer-fakultas"
