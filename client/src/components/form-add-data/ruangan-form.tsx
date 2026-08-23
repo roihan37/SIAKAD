@@ -13,6 +13,8 @@ import { ruanganSchema, type RuanganFormInput, type RuanganFormValues } from "@/
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useAppDispatch } from "@/hooks/redux"
 import type { RuanganFieldProps } from "@/types/props"
+import { useState } from "react"
+import { createRuangan } from "@/features/action/ruanganThunk"
 
 
 
@@ -20,7 +22,8 @@ import type { RuanganFieldProps } from "@/types/props"
 
 
 export function RuanganField({
-  
+  onSuccess,
+  onError,
   isConfirmed,
   setIsConfirmed,
 }: RuanganFieldProps) {
@@ -52,10 +55,13 @@ const ruanganForm = useForm<
     },
   } = ruanganForm
 
+  const [isSubmitting, setIsSubmitting] =
+      useState(false)
+
   const submitRuangan = async (
       data: RuanganFormValues
     ) => {
-      setSubmitError(null)
+      setIsSubmitting(true)
   
       try {
         setIsSubmitting(true)
@@ -64,13 +70,13 @@ const ruanganForm = useForm<
           createRuangan(data)
         ).unwrap()
   
-        ruanganForm.reset()
-        setDialogOpen(false)
-      } catch (err: any) {
-        setSubmitError(
-          typeof err === "string"
-            ? err
-            : err?.message ?? "Terjadi kesalahan, coba lagi."
+        reset()
+        setIsConfirmed(false)
+        onSuccess()
+      } catch (error: any) {
+        onError(
+          error?.message ??
+          "Terjadi kesalahan, coba lagi."
         )
       } finally {
         setIsSubmitting(false)
@@ -80,7 +86,7 @@ const ruanganForm = useForm<
   return (
   <form
   id="ruangan-form"
-  onSubmit={form.handleSubmit(onSubmit)}
+  onSubmit={ruanganForm.handleSubmit(submitRuangan)}
 >
     <FieldGroup>
       <Field data-invalid={!!errors.kode}>

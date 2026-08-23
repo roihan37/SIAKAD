@@ -125,10 +125,8 @@ export function MahasiswaField({
   fakultas,
   prodi,
   lecturers,
-
   isConfirmed,
   setIsConfirmed,
-
   onSuccess,
   onError,
 }: MahasiswaFieldProps) {
@@ -368,9 +366,10 @@ export function MahasiswaField({
     onSuccess()
 
   } catch (error: any) {
-
+    console.log(error, "<<<");
+    
     onError(
-      error?.message ??
+      error ??
       "Terjadi kesalahan, coba lagi."
     )
 

@@ -9,14 +9,14 @@ export interface MahasiswaFieldProps {
   prodi: ProgramStudi[]
   lecturers: Dosen[]
 
-  selectedFakultasId: number | null
-  setSelectedFakultasId: (id: number | null) => void
+  // selectedFakultasId: number | null
+  // setSelectedFakultasId: (id: number | null) => void
 
-  selectedProdiId: number | null
-  setSelectedProdiId: (id: number | null) => void
+  // selectedProdiId: number | null
+  // setSelectedProdiId: (id: number | null) => void
 
-  selectedDosenId: string | null
-  setSelectedDosenId: (id: string | null) => void
+  // selectedDosenId: string | null
+  // setSelectedDosenId: (id: string | null) => void
 
   isConfirmed: boolean
   setIsConfirmed: (value: boolean) => void
@@ -65,7 +65,8 @@ export interface ProdiFieldProps {
 }
 
 export interface RuanganFieldProps {
-
+  onSuccess: () => void
+  onError: (message: string) => void
   isConfirmed: boolean
   setIsConfirmed: (checked: boolean) => void
 }

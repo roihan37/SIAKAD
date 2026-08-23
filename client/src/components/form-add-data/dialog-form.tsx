@@ -30,6 +30,7 @@ import { AlertDestructive } from "../alert-form"
 import { DosenField } from "./dosen-form"
 import { FakultasField } from "./fakultas-form"
 import { ProdiField } from "./prodi-form"
+import RuanganField from "./ruangan-form"
 
 
 type EntityType =
@@ -45,10 +46,9 @@ const getEntityType = (pathname: string): EntityType => {
   if (pathname.startsWith("/fakultas")) {
     return "fakultas"
   }
-
   if (
-    pathname.startsWith("/program-studi") ||
-    pathname.startsWith("/prodi")
+    pathname.startsWith("/program-studi") 
+    // pathname.startsWith("/prodi")
   ) {
     return "prodi"
   }
@@ -115,14 +115,14 @@ export function DialogForm() {
 
   const [dialogOpen, setDialogOpen] = useState(false)
 
-  const [selectedFakultasId, setSelectedFakultasId] =
-    useState<number | null>(null)
+  // const [selectedFakultasId, setSelectedFakultasId] =
+  //   useState<number | null>(null)
 
-  const [selectedProdiId, setSelectedProdiId] =
-    useState<number | null>(null)
+  // const [selectedProdiId, setSelectedProdiId] =
+  //   useState<number | null>(null)
 
-  const [selectedDosenId, setSelectedDosenId] =
-    useState<string | null>(null)
+  // const [selectedDosenId, setSelectedDosenId] =
+  //   useState<string | null>(null)
 
   const [isConfirmed, setIsConfirmed] =
     useState(false)
@@ -135,44 +135,42 @@ export function DialogForm() {
   }, [dispatch])
 
 
-  useEffect(() => {
-    setSelectedProdiId(null)
-    setSelectedDosenId(null)
+  // useEffect(() => {
+  //   setSelectedProdiId(null)
+  //   setSelectedDosenId(null)
 
-    if (!selectedFakultasId) {
-      return
-    }
+  //   // if (!selectedFakultasId) {
+  //   //   return
+  //   // }
 
-    dispatch(
-      getAllProdi({
-        fakultasId: selectedFakultasId,
-      })
-    )
-  }, [selectedFakultasId, dispatch])
+  //   dispatch(
+  //     getAllProdi({
+  //       fakultasId: selectedFakultasId,
+  //     })
+  //   )
+  // }, [selectedFakultasId, dispatch])
 
 
-  useEffect(() => {
-    setSelectedDosenId(null)
+  // useEffect(() => {
+  //   setSelectedDosenId(null)
 
-    if (!selectedProdiId) {
-      return
-    }
+  //   if (!selectedProdiId) {
+  //     return
+  //   }
 
-    dispatch(
-      getAllLecturers({
-        prodiId: selectedProdiId,
-      })
-    )
-  }, [selectedProdiId, dispatch])
+  //   dispatch(
+  //     getAllLecturers({
+  //       prodiId: selectedProdiId,
+  //     })
+  //   )
+  // }, [selectedProdiId, dispatch])
 
 
   const handleClose = () => {
     setDialogOpen(false)
-
-    setSelectedFakultasId(null)
-    setSelectedProdiId(null)
-    setSelectedDosenId(null)
-
+    // setSelectedFakultasId(null)
+    // setSelectedProdiId(null)
+    // setSelectedDosenId(null)
     setIsConfirmed(false)
     setSubmitError(null)
   }
@@ -192,14 +190,14 @@ export function DialogForm() {
           prodi={prodi}
           lecturers={lecturers}
 
-          selectedFakultasId={selectedFakultasId}
-          setSelectedFakultasId={setSelectedFakultasId}
+          // selectedFakultasId={selectedFakultasId}
+          // setSelectedFakultasId={setSelectedFakultasId}
 
-          selectedProdiId={selectedProdiId}
-          setSelectedProdiId={setSelectedProdiId}
+          // selectedProdiId={selectedProdiId}
+          // setSelectedProdiId={setSelectedProdiId}
 
-          selectedDosenId={selectedDosenId}
-          setSelectedDosenId={setSelectedDosenId}
+          // selectedDosenId={selectedDosenId}
+          // setSelectedDosenId={setSelectedDosenId}
 
           isConfirmed={isConfirmed}
           setIsConfirmed={setIsConfirmed}
@@ -249,6 +247,17 @@ export function DialogForm() {
       return (
         <ProdiField
           fakultas={fakultas}
+          isConfirmed={isConfirmed}
+          setIsConfirmed={setIsConfirmed}
+          onSuccess={handleClose}
+          onError={setSubmitError} 
+          />
+      )
+    }
+
+    else if (entityType === "ruangan") {
+      return (
+        <RuanganField
           isConfirmed={isConfirmed}
           setIsConfirmed={setIsConfirmed}
           onSuccess={handleClose}
