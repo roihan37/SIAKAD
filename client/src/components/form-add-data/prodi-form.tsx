@@ -18,6 +18,32 @@ export function ProdiField({
     register, control,
     formState: {errors}
   } = form
+
+  const submitProdi = async (
+      data: ProdiFormValues
+    ) => {
+      setSubmitError(null)
+  
+      try {
+        setIsSubmitting(true)
+  
+        await dispatch(
+          createProdi(data)
+        ).unwrap()
+  
+        resetForm()
+        setDialogOpen(false)
+      } catch (err: any) {
+        setSubmitError(
+          typeof err === "string"
+            ? err
+            : err?.message ?? "Terjadi kesalahan, coba lagi."
+        )
+      } finally {
+        setIsSubmitting(false)
+      }
+    }
+    
   return (
     <form
       id="prodi-form"

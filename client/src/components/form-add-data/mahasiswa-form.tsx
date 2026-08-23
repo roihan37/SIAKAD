@@ -689,15 +689,11 @@ export function MahasiswaField({
                       field.value
                     }
                     captionLayout="dropdown"
-
                     onSelect={(date) => {
-
                       field.onChange(date)
-
                       setDatePickerOpen(
                         false
                       )
-
                     }}
                   />
 

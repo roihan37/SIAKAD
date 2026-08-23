@@ -31,6 +31,31 @@ export function RuanganField({
 }: RuanganFieldProps) {
   const { register, formState: { errors } } = form
 
+  const submitRuangan = async (
+      data: RuanganFormValues
+    ) => {
+      setSubmitError(null)
+  
+      try {
+        setIsSubmitting(true)
+  
+        await dispatch(
+          createRuangan(data)
+        ).unwrap()
+  
+        ruanganForm.reset()
+        setDialogOpen(false)
+      } catch (err: any) {
+        setSubmitError(
+          typeof err === "string"
+            ? err
+            : err?.message ?? "Terjadi kesalahan, coba lagi."
+        )
+      } finally {
+        setIsSubmitting(false)
+      }
+    }
+
   return (
   <form
   id="ruangan-form"

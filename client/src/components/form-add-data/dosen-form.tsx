@@ -8,7 +8,13 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { ImageCrop, ImageCropApply, ImageCropContent, ImageCropReset } from "@/components/kibo-ui/image-crop"
 import type { DosenFieldProps } from "@/types/props"
 import { XIcon } from "lucide-react"
-import { Controller } from "react-hook-form"
+import { Controller, useForm } from "react-hook-form"
+import { dosenSchema, type DosenFormInput, type DosenFormValues } from "@/schemas"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useEffect, useState, type ChangeEvent } from "react"
+import { useAppDispatch } from "@/hooks/redux"
+import { getAllProdi } from "@/features/action/campusThunk"
+import { createLecturer, getLecturerAvatarUploadUrl } from "@/features/action/usersThunk"
 
 const genderList = [{ label: "Laki-laki", value: "Male" }, { label: "Perempuan", value: "Female" }]
 const statusList = [
@@ -20,22 +26,209 @@ const jabatanList = [
   { label: "Dekan", value: "Dekan" }, { label: "Rektor", value: "Rektor" },
 ]
 
+function dataUrlToBlob(dataUrl: string): Blob {
+  const [header, base64] = dataUrl.split(",")
+
+  const mimeMatch = header.match(
+    /data:(.*?);base64/
+  )
+
+  const mime = mimeMatch?.[1] ?? "image/png"
+
+  const binary = atob(base64)
+
+  const array = new Uint8Array(
+    binary.length
+  )
+
+  for (let i = 0; i < binary.length; i++) {
+    array[i] = binary.charCodeAt(i)
+  }
+
+  return new Blob([array], {
+    type: mime,
+  })
+}
+
 export function DosenField({
-  form, onSubmit, fakultas, prodi,
-  selectedFakultasId, setSelectedFakultasId, selectedProdiId, setSelectedProdiId,
-  date, setDate, open, setOpen, selectedFile, croppedImage,
-  onFileChange, onResetPhoto, onCropped, isConfirmed, setIsConfirmed,
+  fakultas,
+  prodi,
+
+  isConfirmed,
+  setIsConfirmed,
+
+  onSuccess,
+  onError,
 }: DosenFieldProps) {
+
+  const dispatch = useAppDispatch()
+
+
+  const dosenForm = useForm<
+    DosenFormInput,
+    unknown,
+    DosenFormValues
+  >({
+    resolver: zodResolver(dosenSchema),
+
+    mode: "onChange",
+
+    defaultValues: {
+      nidn: "",
+      name: "",
+      email: "",
+      username: "",
+      password: "",
+      gender: undefined,
+      phoneNumber: "",
+      address: "",
+      birthDate: undefined,
+      status: "Aktif",
+      jabatan: "Dosen",
+      fakultasId: 0,
+      prodiId: 0,
+    },
+  })
+
+
+
   const {
     register,
     control,
-    formState: { errors },
-  } = form
+    watch,
+    setValue,
+    reset,
+    formState: {
+      errors,
+    },
+  } = dosenForm
+
+  const fakultasId = watch("fakultasId")
+  const prodiId = watch("prodiId")
+
+  const [datePickerOpen, setDatePickerOpen] =
+    useState(false)
+
+  const [selectedFile, setSelectedFile] =
+    useState<File | null>(null)
+
+  const [croppedImage, setCroppedImage] =
+    useState<string | null>(null)
+
+  const [isSubmitting, setIsSubmitting] =
+    useState(false)
+
+  useEffect(() => {
+
+    if (!fakultasId) {
+      setValue("prodiId", 0)
+      return
+    }
+
+    dispatch(
+      getAllProdi({
+        fakultasId,
+      })
+    )
+
+  }, [
+    fakultasId,
+    dispatch,
+    setValue,
+  ])
+
+  const handleFileChange = (
+    event: ChangeEvent<HTMLInputElement>
+  ) => {
+
+    const file = event.target.files?.[0]
+
+    if (!file) {
+      return
+    }
+
+    setSelectedFile(file)
+    setCroppedImage(null)
+  }
+
+
+  const handleResetPhoto = () => {
+
+    setSelectedFile(null)
+    setCroppedImage(null)
+
+  }
+
+  const submitDosen = async (
+    data: DosenFormValues
+  ) => {
+    try {
+      setIsSubmitting(true)
+
+      let avatarKey: string | undefined
+
+      if (croppedImage) {
+        const blob = dataUrlToBlob(croppedImage)
+        const contentType = blob.type || "image/png"
+
+        const {
+          uploadUrl,
+          key,
+        } = await dispatch(
+          getLecturerAvatarUploadUrl(contentType)
+        ).unwrap()
+
+        const response = await fetch(
+          uploadUrl,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": contentType,
+            },
+            body: blob,
+          }
+        )
+
+        if (!response.ok) {
+          throw new Error(
+            "Upload foto ke storage gagal. Coba upload ulang."
+          )
+        }
+
+        avatarKey = key
+      }
+
+      await dispatch(
+        createLecturer({
+          ...data,
+          birthDate: data.birthDate?.toISOString(),
+          avatarKey,
+        })
+      ).unwrap()
+
+      reset()
+
+      setSelectedFile(null)
+      setCroppedImage(null)
+      setDatePickerOpen(false)
+      setIsConfirmed(false)
+
+      onSuccess()
+    } catch (error: any) {
+      onError(
+        error?.message ??
+        "Terjadi kesalahan, coba lagi."
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
 
   return (
     <form
       id="dosen-form"
-      onSubmit={form.handleSubmit(onSubmit)}
+      onSubmit={dosenForm.handleSubmit(submitDosen)}
     >
       <FieldGroup>
         <Field data-invalid={!!errors.name}>
@@ -184,8 +377,10 @@ export function DosenField({
               </FieldLabel>
 
               <Popover
-                open={open}
-                onOpenChange={setOpen}
+                open={datePickerOpen}
+                onOpenChange={
+                  setDatePickerOpen
+                }
               >
                 <PopoverTrigger
                   render={
@@ -210,11 +405,15 @@ export function DosenField({
                   <Calendar
                     mode="single"
                     selected={field.value}
-                    defaultMonth={field.value}
+                    defaultMonth={
+                      field.value
+                    }
                     captionLayout="dropdown"
-                    onSelect={(selectedDate) => {
-                      field.onChange(selectedDate)
-                      setOpen(false)
+                    onSelect={(date) => {
+                      field.onChange(date)
+                      setDatePickerOpen(
+                        false
+                      )
                     }}
                   />
                 </PopoverContent>
@@ -255,7 +454,7 @@ export function DosenField({
                 id="lecturer-photo"
                 accept="image/*"
                 type="file"
-                onChange={onFileChange}
+                onChange={handleFileChange}
               />
 
               <FieldDescription>
@@ -271,7 +470,7 @@ export function DosenField({
               maxImageSize={1024 * 1024}
               onChange={() => { }}
               onComplete={() => { }}
-              onCrop={onCropped}
+              onCrop={setCroppedImage}
             >
               <ImageCropContent className="max-h-[50vh] w-auto object-contain" />
 
@@ -280,7 +479,7 @@ export function DosenField({
                 <ImageCropReset />
 
                 <Button
-                  onClick={onResetPhoto}
+                  onClick={handleResetPhoto}
                   size="icon"
                   type="button"
                   variant="ghost"
@@ -300,7 +499,7 @@ export function DosenField({
               />
 
               <Button
-                onClick={onResetPhoto}
+                onClick={handleResetPhoto}
                 size="icon"
                 type="button"
                 variant="ghost"
@@ -331,56 +530,103 @@ export function DosenField({
           <Controller
             control={control}
             name="fakultasId"
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor="lecturer-fakultas">
+
+            render={({
+              field,
+              fieldState,
+            }) => (
+
+              <Field
+                data-invalid={
+                  fieldState.invalid
+                }
+              >
+
+                <FieldLabel htmlFor="form-fakultas">
                   Fakultas
                 </FieldLabel>
 
                 <Select
-                  items={fakultas.map((item) => ({
-                    label: item.name,
-                    value: String(item.id),
-                  }))}
+                  items={fakultas.map(
+                    (item) => ({
+                      label: item.name,
+                      value: String(
+                        item.id
+                      ),
+                    })
+                  )}
+
                   value={
                     field.value
-                      ? String(field.value)
+                      ? String(
+                        field.value
+                      )
                       : ""
                   }
-                  onValueChange={(value) => {
-                    field.onChange(Number(value))
 
-                    // Reset Prodi ketika Fakultas berubah
-                    form.setValue("prodiId", 0, {
-                      shouldValidate: true,
-                    })
+                  onValueChange={(
+                    value
+                  ) => {
+
+                    const id =
+                      Number(value)
+
+                    field.onChange(id)
+
+                    // reset dependent field
+                    setValue(
+                      "prodiId",
+                      0
+                    )
+
                   }}
                 >
+
                   <SelectTrigger
-                    id="lecturer-fakultas"
-                    aria-invalid={fieldState.invalid}
+                    id="form-fakultas"
+                    aria-invalid={
+                      fieldState.invalid
+                    }
                   >
-                    <SelectValue placeholder="Pilih fakultas" />
+
+                    <SelectValue
+                      placeholder="Pilih fakultas"
+                    />
+
                   </SelectTrigger>
 
+
                   <SelectContent>
+
                     <SelectGroup>
-                      {fakultas.map((item) => (
-                        <SelectItem
-                          key={item.id}
-                          value={String(item.id)}
-                        >
-                          {item.name}
-                        </SelectItem>
-                      ))}
+
+                      {fakultas.map(
+                        (item) => (
+
+                          <SelectItem
+                            key={item.id}
+                            value={String(
+                              item.id
+                            )}
+                          >
+                            {item.name}
+                          </SelectItem>
+
+                        )
+                      )}
+
                     </SelectGroup>
+
                   </SelectContent>
+
                 </Select>
 
                 <FieldError>
                   {fieldState.error?.message}
                 </FieldError>
+
               </Field>
+
             )}
           />
 
@@ -390,58 +636,105 @@ export function DosenField({
           <Controller
             control={control}
             name="prodiId"
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor="lecturer-prodi">
+
+            render={({
+              field,
+              fieldState,
+            }) => (
+
+              <Field
+                data-invalid={
+                  fieldState.invalid
+                }
+              >
+
+                <FieldLabel htmlFor="form-prodi">
                   Program Studi
                 </FieldLabel>
 
                 <Select
-                  items={prodi.map((item) => ({
-                    label: item.name,
-                    value: String(item.id),
-                  }))}
+
+                  items={prodi.map(
+                    (item) => ({
+                      label: item.name,
+                      value: String(
+                        item.id
+                      ),
+                    })
+                  )}
+
                   value={
                     field.value
-                      ? String(field.value)
+                      ? String(
+                        field.value
+                      )
                       : ""
                   }
-                  onValueChange={(value) => {
-                    field.onChange(Number(value))
+
+                  onValueChange={(
+                    value
+                  ) => {
+
+                    const id =
+                      Number(value)
+
+                    field.onChange(id)
+
+
                   }}
-                  disabled={!selectedFakultasId}
+
+                  disabled={!fakultasId}
                 >
+
                   <SelectTrigger
-                    id="lecturer-prodi"
-                    aria-invalid={fieldState.invalid}
+                    id="form-prodi"
+                    aria-invalid={
+                      fieldState.invalid
+                    }
                   >
+
                     <SelectValue
                       placeholder={
-                        selectedFakultasId
+                        fakultasId
                           ? "Pilih prodi"
                           : "Pilih fakultas dulu"
                       }
                     />
+
                   </SelectTrigger>
 
+
                   <SelectContent>
+
                     <SelectGroup>
-                      {prodi.map((item) => (
-                        <SelectItem
-                          key={item.id}
-                          value={String(item.id)}
-                        >
-                          {item.name}
-                        </SelectItem>
-                      ))}
+
+                      {prodi.map(
+                        (item) => (
+
+                          <SelectItem
+                            key={item.id}
+                            value={String(
+                              item.id
+                            )}
+                          >
+                            {item.name}
+                          </SelectItem>
+
+                        )
+                      )}
+
                     </SelectGroup>
+
                   </SelectContent>
+
                 </Select>
 
                 <FieldError>
                   {fieldState.error?.message}
                 </FieldError>
+
               </Field>
+
             )}
           />
           <Controller

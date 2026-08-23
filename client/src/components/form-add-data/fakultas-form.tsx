@@ -10,6 +10,31 @@ export function FakultasField({ form, onSubmit, isConfirmed, setIsConfirmed }: F
     formState: { errors },
   } = form
 
+  const submitFakultas = async (
+      data: FakultasFormValues
+    ) => {
+      setSubmitError(null)
+  
+      try {
+        setIsSubmitting(true)
+  
+        await dispatch(
+          createFakultas(data)
+        ).unwrap()
+  
+        resetForm()
+        setDialogOpen(false)
+      } catch (err: any) {
+        setSubmitError(
+          typeof err === "string"
+            ? err
+            : err?.message ?? "Terjadi kesalahan, coba lagi."
+        )
+      } finally {
+        setIsSubmitting(false)
+      }
+    }
+    
   return (
     <form
       id="fakultas-form"
