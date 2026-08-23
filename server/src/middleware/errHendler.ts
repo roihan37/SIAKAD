@@ -12,21 +12,24 @@ export const errorHandler: ErrorRequestHandler = (
     error instanceof Prisma.PrismaClientKnownRequestError &&
     error.code === "P2002"
   ) {
-    const meta = error.meta as any;
+    const meta = error.meta as any
 
     const fields =
       meta?.target ??
       meta?.driverAdapterError?.cause?.constraint?.fields ??
-      [];
+      []
 
-    // console.log("DUPLICATE FIELDS:", fields);
+    const formatFieldName = (text: string) =>
+      text
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (char) => char.toUpperCase())
 
     return res.status(409).json({
       code: "DUPLICATE_DATA",
       message: Array.isArray(fields)
-        ? `${fields.join(", ")} sudah terdaftar`
+        ? `${fields.map(formatFieldName).join(", ")} sudah terdaftar`
         : "Data sudah terdaftar",
-    });
+    })
   }
 
   switch (error.name) {

@@ -5,6 +5,7 @@ import router from "./router";
 import { useEffect } from "react";
 import { refreshToken } from "./features/action/authThunk";
 import { useAppDispatch } from "./hooks/redux";
+import { Toaster } from "./components/ui/sonner";
 
 function App() {
   const dispatch = useAppDispatch()
@@ -13,7 +14,10 @@ function App() {
     dispatch(refreshToken())
   }, [dispatch])
   return (
-    <RouterProvider router={router} />
+    <>
+      <RouterProvider router={router} />
+      <Toaster />
+    </>
 
   )
 }

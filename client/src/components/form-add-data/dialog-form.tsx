@@ -12,7 +12,7 @@ import {
 
 import { useEffect, useState } from "react"
 import { useLocation } from "react-router"
-
+import { toast } from "sonner"
 import { useAppDispatch, useAppSelector } from "@/hooks/redux"
 
 import {
@@ -115,15 +115,6 @@ export function DialogForm() {
 
   const [dialogOpen, setDialogOpen] = useState(false)
 
-  // const [selectedFakultasId, setSelectedFakultasId] =
-  //   useState<number | null>(null)
-
-  // const [selectedProdiId, setSelectedProdiId] =
-  //   useState<number | null>(null)
-
-  // const [selectedDosenId, setSelectedDosenId] =
-  //   useState<string | null>(null)
-
   const [isConfirmed, setIsConfirmed] =
     useState(false)
 
@@ -135,42 +126,8 @@ export function DialogForm() {
   }, [dispatch])
 
 
-  // useEffect(() => {
-  //   setSelectedProdiId(null)
-  //   setSelectedDosenId(null)
-
-  //   // if (!selectedFakultasId) {
-  //   //   return
-  //   // }
-
-  //   dispatch(
-  //     getAllProdi({
-  //       fakultasId: selectedFakultasId,
-  //     })
-  //   )
-  // }, [selectedFakultasId, dispatch])
-
-
-  // useEffect(() => {
-  //   setSelectedDosenId(null)
-
-  //   if (!selectedProdiId) {
-  //     return
-  //   }
-
-  //   dispatch(
-  //     getAllLecturers({
-  //       prodiId: selectedProdiId,
-  //     })
-  //   )
-  // }, [selectedProdiId, dispatch])
-
-
   const handleClose = () => {
     setDialogOpen(false)
-    // setSelectedFakultasId(null)
-    // setSelectedProdiId(null)
-    // setSelectedDosenId(null)
     setIsConfirmed(false)
     setSubmitError(null)
   }
@@ -190,15 +147,6 @@ export function DialogForm() {
           prodi={prodi}
           lecturers={lecturers}
 
-          // selectedFakultasId={selectedFakultasId}
-          // setSelectedFakultasId={setSelectedFakultasId}
-
-          // selectedProdiId={selectedProdiId}
-          // setSelectedProdiId={setSelectedProdiId}
-
-          // selectedDosenId={selectedDosenId}
-          // setSelectedDosenId={setSelectedDosenId}
-
           isConfirmed={isConfirmed}
           setIsConfirmed={setIsConfirmed}
 
@@ -213,15 +161,6 @@ export function DialogForm() {
         <DosenField
           fakultas={fakultas}
           prodi={prodi}
-
-          selectedFakultasId={selectedFakultasId}
-          setSelectedFakultasId={setSelectedFakultasId}
-
-          selectedProdiId={selectedProdiId}
-          setSelectedProdiId={setSelectedProdiId}
-
-          selectedDosenId={selectedDosenId}
-          setSelectedDosenId={setSelectedDosenId}
 
           isConfirmed={isConfirmed}
           setIsConfirmed={setIsConfirmed}

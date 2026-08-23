@@ -5,6 +5,7 @@ import campusReducer from '@/features/slice/campusSlice'
 import matkulReducer from '@/features/slice/matkulSlice'
 import ruanganReducer from '@/features/slice/ruanganSlice'
 import { injectStore } from '@/api/axios'
+import { toastMiddleware } from './middleware/toast-middleware'
 // ...
 
 export const store = configureStore({
@@ -15,6 +16,12 @@ export const store = configureStore({
     matkul: matkulReducer,
     ruangan: ruanganReducer
   },
+
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware().prepend(
+      toastMiddleware.middleware
+    ),
+
 })
 
 // Infer the `RootState` and `AppDispatch` types from the store itself

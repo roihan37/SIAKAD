@@ -59,7 +59,7 @@ import {
   getAllProdi,
 } from "@/features/action/campusThunk"
 
-import { useAppDispatch } from "@/hooks/redux"
+import { useAppDispatch, useAppSelector } from "@/hooks/redux"
 
 import type { MahasiswaFieldProps } from "@/types/props"
 
@@ -132,6 +132,7 @@ export function MahasiswaField({
 }: MahasiswaFieldProps) {
 
   const dispatch = useAppDispatch()
+  const { isLoading } = useAppSelector((state) => state.users)
 
 
   // =====================================================
@@ -160,7 +161,7 @@ export function MahasiswaField({
       address: "",
       birthDate: undefined,
 
-      angkatan: 0,
+      angkatan: 2000,
       semester: 1,
       status: "Aktif",
 
@@ -203,9 +204,6 @@ export function MahasiswaField({
 
   const [croppedImage, setCroppedImage] =
     useState<string | null>(null)
-
-  const [isSubmitting, setIsSubmitting] =
-    useState(false)
 
 
   // =====================================================
@@ -277,36 +275,21 @@ export function MahasiswaField({
     setCroppedImage(null)
   }
 
-
   const handleResetPhoto = () => {
 
     setSelectedFile(null)
     setCroppedImage(null)
 
   }
-
-
-  // =====================================================
-  // SUBMIT
-  // =====================================================
-
   const handleSubmit = async (
   data: MahasiswaFormValues
 ) => {
   try {
-    setIsSubmitting(true)
-
     let avatarKey: string | undefined
-
-    // ==========================================
-    // 1. UPLOAD AVATAR JIKA ADA
-    // ==========================================
 
     if (croppedImage) {
       const blob = dataUrlToBlob(croppedImage)
-
-      const contentType =
-        blob.type || "image/png"
+      const contentType = blob.type || "image/png"
 
       const {
         uploadUrl,
@@ -335,10 +318,6 @@ export function MahasiswaField({
       avatarKey = key
     }
 
-    // ==========================================
-    // 2. CREATE MAHASISWA
-    // ==========================================
-
     await dispatch(
       createStudent({
         ...data,
@@ -348,20 +327,12 @@ export function MahasiswaField({
       })
     ).unwrap()
 
-    // ==========================================
-    // 3. RESET
-    // ==========================================
-
     reset()
 
     setSelectedFile(null)
     setCroppedImage(null)
     setDatePickerOpen(false)
     setIsConfirmed(false)
-
-    // ==========================================
-    // 4. SUCCESS
-    // ==========================================
 
     onSuccess()
 
@@ -373,8 +344,6 @@ export function MahasiswaField({
       "Terjadi kesalahan, coba lagi."
     )
 
-  } finally {
-    setIsSubmitting(false)
   }
 }
 
@@ -504,6 +473,7 @@ export function MahasiswaField({
 
           <Input
             id="form-password"
+            placeholder="....."
             type="password"
             aria-invalid={
               !!errors.password
@@ -523,22 +493,18 @@ export function MahasiswaField({
         ================================================= */}
 
         <div className="grid grid-cols-2 gap-4">
-
           <Controller
             control={control}
             name="gender"
-
             render={({
               field,
               fieldState,
             }) => (
-
               <Field
                 data-invalid={
                   fieldState.invalid
                 }
               >
-
                 <FieldLabel htmlFor="form-gender">
                   Jenis Kelamin
                 </FieldLabel>
@@ -563,9 +529,7 @@ export function MahasiswaField({
                     />
 
                   </SelectTrigger>
-
                   <SelectContent>
-
                     <SelectGroup>
 
                       {genderList.map(
@@ -1129,16 +1093,18 @@ export function MahasiswaField({
               id="form-angkatan"
               type="number"
               placeholder="2024"
-              aria-invalid={
-                !!errors.angkatan
-              }
+              aria-invalid={!!errors.angkatan}
+              {...register("angkatan", {
+                valueAsNumber: true,
+                onChange: (e) => {
+                  const value = e.target.value
 
-              {...register(
-                "angkatan",
-                {
-                  valueAsNumber: true,
-                }
-              )}
+                  // Hilangkan leading zero
+                  if (value.length > 1 && value.startsWith("0")) {
+                    e.target.value = value.replace(/^0+/, "")
+                  }
+                },
+              })}
             />
 
             <FieldError>
@@ -1174,12 +1140,17 @@ export function MahasiswaField({
                 !!errors.semester
               }
 
-              {...register(
-                "semester",
-                {
-                  valueAsNumber: true,
-                }
-              )}
+              {...register("semester", {
+                valueAsNumber: true,
+                onChange: (e) => {
+                  const value = e.target.value
+
+                  // Hilangkan leading zero
+                  if (value.length > 1 && value.startsWith("0")) {
+                    e.target.value = value.replace(/^0+/, "")
+                  }
+                },
+              })}
             />
 
             <FieldError>
@@ -1415,7 +1386,7 @@ export function MahasiswaField({
 
       </FieldGroup>
 
-      {isSubmitting && (
+      {isLoading && (
         <p className="text-sm text-muted-foreground">
           Menyimpan data mahasiswa...
         </p>

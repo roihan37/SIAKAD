@@ -13,7 +13,7 @@ export const mahasiswaSchema = personSchema.extend({
   nim: requiredText("NIM", 5, 30)
     .regex(/^\d+$/, "NIM hanya boleh berisi angka."),
 
-  angkatan: numericValue("Angkatan", 2000, 2100),
+  angkatan: numericValue("Angkatan", 2000, new Date().getFullYear()),
 
   semester: numericValue("Semester", 1, 14),
 

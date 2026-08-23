@@ -3,7 +3,7 @@ import type { CreateLecturerPayload, CreateStudentPayload, PaginationParams } fr
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
 export const getAllStudents = createAsyncThunk(
-  "students",
+  "students/getAll",
   async (
     { page, limit, search, sortBy, sortOrder }: PaginationParams,
     thunkAPI
@@ -33,7 +33,7 @@ export const getAllStudents = createAsyncThunk(
 );
 
 export const getAllLecturers = createAsyncThunk(
-  "lecturers",
+  "lecturers/getAll",
   async ({ page, limit, search, sortBy, sortOrder, prodiId }: PaginationParams,
     thunkAPI) => {
     try {
@@ -73,10 +73,6 @@ export const createStudent = createAsyncThunk(
       const message =
         err.response?.data?.message ??
         "Gagal membuat mahasiswa"
-      console.log(
-        "ERROR BE:",
-        err.response?.data
-      )
       return thunkAPI.rejectWithValue(
         message
       )
