@@ -1,16 +1,19 @@
+import type { MahasiswaFormInput, MahasiswaFormValues } from "@/schemas";
 import type { Dosen } from "./campus";
+import type { UseFormReturn } from "react-hook-form";
 
 export type FormErrors = Record<string, string>
 
 export interface MahasiswaFieldProps {
     // form data sederhana (text/number input)
-    formData: {
-      name: string; email: string; username: string; password: string;
-      gender: string; phoneNumber: string; address: string;
-      nim: string; angkatan: string; semester: string; status: string;
-    }
-    setFormData: React.Dispatch<React.SetStateAction<MahasiswaFieldProps["formData"]>>
-  
+    form: UseFormReturn<
+        MahasiswaFormInput,
+        unknown,
+        MahasiswaFormValues
+      >
+      onSubmit: (data: MahasiswaFormValues) => Promise<void>
+    // setFormData: React.Dispatch<React.SetStateAction<MahasiswaFieldProps["formData"]>>
+
     // dropdown data dari Redux
     fakultas: { id: string; name: string }[]
     prodi: { id: string; name: string }[]

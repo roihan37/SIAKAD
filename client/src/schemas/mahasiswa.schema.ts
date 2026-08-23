@@ -9,41 +9,26 @@ import {
 
 import { personSchema } from "./person.schema"
 
-export const mahasiswaSchema =
-  personSchema.extend({
-    nim: requiredText(
-      "NIM",
-      5,
-      30,
-    ).regex(
-      /^\d+$/,
-      "NIM hanya boleh berisi angka.",
-    ),
+export const mahasiswaSchema = personSchema.extend({
+  nim: requiredText("NIM", 5, 30)
+    .regex(/^\d+$/, "NIM hanya boleh berisi angka."),
 
-    angkatan: numericValue(
-      "Angkatan",
-      2000,
-      2100,
-    ),
+  angkatan: numericValue("Angkatan", 2000, 2100),
 
-    semester: numericValue(
-      "Semester",
-      1,
-      14,
-    ),
+  semester: numericValue("Semester", 1, 14),
 
-    status: studentStatus,
+  status: studentStatus,
 
-    prodiId: positiveId(
-      "Program studi",
-    ),
+  fakultasId: positiveId("Fakultas"),
 
-    dosenId: requiredText(
-      "Dosen wali",
-      1,
-      100,
-    ),
-  })
+
+  prodiId: positiveId("Program studi"),
+
+  dosenId: requiredText("Dosen wali", 1, 100),
+})
+
+export type MahasiswaFormInput =
+  z.input<typeof mahasiswaSchema>
 
 export type MahasiswaFormValues =
-  z.infer<typeof mahasiswaSchema>
+  z.output<typeof mahasiswaSchema>

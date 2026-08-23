@@ -32,7 +32,7 @@ export function RuanganField({
   const { register, formState: { errors } } = form
 
   return (
-        <form
+  <form
   id="ruangan-form"
   onSubmit={form.handleSubmit(onSubmit)}
 >

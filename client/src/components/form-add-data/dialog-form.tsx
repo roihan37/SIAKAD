@@ -45,6 +45,8 @@ import {
   mahasiswaSchema,
   type RuanganFormValues,
   type RuanganFormInput,
+  type MahasiswaFormInput,
+  type MahasiswaFormValues,
 } from "@/schemas"
 
 
@@ -64,11 +66,13 @@ function dataUrlToBlob(dataUrl: string): Blob {
 // Initial form templates (used to reset component state)
 // Keep these minimal and serializable
 // -----------------------------
-const initialStudentFormData = {
-  name: "", email: "", username: "", password: "",
-  gender: "", phoneNumber: "", address: "",
-  nim: "", angkatan: "", semester: "", status: "",
-}
+// const initialStudentFormData = {
+//   name: "", email: "", username: "", password: "",
+//   gender: "", phoneNumber: "", address: "",
+//   nim: "", angkatan: "", semester: "", status: "",
+// }
+
+
 
 const initialLecturerFormData = {
   name: "", email: "", username: "", password: "",
@@ -101,6 +105,37 @@ export function DialogForm() {
   },
 })
 
+const studentForm = useForm<
+  MahasiswaFormInput,
+  unknown,
+  MahasiswaFormValues
+>({
+  resolver: zodResolver(mahasiswaSchema),
+
+  mode: "onChange",
+
+  defaultValues: {
+    nim: "",
+    name: "",
+    email: "",
+    username: "",
+    password: "",
+    gender: undefined,
+    phoneNumber: "",
+    address: "",
+    birthDate: undefined,
+
+    angkatan: 0,
+    semester: 1,
+    status: "Aktif",
+
+    prodiId: 0,
+    dosenId: "",
+  },
+})
+
+
+
   // Route detection: which page we're on determines the dialog form
   const isFakultas = pathname.startsWith("/fakultas")
   const isProdi = pathname.startsWith("/program-studi") || pathname.startsWith("/prodi")
@@ -117,7 +152,7 @@ export function DialogForm() {
   const { lecturers } = useAppSelector((state) => state.users)
 
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [studentFormData, setStudentFormData] = useState(initialStudentFormData)
+  // const [studentFormData, setStudentFormData] = useState(initialStudentFormData)
   const [lecturerFormData, setLecturerFormData] = useState(initialLecturerFormData)
   const [fakultasFormData, setFakultasFormData] = useState(initialFakultasFormData)
   const [prodiFormData, setProdiFormData] = useState(initialProdiFormData)
@@ -173,14 +208,14 @@ export function DialogForm() {
   }
 
   const resetForm = () => {
-  setStudentFormData(initialStudentFormData)
+  // setStudentFormData(initialStudentFormData)
   setLecturerFormData(initialLecturerFormData)
   setFakultasFormData(initialFakultasFormData)
   setProdiFormData(initialProdiFormData)
   setMatkulFormData(initialMatkulFormData)
 
   ruanganForm.reset()
-
+  studentForm.reset()
   setSelectedFakultasId(null)
   setSelectedProdiId(null)
   setSelectedDosenId(null)
@@ -297,10 +332,10 @@ export function DialogForm() {
         })).unwrap()
       } else {
         const result = mahasiswaSchema.safeParse({
-          ...studentFormData,
+          // ...studentFormData,
           birthDate: date,
-          angkatan: studentFormData.angkatan,
-          semester: studentFormData.semester,
+          // angkatan: studentFormData.angkatan,
+          // semester: studentFormData.semester,
           prodiId: selectedProdiId!,
           dosenId: selectedDosenId!,
         })
@@ -340,6 +375,67 @@ export function DialogForm() {
       typeof err === "string"
         ? err
         : err?.message ?? "Terjadi kesalahan, coba lagi."
+    )
+  } finally {
+    setIsSubmitting(false)
+  }
+}
+
+const submitStudent = async (
+  data: MahasiswaFormValues
+) => {
+  try {
+    setIsSubmitting(true)
+
+    let avatarKey: string | undefined
+
+    if (croppedImage) {
+      const blob = dataUrlToBlob(croppedImage)
+      const contentType = blob.type || "image/png"
+
+      const {
+        uploadUrl,
+        key,
+      } = await dispatch(
+        getAvatarUploadUrl(contentType)
+      ).unwrap()
+
+      const response = await fetch(
+        uploadUrl,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": contentType,
+          },
+          body: blob,
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error(
+          "Upload foto ke storage gagal. Coba upload ulang."
+        )
+      }
+
+      avatarKey = key
+    }
+
+    await dispatch(
+      createStudent({
+        ...data,
+        birthDate: data.birthDate?.toISOString(),
+        avatarKey,
+      })
+    ).unwrap()
+
+    studentForm.reset()
+    setSelectedFile(null)
+    setCroppedImage(null)
+    setDialogOpen(false)
+  } catch (error: any) {
+    setSubmitError(
+      error?.message ??
+        "Terjadi kesalahan, coba lagi."
     )
   } finally {
     setIsSubmitting(false)
@@ -417,17 +513,19 @@ export function DialogForm() {
             /> 
 
             : isRuangan ? (
-  <RuanganField
-    form={ruanganForm}
-    onSubmit={submitRuangan}
-    isConfirmed={isConfirmed}
-    setIsConfirmed={setIsConfirmed}
-  />
-)
+            <RuanganField
+              form={ruanganForm}
+              onSubmit={submitRuangan}
+              isConfirmed={isConfirmed}
+              setIsConfirmed={setIsConfirmed}
+            />
+          )
             
             : <MahasiswaField
-              formData={studentFormData}
-              setFormData={setStudentFormData}
+              // formData={studentFormData}
+              form={studentForm}
+              onSubmit={submitStudent}
+              // setFormData={setStudentFormData}
               fakultas={fakultas}
               prodi={prodi}
               lecturers={lecturers}
@@ -467,12 +565,14 @@ export function DialogForm() {
   />
 
   <Button
-    type="submit"
-    form={`${entityNameLower}-form`}
-    disabled={!isConfirmed || isSubmitting}
-  >
-    {isSubmitting ? "Menyimpan..." : "Save changes"}
-  </Button>
+  type="submit"
+  form={`${entityNameLower}-form`}
+  disabled={!isConfirmed || isSubmitting}
+>
+  {isSubmitting
+    ? "Menyimpan..."
+    : "Save changes"}
+</Button>
 </DialogFooter>
         </DialogContent>
       {/* </form> */}
