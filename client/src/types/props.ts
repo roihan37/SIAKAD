@@ -1,52 +1,28 @@
 import type { DosenFormInput, DosenFormValues, FakultasFormInput, FakultasFormValues, MahasiswaFormInput, MahasiswaFormValues, ProdiFormValues, ProdiFromInput } from "@/schemas";
-import type { Dosen } from "./campus";
+import type { Dosen, Fakultas, ProgramStudi } from "./campus";
 import type { UseFormReturn } from "react-hook-form";
 
 export type FormErrors = Record<string, string>
 
 export interface MahasiswaFieldProps {
-  // form data sederhana (text/number input)
-  form: UseFormReturn<
-    MahasiswaFormInput,
-    unknown,
-    MahasiswaFormValues
-  >
-  onSubmit: (data: MahasiswaFormValues) => Promise<void>
-  // setFormData: React.Dispatch<React.SetStateAction<MahasiswaFieldProps["formData"]>>
-
-  // dropdown data dari Redux
-  fakultas: { id: string; name: string }[]
-  prodi: { id: string; name: string }[]
+  fakultas: Fakultas[]
+  prodi: ProgramStudi[]
   lecturers: Dosen[]
 
-  // dependent-select state
   selectedFakultasId: number | null
   setSelectedFakultasId: (id: number | null) => void
+
   selectedProdiId: number | null
   setSelectedProdiId: (id: number | null) => void
+
   selectedDosenId: string | null
   setSelectedDosenId: (id: string | null) => void
 
-  // date picker
-  date: Date | undefined
-  setDate: (date: Date | undefined) => void
-  open: boolean
-  setOpen: (open: boolean) => void
-
-  // foto profil
-  selectedFile: File | null
-  croppedImage: string | null
-  onFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void
-  onResetPhoto: () => void
-  onCropped: (dataUrl: string) => void
-
-  // checkbox konfirmasi
   isConfirmed: boolean
-  setIsConfirmed: (checked: boolean) => void
+  setIsConfirmed: (value: boolean) => void
 
-  // error submit (opsional ditampilkan di sini)
-  submitError: string | null
-  errors?: FormErrors
+  onSuccess: () => void
+  onError: (message: string) => void
 }
 
 export interface DosenFieldProps {
@@ -107,3 +83,4 @@ export interface ProdiFieldProps {
   setIsConfirmed: (checked: boolean) => void
   errors?: FormErrors
 }
+

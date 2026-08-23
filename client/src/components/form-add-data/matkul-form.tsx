@@ -22,7 +22,8 @@ interface MatkulFieldProps {
   errors?: Record<string, string>
 }
 
-export function MatkulField({ formData, setFormData, prodi, selectedProdiId, setSelectedProdiId, isConfirmed, setIsConfirmed, errors }: MatkulFieldProps) {
+export function MatkulField({ formData, setFormData, prodi, selectedProdiId, setSelectedProdiId, isConfirmed, setIsConfirmed, errors }
+  : MatkulFieldProps) {
   return (
     <FieldGroup>
       <Field data-invalid={!!errors?.kode}>

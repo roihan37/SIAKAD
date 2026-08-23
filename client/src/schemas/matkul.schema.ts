@@ -37,3 +37,6 @@ export const matkulSchema = z.object({
 
 export type MatkulFormValues =
   z.infer<typeof matkulSchema>
+
+export type MatkulFormInput =
+  z.infer<typeof matkulSchema>
