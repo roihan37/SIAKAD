@@ -132,7 +132,7 @@ export function MahasiswaField({
 }: MahasiswaFieldProps) {
 
   const dispatch = useAppDispatch()
-  const { isLoading } = useAppSelector((state) => state.users)
+  
 
 
   // =====================================================
@@ -473,7 +473,7 @@ export function MahasiswaField({
 
           <Input
             id="form-password"
-            placeholder="....."
+            placeholder="Minimal 8 karakter"
             type="password"
             aria-invalid={
               !!errors.password
@@ -1385,12 +1385,6 @@ export function MahasiswaField({
         </Field>
 
       </FieldGroup>
-
-      {isLoading && (
-        <p className="text-sm text-muted-foreground">
-          Menyimpan data mahasiswa...
-        </p>
-      )}
 
     </form>
   )

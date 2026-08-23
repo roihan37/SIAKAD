@@ -31,6 +31,7 @@ import { DosenField } from "./dosen-form"
 import { FakultasField } from "./fakultas-form"
 import { ProdiField } from "./prodi-form"
 import RuanganField from "./ruangan-form"
+import { Spinner } from "../ui/spinner"
 
 
 type EntityType =
@@ -47,7 +48,7 @@ const getEntityType = (pathname: string): EntityType => {
     return "fakultas"
   }
   if (
-    pathname.startsWith("/program-studi") 
+    pathname.startsWith("/program-studi")
     // pathname.startsWith("/prodi")
   ) {
     return "prodi"
@@ -101,7 +102,7 @@ export function DialogForm() {
   const { pathname } = useLocation()
 
   const dispatch = useAppDispatch()
-
+  const { isCreatingStudent } = useAppSelector((state) => state.users)
   const entityType = getEntityType(pathname)
   const entity = entityConfig[entityType]
 
@@ -189,8 +190,8 @@ export function DialogForm() {
           isConfirmed={isConfirmed}
           setIsConfirmed={setIsConfirmed}
           onSuccess={handleClose}
-          onError={setSubmitError} 
-          />
+          onError={setSubmitError}
+        />
       )
     }
 
@@ -200,8 +201,8 @@ export function DialogForm() {
           isConfirmed={isConfirmed}
           setIsConfirmed={setIsConfirmed}
           onSuccess={handleClose}
-          onError={setSubmitError} 
-          />
+          onError={setSubmitError}
+        />
       )
     }
 
@@ -275,6 +276,13 @@ export function DialogForm() {
             form={entity.formId}
             disabled={!isConfirmed}
           >
+            {isCreatingStudent && (
+              <Spinner data-icon="inline-start" >
+                Processing
+              </Spinner>
+            )}
+
+
             Save changes
           </Button>
 

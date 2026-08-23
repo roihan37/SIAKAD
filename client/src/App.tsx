@@ -16,7 +16,10 @@ function App() {
   return (
     <>
       <RouterProvider router={router} />
-      <Toaster />
+      <Toaster 
+      position="top-right"
+      offset="80px"
+      />
     </>
 
   )

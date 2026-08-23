@@ -28,6 +28,34 @@ const isMutationAction = (
   )
 }
 
+const getLoadingMessage = (
+  action: UnknownAction
+) => {
+  const type = action.type
+
+  if (type.includes("/create/")) {
+    return "Menambahkan data..."
+  }
+
+  if (type.includes("/update/")) {
+    return "Memperbarui data..."
+  }
+
+  if (type.includes("/delete/")) {
+    return "Menghapus data..."
+  }
+
+  if (type.includes("/add/")) {
+    return "Menambahkan data..."
+  }
+
+  if (type.includes("/remove/")) {
+    return "Menghapus data..."
+  }
+
+  return "Memproses..."
+}
+
 const getSuccessMessage = (
   action: UnknownAction
 ) => {
@@ -77,16 +105,26 @@ const getErrorMessage = (
     }
   }
 
+  const error = action.error
+
   if (
-    action.error &&
-    typeof action.error === "string"
+    error &&
+    typeof error === "object" &&
+    "message" in error
   ) {
-    return action.error
+    const message = error.message
+
+    if (typeof message === "string") {
+      return message
+    }
   }
 
   return "Terjadi kesalahan. Silakan coba lagi."
 }
 
+/**
+ * PENDING
+ */
 toastMiddleware.startListening({
   predicate: (action) => {
     return (
@@ -101,7 +139,7 @@ toastMiddleware.startListening({
     if (!requestId) return
 
     const toastId = toast.loading(
-      "Menyimpan data..."
+      getLoadingMessage(action)
     )
 
     loadingToastMap.set(
@@ -111,6 +149,9 @@ toastMiddleware.startListening({
   },
 })
 
+/**
+ * FULFILLED
+ */
 toastMiddleware.startListening({
   predicate: (action) => {
     return (
@@ -120,7 +161,7 @@ toastMiddleware.startListening({
   },
 
   effect: async (action) => {
-    const requestId =getRequestId(action)
+    const requestId = getRequestId(action)
 
     if (!requestId) return
 
@@ -138,6 +179,9 @@ toastMiddleware.startListening({
   },
 })
 
+/**
+ * REJECTED
+ */
 toastMiddleware.startListening({
   predicate: (action) => {
     return (
@@ -147,7 +191,7 @@ toastMiddleware.startListening({
   },
 
   effect: async (action) => {
-    const requestId =getRequestId(action)
+    const requestId = getRequestId(action)
 
     if (!requestId) return
 

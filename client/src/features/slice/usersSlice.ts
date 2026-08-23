@@ -3,10 +3,9 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { createStudent, getAllLecturers, getAllStudents } from "../action/usersThunk";
 
 const initialState : UsersState ={
-    isLoading : false,
-    error : null,
-    students : [],
-    lecturers : [],
+    error: null,
+    students: [],
+    lecturers: [],
     search: "",
     page: 1,
     limit: 10,
@@ -14,6 +13,12 @@ const initialState : UsersState ={
     totalRows: 0,
     sortBy: "name",
     sortOrder: "asc",
+
+    isLoadingStudents: false,
+    isCreatingStudent: false,
+    isLoadingLecturers: false,
+    isCreatingLecturer: false
+    
 }
 const usersSilce = createSlice({
     name : 'users',
@@ -37,10 +42,10 @@ const usersSilce = createSlice({
 
         // STUDENTS
         .addCase(getAllStudents.pending, state => {
-            state.isLoading = true
+            state.isLoadingStudents = true
         })
         .addCase(getAllStudents.fulfilled, (state, action) => {
-            state.isLoading = false
+            state.isLoadingStudents = false
             state.students = action.payload.students
             state.page = action.payload.pagination.page;
             state.limit = action.payload.pagination.limit;
@@ -48,19 +53,19 @@ const usersSilce = createSlice({
             state.totalRows = action.payload.pagination.totalRows;
         })
         .addCase(getAllStudents.rejected, (state, action) =>{
-            state.isLoading = false
+            state.isLoadingStudents = false
             state.error = action.payload as string;
         })
 
         // ADD STUDENTS
         .addCase(createStudent.pending, state => {
-            state.isLoading = true
+            state.isCreatingStudent = true
         })
         .addCase(createStudent.fulfilled, (state) => {
-            state.isLoading = false
+            state.isCreatingStudent = false
         })
         .addCase(createStudent.rejected, (state, action) =>{
-            state.isLoading = false
+            state.isCreatingStudent = false
             state.error =
                 typeof action.payload === "string"
                 ? action.payload
@@ -69,10 +74,10 @@ const usersSilce = createSlice({
 
         // LECTURERS
         .addCase(getAllLecturers.pending, state => {
-            state.isLoading = true
+            state.isLoadingLecturers = true
         })
         .addCase(getAllLecturers.fulfilled, (state, action) => {
-            state.isLoading = false
+            state.isLoadingLecturers = false
             state.lecturers = action.payload.lecturers
             state.page = action.payload.pagination.page;
             state.limit = action.payload.pagination.limit;
@@ -80,7 +85,7 @@ const usersSilce = createSlice({
             state.totalRows = action.payload.pagination.totalRows;
         })
         .addCase(getAllLecturers.rejected, (state, action) =>{
-            state.isLoading = false
+            state.isLoadingLecturers = false
             state.error = action.payload as string;
         })
 

@@ -8,10 +8,13 @@ export interface AuthState {
 }
 
 export interface UsersState extends Pagination{
-    isLoading : boolean
     error: string | null
     students: Mahasiswa[]
     lecturers: Dosen[]
+    isLoadingStudents: boolean
+    isCreatingStudent: boolean
+    isLoadingLecturers: boolean
+    isCreatingLecturer: boolean
 }
 
 export interface CampusState extends Pagination {
