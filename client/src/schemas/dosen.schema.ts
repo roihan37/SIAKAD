@@ -22,13 +22,23 @@ export const dosenSchema =
     ),
 
     status: lecturerStatus,
+    fakultasId: z
+    .number({
+      error: "Fakultas wajib dipilih.",
+    })
+    .int()
+    .positive(
+      "Fakultas wajib dipilih."
+    ),
 
     jabatan,
-
     prodiId: positiveId(
       "Program studi",
     ),
   })
 
 export type DosenFormValues =
+  z.infer<typeof dosenSchema>
+
+export type DosenFormInput = 
   z.infer<typeof dosenSchema>

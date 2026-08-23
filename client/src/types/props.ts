@@ -1,4 +1,4 @@
-import type { MahasiswaFormInput, MahasiswaFormValues } from "@/schemas";
+import type { DosenFormInput, DosenFormValues, MahasiswaFormInput, MahasiswaFormValues } from "@/schemas";
 import type { Dosen } from "./campus";
 import type { UseFormReturn } from "react-hook-form";
 
@@ -50,12 +50,18 @@ export interface MahasiswaFieldProps {
   }
 
 export interface DosenFieldProps {
-  formData: {
-    name: string; email: string; username: string; password: string;
-    gender: string; phoneNumber: string; address: string;
-    nidn: string; status: string; jabatan: string;
-  }
-  setFormData: React.Dispatch<React.SetStateAction<DosenFieldProps["formData"]>>
+  // formData: {
+  //   name: string; email: string; username: string; password: string;
+  //   gender: string; phoneNumber: string; address: string;
+  //   nidn: string; status: string; jabatan: string;
+  // }
+  // setFormData: React.Dispatch<React.SetStateAction<DosenFieldProps["formData"]>>
+  form: UseFormReturn<
+        DosenFormInput,
+        unknown,
+        DosenFormValues
+      >
+      onSubmit: (data: DosenFormValues) => Promise<void>
 
   fakultas: { id: string; name: string }[]
   prodi: { id: string; name: string }[]
