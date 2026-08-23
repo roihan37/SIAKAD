@@ -2,27 +2,78 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Field, FieldContent, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { createProdi } from "@/features/action/campusThunk"
+import { useAppDispatch } from "@/hooks/redux"
+import { prodiSchema, type ProdiFormValues, type ProdiFromInput } from "@/schemas"
 import type { ProdiFieldProps } from "@/types/props"
-import { Controller } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useEffect, useState } from "react"
+import { Controller, useForm } from "react-hook-form"
 
 export function ProdiField({
-  form,
-  onSubmit,
   fakultas,
-  selectedFakultasId,
-  setSelectedFakultasId,
+  // selectedFakultasId,
+  // setSelectedFakultasId,
   isConfirmed,
   setIsConfirmed,
+  onSuccess,
+  onError
 }: ProdiFieldProps) {
+
+  const dispatch = useAppDispatch()
+
+  const [isSubmitting, setIsSubmitting] =
+      useState(false)
+
+  const prodiForm = useForm<
+      ProdiFromInput,
+      unknown,
+      ProdiFormValues
+    >({
+      resolver: zodResolver(prodiSchema),
+      mode: "onChange",
+      defaultValues: {
+        kode: "",
+        name: "",
+      },
+    })
+    
   const {
-    register, control,
-    formState: {errors}
-  } = form
+    register,
+    control,
+    watch,
+    setValue,
+    reset,
+    formState: {
+      errors,
+    },
+  } = prodiForm
+
+  // const fakultasId = watch("fakultasId")
+
+  // useEffect(() => {
+  
+  //     if (!fakultasId) {
+  //       setValue("prodiId", 0)
+  //       setValue("dosenId", "")
+  //       return
+  //     }
+  
+  //     dispatch(
+  //       getAllProdi({
+  //         fakultasId,
+  //       })
+  //     )
+  
+  //   }, [
+  //     fakultasId,
+  //     dispatch,
+  //     setValue,
+  //   ])
 
   const submitProdi = async (
       data: ProdiFormValues
     ) => {
-      setSubmitError(null)
   
       try {
         setIsSubmitting(true)
@@ -31,23 +82,23 @@ export function ProdiField({
           createProdi(data)
         ).unwrap()
   
-        resetForm()
-        setDialogOpen(false)
-      } catch (err: any) {
-        setSubmitError(
-          typeof err === "string"
-            ? err
-            : err?.message ?? "Terjadi kesalahan, coba lagi."
+        reset()
+        setIsConfirmed(false)
+        onSuccess()
+      } catch (error: any) {
+        onError(
+          error?.message ??
+          "Terjadi kesalahan, coba lagi."
         )
       } finally {
         setIsSubmitting(false)
       }
     }
-    
+
   return (
     <form
       id="prodi-form"
-      onSubmit={form.handleSubmit(onSubmit)}
+      onSubmit={prodiForm.handleSubmit(submitProdi)}
     >
       <FieldGroup>
         <Field data-invalid={!!errors?.kode}>

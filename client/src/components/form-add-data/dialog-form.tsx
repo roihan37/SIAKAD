@@ -28,6 +28,8 @@ import { MahasiswaField } from "./mahasiswa-form"
 
 import { AlertDestructive } from "../alert-form"
 import { DosenField } from "./dosen-form"
+import { FakultasField } from "./fakultas-form"
+import { ProdiField } from "./prodi-form"
 
 
 type EntityType =
@@ -229,6 +231,29 @@ export function DialogForm() {
           onSuccess={handleClose}
           onError={setSubmitError}
         />
+      )
+    }
+
+    else if (entityType === "fakultas") {
+      return (
+        <FakultasField
+          isConfirmed={isConfirmed}
+          setIsConfirmed={setIsConfirmed}
+          onSuccess={handleClose}
+          onError={setSubmitError}
+        />
+      )
+    }
+
+    else if (entityType === "prodi") {
+      return (
+        <ProdiField
+          fakultas={fakultas}
+          isConfirmed={isConfirmed}
+          setIsConfirmed={setIsConfirmed}
+          onSuccess={handleClose}
+          onError={setSubmitError} 
+          />
       )
     }
 

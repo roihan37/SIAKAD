@@ -1,44 +1,73 @@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Field, FieldContent, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { createFakultas } from "@/features/action/campusThunk"
+import { useAppDispatch } from "@/hooks/redux"
+import { fakultasSchema, type FakultasFormInput, type FakultasFormValues } from "@/schemas"
 import type { FakultasFieldProps } from "@/types/props"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useState } from "react"
+import { useForm } from "react-hook-form"
 
-export function FakultasField({ form, onSubmit, isConfirmed, setIsConfirmed }: FakultasFieldProps) {
+export function FakultasField({ isConfirmed, setIsConfirmed, onSuccess, onError }: FakultasFieldProps) {
+  const dispatch = useAppDispatch()
+
+  const fakultasForm = useForm<
+    FakultasFormInput,
+    unknown,
+    FakultasFormValues
+  >({
+    resolver: zodResolver(fakultasSchema),
+    mode: "onChange",
+    defaultValues: {
+      kode: "",
+      name: "",
+    },
+  })
+
   const {
     register,
     control,
-    formState: { errors },
-  } = form
+    watch,
+    setValue,
+    reset,
+    formState: {
+      errors,
+    },
+  } = fakultasForm
+
+  const [isSubmitting, setIsSubmitting] =
+    useState(false)
 
   const submitFakultas = async (
-      data: FakultasFormValues
-    ) => {
-      setSubmitError(null)
-  
-      try {
-        setIsSubmitting(true)
-  
-        await dispatch(
-          createFakultas(data)
-        ).unwrap()
-  
-        resetForm()
-        setDialogOpen(false)
-      } catch (err: any) {
-        setSubmitError(
-          typeof err === "string"
-            ? err
-            : err?.message ?? "Terjadi kesalahan, coba lagi."
-        )
-      } finally {
-        setIsSubmitting(false)
-      }
+    data: FakultasFormValues
+  ) => {
+    setIsSubmitting(true)
+
+    try {
+      setIsSubmitting(true)
+
+      await dispatch(
+        createFakultas(data)
+      ).unwrap()
+
+      reset()
+      setIsConfirmed(false)
+      onSuccess()
+    } catch (error: any) {
+      onError(
+        error?.message ??
+        "Terjadi kesalahan, coba lagi."
+      )
+    } finally {
+      setIsSubmitting(false)
     }
-    
+  }
+
   return (
     <form
       id="fakultas-form"
-      onSubmit={form.handleSubmit(onSubmit)}
+      onSubmit={fakultasForm.handleSubmit(submitFakultas)}
     >
       <FieldGroup>
         <Field data-invalid={!!errors?.kode}>
@@ -76,6 +105,12 @@ export function FakultasField({ form, onSubmit, isConfirmed, setIsConfirmed }: F
           </FieldContent>
         </Field>
       </FieldGroup>
+
+      {isSubmitting && (
+        <p className="text-sm text-muted-foreground">
+          Menyimpan data fakultas...
+        </p>
+      )}
     </form>
   )
 }

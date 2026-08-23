@@ -827,6 +827,12 @@ export function DosenField({
           <FieldContent><FieldLabel htmlFor="lecturer-confirm-checkbox">Data yang saya masukkan sudah benar</FieldLabel><FieldDescription>Dengan mencentang kotak ini, saya menyatakan seluruh data dosen telah diperiksa dan benar.</FieldDescription></FieldContent>
         </Field>
       </FieldGroup>
+
+      {isSubmitting && (
+        <p className="text-sm text-muted-foreground">
+          Menyimpan data dosen...
+        </p>
+      )}
     </form>
   )
 }

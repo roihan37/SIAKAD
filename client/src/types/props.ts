@@ -46,29 +46,27 @@ export interface DosenFieldProps {
 }
 
 export interface FakultasFieldProps {
-  form: UseFormReturn<
-    FakultasFormInput,
-    unknown,
-    FakultasFormValues
-  >
-  onSubmit: (data: FakultasFormValues) => Promise<void>
+  onSuccess: () => void
+  onError: (message: string) => void
   isConfirmed: boolean
   setIsConfirmed: (checked: boolean) => void
   errors?: FormErrors
 }
 
 export interface ProdiFieldProps {
-  form: UseFormReturn<
-    ProdiFromInput,
-    unknown,
-    ProdiFormValues
-  >
-  onSubmit: (data: ProdiFormValues) => Promise<void>
+  onSuccess: () => void
+  onError: (message: string) => void
   fakultas: { id: number | string; name: string }[]
-  selectedFakultasId: number | null
-  setSelectedFakultasId: (id: number | null) => void
+  // selectedFakultasId: number | null
+  // setSelectedFakultasId: (id: number | null) => void
   isConfirmed: boolean
   setIsConfirmed: (checked: boolean) => void
   errors?: FormErrors
+}
+
+export interface RuanganFieldProps {
+
+  isConfirmed: boolean
+  setIsConfirmed: (checked: boolean) => void
 }
 

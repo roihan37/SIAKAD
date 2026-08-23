@@ -8,28 +8,49 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
-import type { UseFormReturn } from "react-hook-form"
-import type { RuanganFormInput, RuanganFormValues } from "@/schemas"
+import { useForm, type UseFormReturn } from "react-hook-form"
+import { ruanganSchema, type RuanganFormInput, type RuanganFormValues } from "@/schemas"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useAppDispatch } from "@/hooks/redux"
+import type { RuanganFieldProps } from "@/types/props"
 
 
-interface RuanganFieldProps {
-  form: UseFormReturn<
-    RuanganFormInput,
-    unknown,
-    RuanganFormValues
-  >
-  onSubmit: (data: RuanganFormValues) => Promise<void>
-  isConfirmed: boolean
-  setIsConfirmed: (checked: boolean) => void
-}
+
+
+
 
 export function RuanganField({
-  form,
-  onSubmit,
+  
   isConfirmed,
   setIsConfirmed,
 }: RuanganFieldProps) {
-  const { register, formState: { errors } } = form
+  const dispatch = useAppDispatch()
+
+const ruanganForm = useForm<
+    RuanganFormInput,
+    unknown,
+    RuanganFormValues
+  >({
+    resolver: zodResolver(ruanganSchema),
+    mode: "onChange",
+    defaultValues: {
+      kode: "",
+      nama: "",
+      kapasitas: 0,
+      gedung: "",
+    },
+  })
+
+  const {
+    register,
+    control,
+    watch,
+    setValue,
+    reset,
+    formState: {
+      errors,
+    },
+  } = ruanganForm
 
   const submitRuangan = async (
       data: RuanganFormValues
