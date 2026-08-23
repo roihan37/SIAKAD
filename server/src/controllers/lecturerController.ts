@@ -7,11 +7,11 @@ import { AvatarService } from "../services/avatar.service";
 
 export class Controller {
     static async createLecturer(req: Request, res: Response, next: NextFunction) {
+        const {
+            name, email, username, password, phoneNumber, gender, address,
+            nidn, status, jabatan, prodiId, birthDate, avatarKey,
+        } = req.body;
         try {
-            const {
-                name, email, username, password, phoneNumber, gender, address,
-                nidn, status, jabatan, prodiId, birthDate, avatarKey,
-            } = req.body;
 
             let avatarUrl: string | undefined;
             if (avatarKey) {
@@ -45,6 +45,18 @@ export class Controller {
 
             res.status(201).json({ message: `${lecturer.name} created successfully`, data: lecturer.id });
         } catch (error) {
+            if (avatarKey) {
+                try {
+                    await AvatarService.deleteObject(
+                        avatarKey
+                    );
+                } catch (cleanupError) {
+                    console.error(
+                        "Failed to cleanup avatar:",
+                        cleanupError
+                    );
+                }
+            }
             next(error);
         }
     }
