@@ -55,16 +55,13 @@ const ruanganForm = useForm<
     },
   } = ruanganForm
 
-  const [isSubmitting, setIsSubmitting] =
-      useState(false)
 
   const submitRuangan = async (
       data: RuanganFormValues
     ) => {
-      setIsSubmitting(true)
   
       try {
-        setIsSubmitting(true)
+
   
         await dispatch(
           createRuangan(data)
@@ -81,8 +78,6 @@ const ruanganForm = useForm<
           error ??
           "Terjadi kesalahan, coba lagi."
         )
-      } finally {
-        setIsSubmitting(false)
       }
     }
 
@@ -142,9 +137,18 @@ const ruanganForm = useForm<
           min="20"
           aria-invalid={!!errors.kapasitas}
           {...register("kapasitas", {
-            valueAsNumber: true,
-          })}
+                valueAsNumber: true,
+                onChange: (e) => {
+                  const value = e.target.value
+
+                  // Hilangkan leading zero
+                  if (value.length > 1 && value.startsWith("0")) {
+                    e.target.value = value.replace(/^0+/, "")
+                  }
+                },
+              })}
         />
+        
 
         <FieldError>
           {errors.kapasitas?.message}

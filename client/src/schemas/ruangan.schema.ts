@@ -4,8 +4,8 @@ import {
   numericValue,
 } from "./common.schema"
 export const ruanganSchema = z.object({
-  kode: requiredText("Kode ruangan", 4, 32),
-  nama: requiredText("Nama ruangan", 4, 100),
+  kode: requiredText("Kode ruangan", 1, 32),
+  nama: requiredText("Nama ruangan", 1, 100),
   kapasitas: numericValue("Kapasitas", 20, 50),
   gedung: requiredText("Gedung", 2, 100),
 })

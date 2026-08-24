@@ -12,7 +12,7 @@ const initialState : RuanganState ={
     totalPages: 1,
     totalRows: 0,
     sortBy: "name",
-    sortOrder: "asc",
+    sortOrder: "desc",
 }
 const ruanganSilce = createSlice({
     name : 'ruangan',

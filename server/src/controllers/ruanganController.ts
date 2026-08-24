@@ -24,19 +24,75 @@ export class Controller {
     }
   }
 
-  static async getAllRuangan(req: Request, res: Response, next: NextFunction) {
-    try {
-      const page = Number(req.query.page) || 1;
-      const limit = Number(req.query.limit) || 20;
-      const search = String(req.query.search ?? "");
-      const skip = (page - 1) * limit;
-      const where: Prisma.RuanganWhereInput = search ? { OR: [{ kode: { contains: search } }, { nama: { contains: search } }] } : {};
-      const [rows, total] = await Promise.all([prisma.ruangan.findMany({ where, skip, take: limit }), prisma.ruangan.count({ where })]);
-      res.status(200).json({ ruangan: rows, pagination: { page, limit, totalRows: total, totalPages: Math.max(1, Math.ceil(total / limit)) } });
-    } catch (error) {
-      next(error);
-    }
+  static async getAllRuangan(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const page = Number(req.query.page) || 1
+    const limit = Number(req.query.limit) || 20
+    const search = String(req.query.search ?? "")
+
+    const sortOrder =
+      req.query.sortOrder === "asc"
+        ? "asc"
+        : "desc"
+
+    const skip = (page - 1) * limit
+
+    const where: Prisma.RuanganWhereInput = search
+      ? {
+          OR: [
+            {
+              kode: {
+                contains: search,
+                mode: Prisma.QueryMode.insensitive,
+              },
+            },
+            {
+              nama: {
+                contains: search,
+                mode: Prisma.QueryMode.insensitive,
+              },
+            },
+          ],
+        }
+      : {}
+
+    const [rows, total] = await Promise.all([
+      prisma.ruangan.findMany({
+        where,
+        skip,
+        take: limit,
+
+        orderBy: {
+          createdAt: sortOrder,
+        },
+      }),
+
+      prisma.ruangan.count({
+        where,
+      }),
+    ])
+
+    res.status(200).json({
+      ruangan: rows,
+
+      pagination: {
+        page,
+        limit,
+        totalRows: total,
+        totalPages: Math.max(
+          1,
+          Math.ceil(total / limit)
+        ),
+      },
+    })
+  } catch (error) {
+    next(error)
   }
+}
 
   static async getRuanganById(req: Request, res: Response, next: NextFunction) {
     try {

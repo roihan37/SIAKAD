@@ -15,7 +15,7 @@ export const getAllRuangan = createAsyncThunk(
       limit = 10,
       search = "",
       sortBy = "name",
-      sortOrder = "asc",
+      sortOrder = "desc",
     } = params ?? {};
 
     try {

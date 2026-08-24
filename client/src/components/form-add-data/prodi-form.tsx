@@ -38,35 +38,12 @@ export function ProdiField({
   const {
     register,
     control,
-    watch,
-    setValue,
     reset,
     formState: {
       errors,
     },
   } = prodiForm
 
-  // const fakultasId = watch("fakultasId")
-
-  // useEffect(() => {
-  
-  //     if (!fakultasId) {
-  //       setValue("prodiId", 0)
-  //       setValue("dosenId", "")
-  //       return
-  //     }
-  
-  //     dispatch(
-  //       getAllProdi({
-  //         fakultasId,
-  //       })
-  //     )
-  
-  //   }, [
-  //     fakultasId,
-  //     dispatch,
-  //     setValue,
-  //   ])
 
   const submitProdi = async (
       data: ProdiFormValues
