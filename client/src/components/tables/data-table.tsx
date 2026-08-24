@@ -92,44 +92,51 @@ export function DataTable<TData, TValue>({
   })
   return (
     <div>
-      <div className="flex items-center py-4 justify-between gap-2">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+        {/* Search + Columns */}
+        <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
           <Input
             placeholder="Filter Nama, NIM, NIDN, Kode..."
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="max-w-sm w-xl"
+            className="w-full sm:max-w-sm"
           />
+
           <DropdownMenu>
-            <DropdownMenuTrigger render={<Button variant="outline" className="ml-auto">
-              Columns
-            </Button>} >
-            </DropdownMenuTrigger>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                >
+                  Columns
+                </Button>
+              }
+            />
+
             <DropdownMenuContent align="end">
               {table
                 .getAllColumns()
-                .filter(
-                  (column) => column.getCanHide()
-                )
-                .map((column) => {
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      className="capitalize"
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(!!value)
-                      }
-                    >
-                      {(column.columnDef.meta as any)?.label ?? column.id}
-                    </DropdownMenuCheckboxItem>
-                  )
-                })}
+                .filter((column) => column.getCanHide())
+                .map((column) => (
+                  <DropdownMenuCheckboxItem
+                    key={column.id}
+                    className="capitalize"
+                    checked={column.getIsVisible()}
+                    onCheckedChange={(value) =>
+                      column.toggleVisibility(!!value)
+                    }
+                  >
+                    {(column.columnDef.meta as any)?.label ??
+                      column.id}
+                  </DropdownMenuCheckboxItem>
+                ))}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <div className="">
-          {/* FORM */}
+
+        {/* Add */}
+        <div className="w-full sm:w-auto">
           <DialogForm />
         </div>
       </div>
@@ -182,33 +189,36 @@ export function DataTable<TData, TValue>({
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-between space-x-2 py-4">
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            // onClick={() => table.previousPage()}
-            // disabled={!table.getCanPreviousPage()}
-            onClick={() => onPageChange(pageIndex - 1)}
-            disabled={pageIndex <= 0}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            // onClick={() => table.nextPage()}
-            // disabled={!table.getCanNextPage()}
-            onClick={() => onPageChange(pageIndex + 1)}
-            disabled={pageIndex + 1 >= pageCount}
-          >
-            Next
-          </Button>
+      <div className="flex flex-col gap-3 border-t py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="text-sm text-muted-foreground">
+          {table.getFilteredSelectedRowModel().rows.length} dari{" "}
+          {table.getFilteredRowModel().rows.length} data dipilih
         </div>
-        <div className="flex text-sm text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length} of{" "}
-          {table.getFilteredRowModel().rows.length} row(s) selected.
-          Halaman {pageIndex + 1} dari {pageCount || 1}
+
+        <div className="flex items-center justify-between gap-3 sm:justify-end">
+          <span className="text-sm text-muted-foreground whitespace-nowrap">
+            Halaman {pageIndex + 1} dari {pageCount || 1}
+          </span>
+
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(pageIndex - 1)}
+              disabled={pageIndex <= 0}
+            >
+              Sebelumnya
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(pageIndex + 1)}
+              disabled={pageIndex + 1 >= pageCount}
+            >
+              Berikutnya
+            </Button>
+          </div>
         </div>
       </div>
     </div>

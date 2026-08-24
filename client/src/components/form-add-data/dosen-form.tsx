@@ -12,9 +12,9 @@ import { Controller, useForm } from "react-hook-form"
 import { dosenSchema, type DosenFormInput, type DosenFormValues } from "@/schemas"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useEffect, useState, type ChangeEvent } from "react"
-import { useAppDispatch } from "@/hooks/redux"
+import { useAppDispatch, useAppSelector } from "@/hooks/redux"
 import { getAllProdi } from "@/features/action/campusThunk"
-import { createLecturer, getLecturerAvatarUploadUrl } from "@/features/action/usersThunk"
+import { createLecturer, getAllLecturers, getLecturerAvatarUploadUrl } from "@/features/action/usersThunk"
 
 const genderList = [{ label: "Laki-laki", value: "Male" }, { label: "Perempuan", value: "Female" }]
 const statusList = [
@@ -62,7 +62,21 @@ export function DosenField({
 }: DosenFieldProps) {
 
   const dispatch = useAppDispatch()
+  const {
+        page,
+        totalPages,
+        search,
+        sortBy,
+        sortOrder
+    } = useAppSelector((state) => state.users)
 
+  const getDefaultBirthDate = () => {
+    const date = new Date()
+
+    date.setFullYear(date.getFullYear() - 17)
+
+    return date
+  }
 
   const dosenForm = useForm<
     DosenFormInput,
@@ -82,7 +96,7 @@ export function DosenField({
       gender: undefined,
       phoneNumber: "",
       address: "",
-      birthDate: undefined,
+      birthDate: getDefaultBirthDate(),
       status: "Aktif",
       jabatan: "Dosen",
       fakultasId: 0,
@@ -104,7 +118,6 @@ export function DosenField({
   } = dosenForm
 
   const fakultasId = watch("fakultasId")
-  const prodiId = watch("prodiId")
 
   const [datePickerOpen, setDatePickerOpen] =
     useState(false)
@@ -114,9 +127,6 @@ export function DosenField({
 
   const [croppedImage, setCroppedImage] =
     useState<string | null>(null)
-
-  const [isSubmitting, setIsSubmitting] =
-    useState(false)
 
   useEffect(() => {
 
@@ -160,69 +170,75 @@ export function DosenField({
   }
 
   const submitDosen = async (
-    data: DosenFormValues
-  ) => {
-    try {
-      setIsSubmitting(true)
+  data: DosenFormValues
+) => {
+  try {
+    let avatarKey: string | undefined
 
-      let avatarKey: string | undefined
+    if (croppedImage) {
+      const blob = dataUrlToBlob(croppedImage)
+      const contentType = blob.type || "image/png"
 
-      if (croppedImage) {
-        const blob = dataUrlToBlob(croppedImage)
-        const contentType = blob.type || "image/png"
+      const {
+        uploadUrl,
+        key,
+      } = await dispatch(getLecturerAvatarUploadUrl(contentType)).unwrap()
 
-        const {
-          uploadUrl,
-          key,
-        } = await dispatch(
-          getLecturerAvatarUploadUrl(contentType)
-        ).unwrap()
-
-        const response = await fetch(
-          uploadUrl,
-          {
-            method: "PUT",
-            headers: {
-              "Content-Type": contentType,
-            },
-            body: blob,
-          }
-        )
-
-        if (!response.ok) {
-          throw new Error(
-            "Upload foto ke storage gagal. Coba upload ulang."
-          )
+      const response = await fetch(
+        uploadUrl,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": contentType,
+          },
+          body: blob,
         }
+      )
 
-        avatarKey = key
+      if (!response.ok) {
+        throw new Error(
+          "Upload foto ke storage gagal. Coba upload ulang."
+        )
       }
 
-      await dispatch(
-        createLecturer({
-          ...data,
-          birthDate: data.birthDate?.toISOString(),
-          avatarKey,
-        })
-      ).unwrap()
-
-      reset()
-
-      setSelectedFile(null)
-      setCroppedImage(null)
-      setDatePickerOpen(false)
-      setIsConfirmed(false)
-
-      onSuccess()
-    } catch (error: any) {
-      onError(
-        error?.message ??
-        "Terjadi kesalahan, coba lagi."
-      )
-    } finally {
-      setIsSubmitting(false)
+      avatarKey = key
     }
+    await dispatch(
+      createLecturer({
+        ...data,
+        birthDate: data.birthDate?.toISOString(),
+        avatarKey,
+      })
+    ).unwrap()
+
+    await dispatch(
+      getAllLecturers({
+        page,
+        limit: 10,
+        search,
+        sortBy,
+        sortOrder,
+      })
+    ).unwrap()
+
+    reset()
+
+    setSelectedFile(null)
+    setCroppedImage(null)
+    setDatePickerOpen(false)
+    setIsConfirmed(false)
+
+    onSuccess()
+
+  } catch (error: any) {
+    onError(
+      typeof error === "string"
+        ? error
+        : error?.message ??
+          "Terjadi kesalahan, coba lagi."
+    )
   }
+}
 
 
   return (
@@ -827,12 +843,6 @@ export function DosenField({
           <FieldContent><FieldLabel htmlFor="lecturer-confirm-checkbox">Data yang saya masukkan sudah benar</FieldLabel><FieldDescription>Dengan mencentang kotak ini, saya menyatakan seluruh data dosen telah diperiksa dan benar.</FieldDescription></FieldContent>
         </Field>
       </FieldGroup>
-
-      {isSubmitting && (
-        <p className="text-sm text-muted-foreground">
-          Menyimpan data dosen...
-        </p>
-      )}
     </form>
   )
 }

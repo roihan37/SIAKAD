@@ -18,7 +18,7 @@ function App() {
       <RouterProvider router={router} />
       <Toaster 
       position="top-right"
-      offset="80px"
+      offset="64px"
       />
     </>
 

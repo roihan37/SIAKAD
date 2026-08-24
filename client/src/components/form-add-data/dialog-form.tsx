@@ -12,17 +12,11 @@ import {
 
 import { useEffect, useState } from "react"
 import { useLocation } from "react-router"
-import { toast } from "sonner"
 import { useAppDispatch, useAppSelector } from "@/hooks/redux"
 
 import {
   getAllFakultas,
-  getAllProdi,
 } from "@/features/action/campusThunk"
-
-import {
-  getAllLecturers,
-} from "@/features/action/usersThunk"
 
 import { MahasiswaField } from "./mahasiswa-form"
 
@@ -102,7 +96,7 @@ export function DialogForm() {
   const { pathname } = useLocation()
 
   const dispatch = useAppDispatch()
-  const { isCreatingStudent } = useAppSelector((state) => state.users)
+  const { isCreatingStudent, isCreatingLecturer } = useAppSelector((state) => state.users)
   const entityType = getEntityType(pathname)
   const entity = entityConfig[entityType]
 
@@ -276,13 +270,13 @@ export function DialogForm() {
             form={entity.formId}
             disabled={!isConfirmed}
           >
-            {isCreatingStudent && (
+            {isCreatingStudent 
+            || isCreatingLecturer 
+            && (
               <Spinner data-icon="inline-start" >
                 Processing
               </Spinner>
             )}
-
-
             Save changes
           </Button>
 

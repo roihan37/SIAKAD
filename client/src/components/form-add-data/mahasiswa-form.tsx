@@ -52,6 +52,7 @@ import { useEffect, useState, type ChangeEvent } from "react"
 import {
   createStudent,
   getAllLecturers,
+  getAllStudents,
   getAvatarUploadUrl,
 } from "@/features/action/usersThunk"
 
@@ -132,12 +133,20 @@ export function MahasiswaField({
 }: MahasiswaFieldProps) {
 
   const dispatch = useAppDispatch()
-  
+  const {
+    page,
+    search,
+    sortBy,
+    sortOrder,
+  } = useAppSelector((state)=>state.users)
 
+  const getDefaultBirthDate = () => {
+    const date = new Date()
 
-  // =====================================================
-  // FORM
-  // =====================================================
+    date.setFullYear(date.getFullYear() - 17)
+
+    return date
+  }
 
   const studentForm = useForm<
     MahasiswaFormInput,
@@ -159,7 +168,7 @@ export function MahasiswaField({
 
       phoneNumber: "",
       address: "",
-      birthDate: undefined,
+      birthDate: getDefaultBirthDate(),
 
       angkatan: 2000,
       semester: 1,
@@ -191,10 +200,8 @@ export function MahasiswaField({
   const fakultasId = watch("fakultasId")
   const prodiId = watch("prodiId")
 
+  
 
-  // =====================================================
-  // UI STATE
-  // =====================================================
 
   const [datePickerOpen, setDatePickerOpen] =
     useState(false)
@@ -324,6 +331,16 @@ export function MahasiswaField({
         birthDate:
           data.birthDate?.toISOString(),
         avatarKey,
+      })
+    ).unwrap()
+
+    await dispatch(
+      getAllStudents({
+        page,
+        limit: 10,
+        search,
+        sortBy,
+        sortOrder,
       })
     ).unwrap()
 
