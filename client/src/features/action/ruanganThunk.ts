@@ -4,7 +4,7 @@ import type { PaginationParams } from "@/types/param";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
 export const getAllRuangan = createAsyncThunk(
-  "ruangan",
+  "ruangan/getAll",
   async (
     params: Partial<PaginationParams> | undefined,
     thunkAPI

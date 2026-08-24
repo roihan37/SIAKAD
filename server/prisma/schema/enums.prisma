@@ -33,3 +33,12 @@ enum KRSStatus {
   DISETUJUI
   DITOLAK
 }
+
+enum Hari {
+  SENIN
+  SELASA
+  RABU
+  KAMIS
+  JUMAT
+  SABTU
+}

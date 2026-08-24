@@ -1191,11 +1191,9 @@ export function MahasiswaField({
                   fieldState.invalid
                 }
               >
-
                 <FieldLabel htmlFor="form-status">
                   Status
                 </FieldLabel>
-
                 <Select
                   items={statusList}
                   value={field.value}
@@ -1203,14 +1201,12 @@ export function MahasiswaField({
                     field.onChange
                   }
                 >
-
                   <SelectTrigger
                     id="form-status"
                     aria-invalid={
                       fieldState.invalid
                     }
                   >
-
                     <SelectValue
                       placeholder="Pilih status"
                     />
@@ -1219,7 +1215,6 @@ export function MahasiswaField({
 
 
                   <SelectContent>
-
                     <SelectGroup>
 
                       {statusList.map(
@@ -1261,25 +1256,19 @@ export function MahasiswaField({
         <Controller
           control={control}
           name="dosenId"
-
           render={({
             field,
             fieldState,
           }) => (
-
             <Field
               data-invalid={
                 fieldState.invalid
               }
             >
-
               <FieldLabel htmlFor="form-dosen">
                 Dosen Wali
               </FieldLabel>
-
-
               <Select
-
                 items={lecturers.map(
                   (lecturer) => ({
                     label:
@@ -1288,25 +1277,20 @@ export function MahasiswaField({
                       lecturer.dosen.id,
                   })
                 )}
-
                 value={
                   field.value || ""
                 }
-
                 onValueChange={
                   field.onChange
                 }
-
                 disabled={!prodiId}
               >
-
                 <SelectTrigger
                   id="form-dosen"
                   aria-invalid={
                     fieldState.invalid
                   }
                 >
-
                   <SelectValue
                     placeholder={
                       prodiId
@@ -1314,17 +1298,11 @@ export function MahasiswaField({
                         : "Pilih prodi dulu"
                     }
                   />
-
                 </SelectTrigger>
-
-
                 <SelectContent>
-
                   <SelectGroup>
-
                     {lecturers.map(
                       (lecturer) => (
-
                         <SelectItem
                           key={
                             lecturer.dosen.id
@@ -1335,23 +1313,15 @@ export function MahasiswaField({
                         >
                           {lecturer.name}
                         </SelectItem>
-
                       )
                     )}
-
                   </SelectGroup>
-
                 </SelectContent>
-
               </Select>
-
-
               <FieldError>
                 {fieldState.error?.message}
               </FieldError>
-
             </Field>
-
           )}
         />
 

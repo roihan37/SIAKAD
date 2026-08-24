@@ -4,7 +4,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 
 
 export const getAllFakultas = createAsyncThunk(
-  "fakultas",
+  "fakultas/getAll",
   async (
     params: Partial<PaginationParams> | undefined,
     thunkAPI
@@ -63,37 +63,42 @@ export const createProdi = createAsyncThunk(
   }
 );
 
-  export const getAllProdi = createAsyncThunk(
-    "prodi",
-    async ({ 
-      page, 
-      limit, 
-      search, 
-      sortBy, 
-      sortOrder, 
-      fakultasId
-     }: PaginationParams
-      , thunkAPI) => {
-      try {
-        const response = await api.get("/prodi",{
-          params : {
-            page,
-            limit,
-            search,
-            sortBy, 
-            sortOrder,
-            fakultasId
-          }
-        })
-        
-        
-        return response.data;
-        
-      } catch (err: any) {
-       
-        return thunkAPI.rejectWithValue(
-          err.response.data.message
-        );
-      }
+export const getAllProdi = createAsyncThunk<
+  any,
+  PaginationParams | undefined
+>(
+  "prodi/getAll",
+  async (
+    params,
+    thunkAPI
+  ) => {
+    const {
+      page = 1,
+      limit = 10,
+      search = "",
+      sortBy = "name",
+      sortOrder = "desc",
+      fakultasId,
+    } = params ?? {}
+
+    try {
+      const response = await api.get("/prodi", {
+        params: {
+          page,
+          limit,
+          search,
+          sortBy,
+          sortOrder,
+          fakultasId,
+        },
+      })
+
+      return response.data
+    } catch (err: any) {
+      return thunkAPI.rejectWithValue(
+        err.response?.data?.message ??
+          "Gagal mengambil data program studi."
+      )
     }
-  );
+  }
+)

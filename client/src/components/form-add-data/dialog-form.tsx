@@ -16,6 +16,7 @@ import { useAppDispatch, useAppSelector } from "@/hooks/redux"
 
 import {
   getAllFakultas,
+  getAllProdi,
 } from "@/features/action/campusThunk"
 
 import { MahasiswaField } from "./mahasiswa-form"
@@ -26,6 +27,7 @@ import { FakultasField } from "./fakultas-form"
 import { ProdiField } from "./prodi-form"
 import RuanganField from "./ruangan-form"
 import { Spinner } from "../ui/spinner"
+import MatkulField from "./matkul-form"
 
 
 type EntityType =
@@ -118,6 +120,7 @@ export function DialogForm() {
 
   useEffect(() => {
     dispatch(getAllFakultas())
+    dispatch(getAllProdi())
   }, [dispatch])
 
 
@@ -192,6 +195,18 @@ export function DialogForm() {
     else if (entityType === "ruangan") {
       return (
         <RuanganField
+          isConfirmed={isConfirmed}
+          setIsConfirmed={setIsConfirmed}
+          onSuccess={handleClose}
+          onError={setSubmitError}
+        />
+      )
+    }
+
+    else if (entityType === "matkul") {
+      return (
+        <MatkulField
+          prodi={prodi}
           isConfirmed={isConfirmed}
           setIsConfirmed={setIsConfirmed}
           onSuccess={handleClose}

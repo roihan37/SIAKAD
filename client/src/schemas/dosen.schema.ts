@@ -38,7 +38,7 @@ export const dosenSchema =
   })
 
 export type DosenFormValues =
-  z.infer<typeof dosenSchema>
+  z.input<typeof dosenSchema>
 
 export type DosenFormInput = 
-  z.infer<typeof dosenSchema>
+  z.output<typeof dosenSchema>

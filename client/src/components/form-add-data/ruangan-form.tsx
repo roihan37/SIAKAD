@@ -14,7 +14,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useAppDispatch } from "@/hooks/redux"
 import type { RuanganFieldProps } from "@/types/props"
 import { useState } from "react"
-import { createRuangan } from "@/features/action/ruanganThunk"
+import { createRuangan, getAllRuangan } from "@/features/action/ruanganThunk"
 
 
 
@@ -69,13 +69,16 @@ const ruanganForm = useForm<
         await dispatch(
           createRuangan(data)
         ).unwrap()
-  
+        
+        await dispatch(
+          getAllRuangan()
+        )
         reset()
         setIsConfirmed(false)
         onSuccess()
       } catch (error: any) {
         onError(
-          error?.message ??
+          error ??
           "Terjadi kesalahan, coba lagi."
         )
       } finally {

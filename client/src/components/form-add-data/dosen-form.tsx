@@ -64,7 +64,6 @@ export function DosenField({
   const dispatch = useAppDispatch()
   const {
         page,
-        totalPages,
         search,
         sortBy,
         sortOrder

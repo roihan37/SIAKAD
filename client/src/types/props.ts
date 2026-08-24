@@ -53,3 +53,11 @@ export interface RuanganFieldProps {
   setIsConfirmed: (checked: boolean) => void
 }
 
+export interface MatkulFieldProps {
+  prodi: { id: number | string; name: string }[]
+  isConfirmed: boolean
+  setIsConfirmed: (checked: boolean) => void
+  onSuccess: () => void
+  onError: (message: string) => void
+}
+

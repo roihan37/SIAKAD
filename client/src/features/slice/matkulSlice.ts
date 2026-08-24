@@ -12,7 +12,7 @@ const initialState : MataKuliahState ={
     totalPages: 1,
     totalRows: 0,
     sortBy: "name",
-    sortOrder: "asc",
+    sortOrder: "desc",
 }
 const matkulSlice = createSlice({
     name : 'matkul',

@@ -1,12 +1,12 @@
 export interface PaginationParams {
-    page?: number | 0;
-    limit?: number | 10;
-    search? : string | '';
-    sortBy?: string
-    sortOrder?: "asc" | "desc"
-    prodiId? : number
-    fakultasId? : number
-  }
+  page?: number
+  limit?: number
+  search?: string
+  sortBy?: string
+  sortOrder?: "asc" | "desc"
+  prodiId?: number
+  fakultasId?: number
+}
 
   export interface CreateStudentPayload {
     name: string; email: string; username: string; password: string;
@@ -34,7 +34,7 @@ export interface CreateProdiPayload {
 
 export interface CreateMatkulPayload {
   kode: string;
-  name_mk: string;
+  nama: string;
   sks: number;
   semester: number;
   prodiId: number;

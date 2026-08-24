@@ -41,7 +41,7 @@ interface DataTableProps<TData, TValue> {
   pageIndex: number       // 0-based
   pageCount: number
   onPageChange: (pageIndex: number) => void
-  sorting: SortingState
+  sorting: SortingState 
   onSortingChange: (sorting: SortingState) => void
   isLoading?: boolean
 }

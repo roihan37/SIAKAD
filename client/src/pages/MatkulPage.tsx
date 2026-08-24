@@ -22,7 +22,7 @@ export default function MatkulPage() {
 
     const handleSortingChange = (next: SortingState) => {
         if (next.length === 0) {
-            dispatch(setSorting({ sortBy: "name", sortOrder: "asc" }))
+            dispatch(setSorting({ sortBy: "name", sortOrder: "desc" }))
             return
         }
 

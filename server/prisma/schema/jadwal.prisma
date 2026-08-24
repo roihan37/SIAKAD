@@ -23,11 +23,3 @@ model Jadwal {
   @@index([ruanganId])
 }
 
-enum Hari {
-  SENIN
-  SELASA
-  RABU
-  KAMIS
-  JUMAT
-  SABTU
-}

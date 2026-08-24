@@ -3,18 +3,17 @@ import type { CreateMatkulPayload, PaginationParams } from "@/types/param";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
 export const getAllMatkul = createAsyncThunk(
-  "matkul",
+  "matkul/getAll",
   async (
     params: Partial<PaginationParams> | undefined,
     thunkAPI
   ) => {
-
     const {
       page = 1,
       limit = 10,
       search = "",
       sortBy = "name",
-      sortOrder = "asc",
+      sortOrder = "desc",
     } = params ?? {};
 
     try {
@@ -41,6 +40,8 @@ export const getAllMatkul = createAsyncThunk(
 export const createMatkul = createAsyncThunk(
   "matkul/create",
   async (payload: CreateMatkulPayload, thunkAPI) => {
+    console.log(payload);
+    
     try {
       const response = await api.post("/mata-kuliah", payload);
       return response.data;

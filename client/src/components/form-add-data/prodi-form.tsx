@@ -22,9 +22,6 @@ export function ProdiField({
 
   const dispatch = useAppDispatch()
 
-  const [isSubmitting, setIsSubmitting] =
-      useState(false)
-
   const prodiForm = useForm<
       ProdiFromInput,
       unknown,
@@ -76,12 +73,12 @@ export function ProdiField({
     ) => {
   
       try {
-        setIsSubmitting(true)
   
         await dispatch(
           createProdi(data)
         ).unwrap()
   
+        
         reset()
         setIsConfirmed(false)
         onSuccess()
@@ -90,9 +87,7 @@ export function ProdiField({
           error?.message ??
           "Terjadi kesalahan, coba lagi."
         )
-      } finally {
-        setIsSubmitting(false)
-      }
+      } 
     }
 
   return (

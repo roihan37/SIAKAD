@@ -1,7 +1,7 @@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Field, FieldContent, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { createFakultas } from "@/features/action/campusThunk"
+import { createFakultas, getAllFakultas } from "@/features/action/campusThunk"
 import { useAppDispatch } from "@/hooks/redux"
 import { fakultasSchema, type FakultasFormInput, type FakultasFormValues } from "@/schemas"
 import type { FakultasFieldProps } from "@/types/props"
@@ -36,31 +36,27 @@ export function FakultasField({ isConfirmed, setIsConfirmed, onSuccess, onError 
     },
   } = fakultasForm
 
-  const [isSubmitting, setIsSubmitting] =
-    useState(false)
-
   const submitFakultas = async (
     data: FakultasFormValues
   ) => {
-    setIsSubmitting(true)
 
     try {
-      setIsSubmitting(true)
 
       await dispatch(
         createFakultas(data)
       ).unwrap()
 
+      await dispatch(
+        getAllFakultas()
+      )
       reset()
       setIsConfirmed(false)
       onSuccess()
     } catch (error: any) {
       onError(
-        error?.message ??
+        error ??
         "Terjadi kesalahan, coba lagi."
       )
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
@@ -106,11 +102,6 @@ export function FakultasField({ isConfirmed, setIsConfirmed, onSuccess, onError 
         </Field>
       </FieldGroup>
 
-      {isSubmitting && (
-        <p className="text-sm text-muted-foreground">
-          Menyimpan data fakultas...
-        </p>
-      )}
     </form>
   )
 }

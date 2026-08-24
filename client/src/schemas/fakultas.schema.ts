@@ -7,7 +7,7 @@ export const fakultasSchema = z.object({
 })
 
 export type FakultasFormValues =
-  z.infer<typeof fakultasSchema>
+  z.input<typeof fakultasSchema>
 
 export type FakultasFormInput =
-  z.infer<typeof fakultasSchema>
+  z.output<typeof fakultasSchema>
