@@ -1,4 +1,4 @@
-import type { Dosen, Fakultas, Mahasiswa, MataKuliah, ProgramStudi, Ruangan } from "./campus"
+import type { Dosen, Fakultas, Mahasiswa, MataKuliah, ProgramStudi, Ruangan, TahunAkademik } from "./campus"
 
 export interface AuthState {
     isLoading : boolean
@@ -34,6 +34,12 @@ export interface RuanganState extends Pagination{
     isLoading : boolean
     error: string | null
     ruangan: Ruangan[]
+}
+
+export interface TahunAkaState extends Pagination{
+    isLoading : boolean
+    error: string | null
+    tAkademik: TahunAkademik[]
 }
 
 export interface Pagination {

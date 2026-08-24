@@ -84,11 +84,11 @@ const data = {
         },
         {
           title: "Tahun Akademik",
-          url: "#",
+          url: "/tahun-akademik",
         },
         {
           title: "Kurikulum",
-          url: "#",
+          url: "/kurikulum",
         },
       ],
     },

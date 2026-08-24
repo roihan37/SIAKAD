@@ -2,6 +2,7 @@ model TahunAkademik {
   id          Int   @id @default(autoincrement())
   tahun       String
   semester    Semester
+  isActive    Boolean  @default(false)
 
   kelas       Kelas[]
   jadwal      Jadwal[]

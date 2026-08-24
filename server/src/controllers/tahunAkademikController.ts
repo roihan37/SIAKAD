@@ -24,12 +24,73 @@ export class Controller {
     }
   }
 
-  static async getAllTahunAkademik(req: Request, res: Response, next: NextFunction) {
+  static async getAllTahunAkademik(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
     try {
-      const rows = await prisma.tahunAkademik.findMany();
-      res.status(200).json({ tahunAkademik: rows });
+      const page = Number(req.query.page) || 1
+      const limit = Number(req.query.limit) || 20
+      const search = String(req.query.search ?? "")
+
+      const sortOrder =
+        req.query.sortOrder === "asc"
+          ? "asc"
+          : "desc"
+
+      const skip = (page - 1) * limit
+
+      const where: Prisma.TahunAkademikWhereInput =
+        search
+          ? {
+            OR: [
+              {
+                tahun: {
+                  contains: search,
+                  mode: Prisma.QueryMode.insensitive,
+                },
+              },
+              {
+                semester: {
+                  equals: search as any,
+                },
+              },
+            ],
+          }
+          : {}
+
+      const [rows, total] = await Promise.all([
+        prisma.tahunAkademik.findMany({
+          where,
+          skip,
+          take: limit,
+
+          orderBy: {
+            createdAt: sortOrder,
+          },
+        }),
+
+        prisma.tahunAkademik.count({
+          where,
+        }),
+      ])
+
+      res.status(200).json({
+        tahunAkademik: rows,
+
+        pagination: {
+          page,
+          limit,
+          totalRows: total,
+          totalPages: Math.max(
+            1,
+            Math.ceil(total / limit)
+          ),
+        },
+      })
     } catch (error) {
-      next(error);
+      next(error)
     }
   }
 

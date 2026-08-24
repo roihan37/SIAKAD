@@ -59,3 +59,10 @@ export type Ruangan = {
   kapasitas: number
   gedung: string
 }
+
+export type TahunAkademik = {
+  id?: string
+  tahun: string
+  semester: string
+  status: string
+}
