@@ -198,29 +198,95 @@ async function main() {
   }
 
   // Mata kuliah per prodi (8 mata kuliah each)
-  const mkTemplates = ["Pengantar Pemrograman","Struktur Data","Basis Data","Sistem Operasi","Jaringan Komputer","Rekayasa Perangkat Lunak","Analisis dan Desain","Kecerdasan Buatan"];
-  const createdMataKuliah: { id: number; prodiId: number }[] = [];
+  // ==========================
+  // Mata Kuliah + Kurikulum
+  // ==========================
+
+  const mkTemplates = [
+    "Pengantar Pemrograman",
+    "Struktur Data",
+    "Basis Data",
+    "Sistem Operasi",
+    "Jaringan Komputer",
+    "Rekayasa Perangkat Lunak",
+    "Analisis dan Desain",
+    "Kecerdasan Buatan",
+  ];
+
+  const createdMataKuliah: {
+    id: number;
+    prodiId: number;
+  }[] = [];
 
   for (const p of allProdi) {
     for (let i = 0; i < mkTemplates.length; i++) {
       try {
         const kode = `${p.kode}-MK${String(i + 1).padStart(2, "0")}`;
         const nama = mkTemplates[i];
-        const sks = [2,3,4][i % 3];
-        const mk = await prisma.mataKuliah.create({ data: { kode, nama, sks } });
-        // buat relasi kurikulum (prodi -> mata kuliah), tempatkan di semester 1..8 round-robin
+        const sks = [2, 3, 4][i % 3];
+
+        // --------------------------
+        // Mata Kuliah
+        // --------------------------
+        const mk = await prisma.mataKuliah.create({
+          data: {
+            kode,
+            nama,
+            sks,
+          },
+        });
+
+        // --------------------------
+        // Kurikulum
+        // --------------------------
+        const kurikulum =
+          await prisma.kurikulum.create({
+            data: {
+              kode: `${p.kode}-2024`,
+              nama: `Kurikulum ${p.name} 2024`,
+              tahun: 2024,
+              prodiId: p.id,
+              isActive: true,
+            },
+          });
+
+        // --------------------------
+        // Kurikulum Mata Kuliah
+        // --------------------------
         const semester = (i % 8) + 1;
+
         try {
-          await prisma.kurikulum.create({ data: { prodiId: p.id, mataKuliahId: mk.id, semester } });
+          await prisma.kurikulumMataKuliah.create({
+            data: {
+              kurikulumId: kurikulum.id,
+              mataKuliahId: mk.id,
+              semester,
+              wajib: true,
+            },
+          });
         } catch (err: any) {
-          if (err?.code !== "P2002") console.warn("Warning: could not create kurikulum:", err?.message ?? err);
+          if (err?.code !== "P2002") {
+            console.warn(
+              "Warning: could not create kurikulumMataKuliah:",
+              err?.message ?? err
+            );
+          }
         }
-        createdMataKuliah.push({ id: mk.id, prodiId: p.id });
+
+        createdMataKuliah.push({
+          id: mk.id,
+          prodiId: p.id,
+        });
       } catch (err: any) {
         if (err?.code === "P2002") {
-          // already exists, ignore
+          console.log(
+            `Mata kuliah ${p.kode}-MK${String(i + 1).padStart(2, "0")} already exists`
+          );
         } else {
-          console.warn("Warning: could not create mata kuliah, skipping:", err?.message ?? err);
+          console.warn(
+            "Warning: could not create mata kuliah, skipping:",
+            err?.message ?? err
+          );
         }
       }
     }
@@ -245,20 +311,110 @@ async function main() {
     }
   }
 
-  // Tahun Akademik (2 entries)
+  // ==========================
+  // Tahun Akademik
+  // ==========================
+
   let ta1: any = null;
   let ta2: any = null;
+
   try {
-    ta1 = await prisma.tahunAkademik.create({ data: { tahun: "2023/2024", semester: Semester.GANJIL } });
+    ta1 = await prisma.tahunAkademik.create({
+      data: {
+        tahun: "2023/2024",
+        semester: Semester.GANJIL,
+        isActive: false,
+      },
+    });
   } catch (err: any) {
-    if (err?.code !== "P2002") console.warn("Warning: could not create tahun akademik 2023/2024:", err?.message ?? err);
+    if (err?.code !== "P2002") {
+      console.warn(
+        "Warning: could not create tahun akademik 2023/2024:",
+        err?.message ?? err
+      );
+    }
+
+    ta1 = await prisma.tahunAkademik.findUnique({
+      where: {
+        tahun_semester: {
+          tahun: "2023/2024",
+          semester: Semester.GANJIL,
+        },
+      },
+    });
   }
+
   try {
-    ta2 = await prisma.tahunAkademik.create({ data: { tahun: "2024/2025", semester: Semester.GENAP } });
+    ta2 = await prisma.tahunAkademik.create({
+      data: {
+        tahun: "2024/2025",
+        semester: Semester.GENAP,
+        isActive: true,
+      },
+    });
   } catch (err: any) {
-    if (err?.code !== "P2002") console.warn("Warning: could not create tahun akademik 2024/2025:", err?.message ?? err);
+    if (err?.code !== "P2002") {
+      console.warn(
+        "Warning: could not create tahun akademik 2024/2025:",
+        err?.message ?? err
+      );
+    }
+
+    ta2 = await prisma.tahunAkademik.findUnique({
+      where: {
+        tahun_semester: {
+          tahun: "2024/2025",
+          semester: Semester.GENAP,
+        },
+      },
+    });
   }
+
   const activeTA = ta2 ?? ta1;
+
+  // ==========================
+  // Periode KRS
+  // ==========================
+
+  if (ta1) {
+    try {
+      await prisma.periodeKRS.create({
+        data: {
+          tahunAkademikId: ta1.id,
+          mulai: new Date("2023-08-01"),
+          selesai: new Date("2023-08-15"),
+          isActive: false,
+        },
+      });
+    } catch (err: any) {
+      if (err?.code !== "P2002") {
+        console.warn(
+          "Warning: could not create periode KRS 2023/2024:",
+          err?.message ?? err
+        );
+      }
+    }
+  }
+
+  if (ta2) {
+    try {
+      await prisma.periodeKRS.create({
+        data: {
+          tahunAkademikId: ta2.id,
+          mulai: new Date("2025-01-20"),
+          selesai: new Date("2025-02-05"),
+          isActive: true,
+        },
+      });
+    } catch (err: any) {
+      if (err?.code !== "P2002") {
+        console.warn(
+          "Warning: could not create periode KRS 2024/2025:",
+          err?.message ?? err
+        );
+      }
+    }
+  }
 
   // Kelas per prodi (2 kelas tiap prodi: A & B, tingkat 1)
   const kelasList: any[] = [];

@@ -14,7 +14,7 @@ export class Controller {
         nama,
         sks,
         semester,
-        prodiId,
+        kurikulumId,
       } = req.body;
 
       const mk = await prisma.$transaction(
@@ -28,9 +28,9 @@ export class Controller {
               },
             });
 
-          await tx.kurikulum.create({
+          await tx.kurikulumMataKuliah.create({
             data: {
-              prodiId,
+              kurikulumId,
               mataKuliahId: mataKuliah.id,
               semester,
               wajib: true,
@@ -109,7 +109,11 @@ export class Controller {
         include: {
           kurikulum: {
             include: {
-              prodi: true,
+              kurikulum : {
+                include : {
+                  prodi : true
+                }
+              }
             },
           },
         },
@@ -137,7 +141,7 @@ export class Controller {
             kode: mk.kode,
             nama: mk.nama,
             sks: mk.sks,
-            prodi: k.prodi?.name ?? null,
+            prodi: k.kurikulum.prodi?.name ?? null,
             semester: k.semester ?? null,
           })
         }
