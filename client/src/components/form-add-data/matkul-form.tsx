@@ -6,8 +6,11 @@ import { Controller, useForm } from "react-hook-form"
 import { matkulSchema, type MatkulFormInput, type MatkulFormValues } from "@/schemas"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { createMatkul, getAllMatkul } from "@/features/action/matkulThunk"
-import { useAppDispatch } from "@/hooks/redux"
+import { useAppDispatch, useAppSelector } from "@/hooks/redux"
 import type { MatkulFieldProps } from "@/types/props"
+import { useEffect } from "react"
+import { getAllKurikulum } from "@/features/action/kurikulumThunk"
+import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList } from "../ui/combobox"
 
 export function MatkulField({
   prodi, isConfirmed,
@@ -16,6 +19,11 @@ export function MatkulField({
   : MatkulFieldProps) {
 
   const dispatch = useAppDispatch()
+
+  useEffect(()=>{
+    dispatch(getAllKurikulum())
+  },[])
+  const { kurikulum } = useAppSelector((state)=> state.kurikulum)
 
   const matkulForm = useForm<
     MatkulFormInput,
@@ -30,6 +38,7 @@ export function MatkulField({
       sks: 2,
       semester: 1,
       prodiId: 0,
+      kurikulumId: 0
     },
   })
 
@@ -68,7 +77,13 @@ export function MatkulField({
 
     }
   }
-
+const kurikulumOptions = kurikulum.map((item) => ({
+  value: item.id,
+  label: item.nama,
+  kode: item.kode,
+  prodi: item.prodi,
+  tahun: item.tahun,
+}))
   return (
     <form
       id="mata-kuliah-form"
@@ -110,16 +125,16 @@ export function MatkulField({
             type="number"
             aria-invalid={!!errors?.sks}
             {...register("sks", {
-                valueAsNumber: true,
-                onChange: (e) => {
-                  const value = e.target.value
+              valueAsNumber: true,
+              onChange: (e) => {
+                const value = e.target.value
 
-                  // Hilangkan leading zero
-                  if (value.length > 1 && value.startsWith("0")) {
-                    e.target.value = value.replace(/^0+/, "")
-                  }
-                },
-              })}
+                // Hilangkan leading zero
+                if (value.length > 1 && value.startsWith("0")) {
+                  e.target.value = value.replace(/^0+/, "")
+                }
+              },
+            })}
           />
           <FieldError>{errors.semester?.message}</FieldError>
         </Field>
@@ -132,78 +147,145 @@ export function MatkulField({
             type="number"
             aria-invalid={!!errors?.semester}
             {...register("semester", {
-                valueAsNumber: true,
-                onChange: (e) => {
-                  const value = e.target.value
+              valueAsNumber: true,
+              onChange: (e) => {
+                const value = e.target.value
 
-                  // Hilangkan leading zero
-                  if (value.length > 1 && value.startsWith("0")) {
-                    e.target.value = value.replace(/^0+/, "")
-                  }
-                },
-              })}
+                // Hilangkan leading zero
+                if (value.length > 1 && value.startsWith("0")) {
+                  e.target.value = value.replace(/^0+/, "")
+                }
+              },
+            })}
           />
           <FieldError>{errors.semester?.message}</FieldError>
         </Field>
 
-        <Controller
+    <Controller
   control={control}
-  name="prodiId"
-  render={({ field, fieldState }) => (
-    <Field data-invalid={fieldState.invalid}>
-      <FieldLabel htmlFor="form-prodi">
-        Program Studi
-      </FieldLabel>
+  name="kurikulumId"
+  render={({ field, fieldState }) => {
+    const selectedKurikulum =
+      kurikulumOptions.find(
+        (item) => Number(item.value) === field.value
+      ) ?? null
 
-      <Select
-        items={prodi.map((item) => ({
-          label: item.name,
-          value: String(item.id),
-        }))}
-        value={
-          field.value > 0
-            ? String(field.value)
-            : ""
-        }
-        onValueChange={(value) => {
-          field.onChange(
-            value ? Number(value) : 0
-          )
-        }}
-        onOpenChange={(open) => {
-          if (!open) {
-            field.onBlur()
-          }
-        }}
-      >
-        <SelectTrigger
-          id="form-prodi"
-          aria-invalid={fieldState.invalid}
-          className="w-full"
+    return (
+      <Field data-invalid={fieldState.invalid}>
+        <FieldLabel htmlFor="form-kurikulum">
+          Kurikulum
+        </FieldLabel>
+
+        <Combobox
+          items={kurikulumOptions}
+          value={selectedKurikulum}
+          onValueChange={(value) => {
+            field.onChange(
+              value?.value ?? 0
+            )
+          }}
         >
-          <SelectValue placeholder="Pilih program studi" />
-        </SelectTrigger>
+          <ComboboxInput
+            id="form-kurikulum"
+            placeholder="Cari kurikulum..."
+            aria-invalid={fieldState.invalid}
+            className="w-full"
+            onBlur={field.onBlur}
+          />
 
-        <SelectContent>
-          <SelectGroup>
-            {prodi.map((item) => (
-              <SelectItem
-                key={item.id}
-                value={String(item.id)}
-              >
-                {item.name}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
+          <ComboboxContent>
+            <ComboboxEmpty>
+              Kurikulum tidak ditemukan.
+            </ComboboxEmpty>
 
-      <FieldError>
-        {fieldState.error?.message}
-      </FieldError>
-    </Field>
-  )}
+            <ComboboxList>
+              {(item) => (
+                <ComboboxItem
+                  key={item.value}
+                  value={item}
+                >
+                  <div className="flex flex-col">
+                    <span className="font-medium">
+                      {item.label}
+                    </span>
+
+                    <span className="text-xs text-muted-foreground">
+                      {item.kode} • {item.prodi} •{" "}
+                      {item.tahun}
+                    </span>
+                  </div>
+                </ComboboxItem>
+              )}
+            </ComboboxList>
+          </ComboboxContent>
+        </Combobox>
+
+        <FieldError>
+          {fieldState.error?.message}
+        </FieldError>
+      </Field>
+    )
+  }}
 />
+
+        <Controller
+          control={control}
+          name="prodiId"
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel htmlFor="form-prodi">
+                Program Studi
+              </FieldLabel>
+
+              <Select
+                items={prodi.map((item) => ({
+                  label: item.name,
+                  value: String(item.id),
+                }))}
+                value={
+                  field.value > 0
+                    ? String(field.value)
+                    : ""
+                }
+                onValueChange={(value) => {
+                  field.onChange(
+                    value ? Number(value) : 0
+                  )
+                }}
+                onOpenChange={(open) => {
+                  if (!open) {
+                    field.onBlur()
+                  }
+                }}
+              >
+                <SelectTrigger
+                  id="form-prodi"
+                  aria-invalid={fieldState.invalid}
+                  className="w-full"
+                >
+                  <SelectValue placeholder="Pilih program studi" />
+                </SelectTrigger>
+
+                <SelectContent>
+                  <SelectGroup>
+                    {prodi.map((item) => (
+                      <SelectItem
+                        key={item.id}
+                        value={String(item.id)}
+                      >
+                        {item.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+
+              <FieldError>
+                {fieldState.error?.message}
+              </FieldError>
+            </Field>
+          )}
+        />
 
         <Field orientation="horizontal" className="items-start gap-2 pt-2 pb-4">
           <Checkbox

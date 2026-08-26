@@ -69,8 +69,9 @@ export type TahunAkademik = {
 
 export type Kurikulum = {
   id: string
-  namaKurikulum: string
-  namaProdi: string
+  nama: string
+  kode: string
+  prodi: string
   tahun: number | null
   semester: string
   totalSks: number

@@ -202,6 +202,21 @@ async function main() {
   // Mata Kuliah + Kurikulum
   // ==========================
 
+  // const mkTemplates = [
+  //   "Pengantar Pemrograman",
+  //   "Struktur Data",
+  //   "Basis Data",
+  //   "Sistem Operasi",
+  //   "Jaringan Komputer",
+  //   "Rekayasa Perangkat Lunak",
+  //   "Analisis dan Desain",
+  //   "Kecerdasan Buatan",
+  // ];
+
+  // ==========================
+  // Mata Kuliah + Kurikulum
+  // ==========================
+
   const mkTemplates = [
     "Pengantar Pemrograman",
     "Struktur Data",
@@ -219,76 +234,115 @@ async function main() {
   }[] = [];
 
   for (const p of allProdi) {
-    for (let i = 0; i < mkTemplates.length; i++) {
-      try {
-        const kode = `${p.kode}-MK${String(i + 1).padStart(2, "0")}`;
-        const nama = mkTemplates[i];
-        const sks = [2, 3, 4][i % 3];
+    try {
+      // =====================================================
+      // 1. SATU KURIKULUM UNTUK SATU PRODI DALAM SATU TAHUN
+      // =====================================================
 
-        // --------------------------
-        // Mata Kuliah
-        // --------------------------
-        const mk = await prisma.mataKuliah.create({
-          data: {
-            kode,
-            nama,
-            sks,
+      const kurikulum = await prisma.kurikulum.upsert({
+        where: {
+          prodiId_tahun: {
+            prodiId: p.id,
+            tahun: 2024,
+          },
+        },
+
+        update: {
+          nama: `Kurikulum ${p.name} 2024`,
+          isActive: true,
+        },
+
+        create: {
+          kode: `${p.kode}-2024`,
+          nama: `Kurikulum ${p.name} 2024`,
+          tahun: 2024,
+          prodiId: p.id,
+          isActive: true,
+        },
+      });
+
+      // =====================================================
+      // 2. BUAT 8 MATA KULIAH UNTUK PRODI TERSEBUT
+      // =====================================================
+
+      for (
+        let i = 0;
+        i < mkTemplates.length;
+        i++
+      ) {
+        const kode =
+          `${p.kode}-MK${String(i + 1).padStart(2, "0")}`;
+
+        const nama = mkTemplates[i];
+
+        const sks =
+          [2, 3, 4][i % 3];
+
+        const semester = i + 1;
+
+        // ===================================================
+        // 3. CREATE / GET MATA KULIAH
+        // ===================================================
+
+        const mataKuliah =
+          await prisma.mataKuliah.upsert({
+            where: {
+              kode,
+            },
+
+            update: {
+              nama,
+              sks,
+            },
+
+            create: {
+              kode,
+              nama,
+              sks,
+            },
+          });
+
+        // ===================================================
+        // 4. HUBUNGKAN MATA KULIAH DENGAN KURIKULUM
+        // ===================================================
+
+        await prisma.kurikulumMataKuliah.upsert({
+          where: {
+            kurikulumId_mataKuliahId: {
+              kurikulumId: kurikulum.id,
+              mataKuliahId: mataKuliah.id,
+            },
+          },
+
+          update: {
+            semester,
+            wajib: true,
+          },
+
+          create: {
+            kurikulumId: kurikulum.id,
+            mataKuliahId: mataKuliah.id,
+            semester,
+            wajib: true,
           },
         });
 
-        // --------------------------
-        // Kurikulum
-        // --------------------------
-        const kurikulum =
-          await prisma.kurikulum.create({
-            data: {
-              kode: `${p.kode}-2024`,
-              nama: `Kurikulum ${p.name} 2024`,
-              tahun: 2024,
-              prodiId: p.id,
-              isActive: true,
-            },
-          });
-
-        // --------------------------
-        // Kurikulum Mata Kuliah
-        // --------------------------
-        const semester = (i % 8) + 1;
-
-        try {
-          await prisma.kurikulumMataKuliah.create({
-            data: {
-              kurikulumId: kurikulum.id,
-              mataKuliahId: mk.id,
-              semester,
-              wajib: true,
-            },
-          });
-        } catch (err: any) {
-          if (err?.code !== "P2002") {
-            console.warn(
-              "Warning: could not create kurikulumMataKuliah:",
-              err?.message ?? err
-            );
-          }
-        }
+        // ===================================================
+        // 5. SIMPAN ID UNTUK KELAS MATA KULIAH
+        // ===================================================
 
         createdMataKuliah.push({
-          id: mk.id,
+          id: mataKuliah.id,
           prodiId: p.id,
         });
-      } catch (err: any) {
-        if (err?.code === "P2002") {
-          console.log(
-            `Mata kuliah ${p.kode}-MK${String(i + 1).padStart(2, "0")} already exists`
-          );
-        } else {
-          console.warn(
-            "Warning: could not create mata kuliah, skipping:",
-            err?.message ?? err
-          );
-        }
       }
+    } catch (error: any) {
+      console.error(
+        `❌ Gagal membuat data kurikulum untuk prodi ${p.kode}:`,
+        error?.message ?? error
+      );
+
+      throw error;
     }
   }
 

@@ -10,6 +10,12 @@ export const matkulSchema = z.object({
   nama: requiredText("Nama mata kuliah", 3, 100),
   sks: numericValue("SKS", 1, 6),
   semester: numericValue("Semester", 1, 14),
+  kurikulumId: z
+    .number({
+      error: "Kurikulum wajib dipilih.",
+    })
+    .int()
+    .positive("Kurikulum wajib dipilih."),
   prodiId: z
     .number({
       error: "Program studi wajib dipilih.",

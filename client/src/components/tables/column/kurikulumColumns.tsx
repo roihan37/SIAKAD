@@ -11,11 +11,11 @@ export const kurikulumColumns: ColumnDef<Kurikulum>[] = [
     header: "Kode",
   },
   {
-    accessorKey: "namaKurikulum",
+    accessorKey: "nama",
     header: "Nama Kurikulum",
   },
   {
-    accessorKey: "namaProdi",
+    accessorKey: "prodi",
     header: "Nama Prodi",
   },
   {

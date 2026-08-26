@@ -21,33 +21,58 @@ export class Controller {
   // }
 
   static async getAllKurikulum(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
-  try {
-    const page =
-      Number(req.query.page) || 1
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      // =====================================================
+      // PAGINATION
+      // =====================================================
 
-    const limit =
-      Number(req.query.limit) || 10
+      const page =
+        Number(req.query.page) || 1
 
-    const search =
-      String(req.query.search ?? "").trim()
+      const limit =
+        Number(req.query.limit) || 10
 
-    const sortBy =
-      String(req.query.sortBy ?? "createdAt")
+      const skip =
+        (page - 1) * limit
 
-    const sortOrder =
-      req.query.sortOrder === "asc"
-        ? "asc"
-        : "desc"
+      // =====================================================
+      // SEARCH
+      // =====================================================
 
-    const skip = (page - 1) * limit
+      const search =
+        String(
+          req.query.search ?? ""
+        ).trim()
 
-    const where: Prisma.KurikulumWhereInput =
-      search
-        ? {
+      // =====================================================
+      // SORT
+      // =====================================================
+
+      const sortBy =
+        String(
+          req.query.sortBy ?? "createdAt"
+        )
+
+      const sortOrder =
+        req.query.sortOrder === "asc"
+          ? "asc"
+          : "desc"
+
+      // =====================================================
+      // WHERE
+      // =====================================================
+      const searchNumber = Number(search)
+
+      const isYearSearch =
+        search !== "" &&
+        Number.isInteger(searchNumber)
+      const where: Prisma.KurikulumWhereInput =
+        search
+          ? {
             OR: [
               {
                 kode: {
@@ -69,104 +94,175 @@ export class Controller {
                   },
                 },
               },
+
+              ...(isYearSearch
+                ? [
+                  {
+                    tahun: searchNumber,
+                  },
+                ]
+                : []),
             ],
           }
-        : {}
+          : {}
 
-    const [rows, total] =
-      await Promise.all([
-        prisma.kurikulum.findMany({
-          where,
-          skip,
-          take: limit,
+      // =====================================================
+      // ORDER BY
+      // =====================================================
 
-          include: {
-            prodi: true,
+      let orderBy:
+        Prisma.KurikulumOrderByWithRelationInput
 
-            mataKuliah: {
-              include: {
-                mataKuliah: true,
+      switch (sortBy) {
+        case "kode":
+          orderBy = {
+            kode: sortOrder,
+          }
+          break
+
+        case "nama":
+          orderBy = {
+            nama: sortOrder,
+          }
+          break
+
+        case "prodi":
+          orderBy = {
+            prodi: {
+              name: sortOrder,
+            },
+          }
+          break
+
+        case "tahun":
+          orderBy = {
+            tahun: sortOrder,
+          }
+          break
+
+        case "status":
+          orderBy = {
+            isActive: sortOrder,
+          }
+          break
+
+        case "createdAt":
+        default:
+          orderBy = {
+            createdAt: sortOrder,
+          }
+          break
+      }
+
+      // =====================================================
+      // QUERY
+      // =====================================================
+
+      const [rows, total] =
+        await Promise.all([
+          prisma.kurikulum.findMany({
+            where,
+
+            skip,
+            take: limit,
+
+            orderBy,
+
+            include: {
+              prodi: {
+                select: {
+                  id: true,
+                  kode: true,
+                  name: true,
+                },
+              },
+
+              mataKuliah: {
+                select: {
+                  semester: true,
+
+                  mataKuliah: {
+                    select: {
+                      id: true,
+                      kode: true,
+                      nama: true,
+                      sks: true,
+                    },
+                  },
+                },
               },
             },
-          },
+          }),
 
-          orderBy:
-            sortBy === "kode"
-              ? {
-                  kode: sortOrder,
-                }
-              : sortBy === "nama"
-                ? {
-                    nama: sortOrder,
-                  }
-                : sortBy === "tahun"
-                  ? {
-                      tahun: sortOrder,
-                    }
-                  : sortBy === "status"
-                    ? {
-                        isActive: sortOrder,
-                      }
-                    : sortBy === "prodi"
-                      ? {
-                          prodi: {
-                            name: sortOrder,
-                          },
-                        }
-                      : {
-                          createdAt: sortOrder,
-                        },
-        }),
+          prisma.kurikulum.count({
+            where,
+          }),
+        ])
 
-        prisma.kurikulum.count({
-          where,
-        }),
-      ])
+      // =====================================================
+      // FORMAT RESPONSE
+      // =====================================================
 
-    const kurikulum = rows.map((item) => {
-      const totalSks =
-        item.mataKuliah.reduce(
-          (total, detail) =>
-            total + detail.mataKuliah.sks,
-          0
-        )
+      const kurikulum = rows.map(
+        (item) => {
+          const totalSks =
+            item.mataKuliah.reduce(
+              (total, km) =>
+                total +
+                km.mataKuliah.sks,
+              0
+            )
 
-      return {
-        id: item.id,
+          return {
+            id: item.id,
 
-        kode: item.kode,
+            kode: item.kode,
 
-        namaKurikulum: item.nama,
+            nama: item.nama,
 
-        namaProdi: item.prodi.name,
+            prodi:
+              item.prodi.name,
 
-        tahun: item.tahun,
+            tahun:
+              item.tahun,
 
-        totalSks,
+            totalSks,
 
-        status: item.isActive
-          ? "Aktif"
-          : "Tidak Aktif",
-      }
-    })
+            status:
+              item.isActive
+                ? "Aktif"
+                : "Tidak Aktif",
+          }
+        }
+      )
 
-    res.status(200).json({
-      kurikulum,
+      // =====================================================
+      // RESPONSE
+      // =====================================================
 
-      pagination: {
-        page,
-        limit,
-        totalRows: total,
-        totalPages: Math.max(
-          1,
-          Math.ceil(total / limit)
-        ),
-      },
-    })
-  } catch (error) {
-    next(error)
+      
+      res.status(200).json({
+        kurikulum,
+
+        pagination: {
+          page,
+          limit,
+
+          totalRows: total,
+
+          totalPages:
+            Math.max(
+              1,
+              Math.ceil(
+                total / limit
+              )
+            ),
+        },
+      })
+    } catch (error) {
+      next(error)
+    }
   }
-}
 
   // static async getKurikulumById(req: Request, res: Response, next: NextFunction) {
   //   try {

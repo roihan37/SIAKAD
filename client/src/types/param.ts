@@ -37,5 +37,6 @@ export interface CreateMatkulPayload {
   nama: string;
   sks: number;
   semester: number;
+  kurikulumId: number
   prodiId: number;
 }

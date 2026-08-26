@@ -13,40 +13,132 @@ export class Controller {
         kode,
         nama,
         sks,
-        semester,
         kurikulumId,
-      } = req.body;
+        semester,
+        wajib,
+      } = req.body
 
-      const mk = await prisma.$transaction(
-        async (tx) => {
-          const mataKuliah =
-            await tx.mataKuliah.create({
-              data: {
-                kode,
-                nama,
-                sks,
-              },
-            });
+      // ==========================================
+      // VALIDASI DASAR
+      // ==========================================
 
-          await tx.kurikulumMataKuliah.create({
-            data: {
-              kurikulumId,
-              mataKuliahId: mataKuliah.id,
-              semester,
-              wajib: true,
-            },
-          });
+      if (
+        !kode ||
+        !nama ||
+        !kurikulumId ||
+        !semester
+      ) {
+        return res.status(400).json({
+          message:
+            "Kode, nama, SKS, kurikulum, dan semester wajib diisi.",
+        })
+      }
 
-          return mataKuliah;
-        }
-      );
+      if (Number(sks) <= 0) {
+        return res.status(400).json({
+          message: "SKS harus lebih dari 0.",
+        })
+      }
+
+      if (
+        Number(semester) < 1 ||
+        Number(semester) > 8
+      ) {
+        return res.status(400).json({
+          message:
+            "Semester harus berada antara 1 sampai 8.",
+        })
+      }
+
+      // ==========================================
+      // CEK KURIKULUM
+      // ==========================================
+
+      const kurikulum =
+        await prisma.kurikulum.findUnique({
+          where: {
+            id: Number(kurikulumId),
+          },
+        })
+
+      if (!kurikulum) {
+        return res.status(404).json({
+          message:
+            "Kurikulum tidak ditemukan.",
+        })
+      }
+
+      // ==========================================
+      // CEK KODE MATA KULIAH
+      // ==========================================
+
+      const existing =
+        await prisma.mataKuliah.findUnique({
+          where: {
+            kode: String(kode).trim(),
+          },
+        })
+
+      if (existing) {
+        return res.status(409).json({
+          message:
+            "Kode mata kuliah sudah digunakan.",
+        })
+      }
+
+      // ==========================================
+      // TRANSACTION
+      // ==========================================
+
+      const result =
+        await prisma.$transaction(
+          async (tx) => {
+            // 1. Buat Mata Kuliah
+            const mataKuliah =
+              await tx.mataKuliah.create({
+                data: {
+                  kode: String(kode).trim(),
+                  nama: String(nama).trim(),
+                  sks: Number(sks),
+                },
+              })
+
+            // 2. Hubungkan dengan Kurikulum
+            const kurikulumMataKuliah =
+              await tx.kurikulumMataKuliah.create({
+                data: {
+                  kurikulumId:
+                    Number(kurikulumId),
+
+                  mataKuliahId:
+                    mataKuliah.id,
+
+                  semester:
+                    Number(semester),
+
+                  wajib:
+                    wajib ?? true,
+                },
+              })
+
+            return {
+              mataKuliah,
+              kurikulumMataKuliah,
+            }
+          }
+        )
+
+      // ==========================================
+      // RESPONSE
+      // ==========================================
 
       res.status(201).json({
-        message: "Mata Kuliah berhasil dibuat",
-        mk,
-      });
-    } catch (error) {
-      next(error);
+        message:
+          "Mata Kuliah berhasil ditambahkan.",
+        data: result,
+      })
+    } catch (error: any) {
+      next(error)
     }
   }
 
@@ -62,116 +154,137 @@ export class Controller {
   }
 
   static async getAllMataKuliah(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
-  try {
-    const page = Number(req.query.page) || 1
-    const limit = Number(req.query.limit) || 20
-    const search = String(req.query.search ?? "")
-    
-    const sortOrder = req.query.sortOrder === "asc"
-        ? "asc"
-        : "desc"
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      const page =
+        Number(req.query.page) || 1
 
-    const skip = (page - 1) * limit
+      const limit =
+        Number(req.query.limit) || 10
 
-    const where: Prisma.MataKuliahWhereInput = search
-      ? {
-          OR: [
-            {
-              kode: {
-                contains: search,
-                mode: Prisma.QueryMode.insensitive,
+      const search =
+        String(req.query.search ?? "").trim()
+
+      const sortOrder =
+        req.query.sortOrder === "asc"
+          ? "asc"
+          : "desc"
+
+      const skip = (page - 1) * limit
+
+      const where: Prisma.MataKuliahWhereInput =
+        search
+          ? {
+            OR: [
+              {
+                kode: {
+                  contains: search,
+                  mode: Prisma.QueryMode.insensitive,
+                },
               },
-            },
-            {
-              nama: {
-                contains: search,
-                mode: Prisma.QueryMode.insensitive,
+              {
+                nama: {
+                  contains: search,
+                  mode: Prisma.QueryMode.insensitive,
+                },
               },
+              {
+                kurikulum: {
+                  some: {
+                    kurikulum: {
+                      prodi: {
+                        name: {
+                          contains: search,
+                          mode: Prisma.QueryMode.insensitive,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            ],
+          }
+          : {}
+
+      const [rows, total] =
+        await Promise.all([
+          prisma.mataKuliah.findMany({
+            where,
+            skip,
+            take: limit,
+
+            orderBy: {
+              createdAt: sortOrder,
             },
-          ],
-        }
-      : {}
 
-    const [rows, total] = await Promise.all([
-      prisma.mataKuliah.findMany({
-        where,
-        skip,
-        take: limit,
-
-        orderBy: {
-          createdAt: sortOrder,
-        },
-
-        include: {
-          kurikulum: {
             include: {
-              kurikulum : {
-                include : {
-                  prodi : true
-                }
-              }
+              kurikulum: {
+                where: {
+                  kurikulum: {
+                    isActive: true,
+                  },
+                },
+
+                include: {
+                  kurikulum: {
+                    include: {
+                      prodi: true,
+                    },
+                  },
+                },
+              },
             },
-          },
-        },
-      }),
+          }),
 
-      prisma.mataKuliah.count({
-        where,
-      }),
-    ])
+          prisma.mataKuliah.count({
+            where,
+          }),
+        ])
 
-    type MataKuliahRow = {
-      kode: string
-      nama: string
-      sks: number
-      prodi: string | null
-      semester: number | null
-    }
+      const mataKuliah = rows.map(
+        (mk) => {
+          const kurikulumAktif =
+            mk.kurikulum[0]
 
-    const flattened: MataKuliahRow[] = []
-
-    for (const mk of rows) {
-      if (mk.kurikulum.length > 0) {
-        for (const k of mk.kurikulum) {
-          flattened.push({
+          return {
+            id: mk.id,
             kode: mk.kode,
             nama: mk.nama,
             sks: mk.sks,
-            prodi: k.kurikulum.prodi?.name ?? null,
-            semester: k.semester ?? null,
-          })
-        }
-      } else {
-        flattened.push({
-          kode: mk.kode,
-          nama: mk.nama,
-          sks: mk.sks,
-          prodi: null,
-          semester: null,
-        })
-      }
-    }
 
-    res.status(200).json({
-      mataKuliah: flattened,
-      pagination: {
-        page,
-        limit,
-        totalPages: Math.max(
-          1,
-          Math.ceil(total / limit)
-        ),
-        totalRows: total,
-      },
-    })
-  } catch (error) {
-    next(error)
+            prodi:
+              kurikulumAktif
+                ?.kurikulum
+                .prodi
+                .name ?? null,
+
+            semester:
+              kurikulumAktif
+                ?.semester ?? null,
+          }
+        }
+      )
+
+      res.status(200).json({
+        mataKuliah,
+
+        pagination: {
+          page,
+          limit,
+          totalRows: total,
+          totalPages: Math.max(
+            1,
+            Math.ceil(total / limit)
+          ),
+        },
+      })
+    } catch (error) {
+      next(error)
+    }
   }
-}
 
   static async getMataKuliahById(req: Request, res: Response, next: NextFunction) {
     try {
