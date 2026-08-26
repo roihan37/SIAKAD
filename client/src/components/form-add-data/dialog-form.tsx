@@ -28,6 +28,7 @@ import { ProdiField } from "./prodi-form"
 import RuanganField from "./ruangan-form"
 import { Spinner } from "../ui/spinner"
 import MatkulField from "./matkul-form"
+import { TAkademikField } from "./tAkademik-form"
 
 
 type EntityType =
@@ -37,6 +38,7 @@ type EntityType =
   | "prodi"
   | "matkul"
   | "ruangan"
+  | "tAkademik"
 
 
 const getEntityType = (pathname: string): EntityType => {
@@ -60,6 +62,10 @@ const getEntityType = (pathname: string): EntityType => {
 
   if (pathname.startsWith("/ruangan")) {
     return "ruangan"
+  }
+
+  if (pathname.startsWith("/tahun-akademik")) {
+    return "tAkademik"
   }
 
   return "mahasiswa"
@@ -90,6 +96,10 @@ const entityConfig = {
   ruangan: {
     label: "Ruangan",
     formId: "ruangan-form",
+  },
+  tAkademik: {
+    label: "Tahun Akademik",
+    formId: "tahun-akademik-form",
   },
 } as const
 
@@ -207,6 +217,17 @@ export function DialogForm() {
       return (
         <MatkulField
           prodi={prodi}
+          isConfirmed={isConfirmed}
+          setIsConfirmed={setIsConfirmed}
+          onSuccess={handleClose}
+          onError={setSubmitError}
+        />
+      )
+    }
+
+    else if (entityType === "tAkademik") {
+      return (
+        <TAkademikField
           isConfirmed={isConfirmed}
           setIsConfirmed={setIsConfirmed}
           onSuccess={handleClose}

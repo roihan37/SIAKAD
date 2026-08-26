@@ -1,10 +1,9 @@
 import { api } from "@/api/axios";
-import type { Ruangan, TahunAkademik } from "@/types/campus";
 import type { PaginationParams } from "@/types/param";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
-export const getAllTAkademik= createAsyncThunk(
-  "tAkademik/getAll",
+export const getAllKurikulum= createAsyncThunk(
+  "kurikulum/getAll",
   async (
     params: Partial<PaginationParams> | undefined,
     thunkAPI
@@ -19,7 +18,7 @@ export const getAllTAkademik= createAsyncThunk(
     } = params ?? {};
 
     try {
-      const response = await api.get("/tahun-akademik", {
+      const response = await api.get("/kurikulum", {
         params: {
           page,
           limit,
@@ -28,7 +27,9 @@ export const getAllTAkademik= createAsyncThunk(
           sortOrder,
         },
       });
-      console.log("response.data", response.data);
+
+      console.log(response.data);
+      
       return response.data;
 
     } catch (err: any) {
@@ -39,16 +40,16 @@ export const getAllTAkademik= createAsyncThunk(
   }
 );
 
-export const createTAkademik = createAsyncThunk(
-  "tAkademik/create",
-  async (payload: TahunAkademik, thunkAPI) => {
-    try {
-      console.log(payload);
+// export const createTAkademik = createAsyncThunk(
+//   "kurikulum/create",
+//   async (payload: TahunAkademik, thunkAPI) => {
+//     try {
+//       console.log(payload);
       
-      const response = await api.post("/tahun-akademik", payload);
-      return response.data;
-    } catch (err: any) {
-      return thunkAPI.rejectWithValue(err.response?.data?.message ?? "Gagal membuat mata kuliah");
-    }
-  }
-);
+//       const response = await api.post("/kurikulum", payload);
+//       return response.data;
+//     } catch (err: any) {
+//       return thunkAPI.rejectWithValue(err.response?.data?.message ?? "Gagal membuat mata kuliah");
+//     }
+//   }
+// );

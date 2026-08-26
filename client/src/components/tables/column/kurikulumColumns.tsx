@@ -1,11 +1,23 @@
 import { type ColumnDef } from "@tanstack/react-table";
 import { createActionColumn } from "../action-column";
 import { createSelectColumn } from "../select-column";
-import type { TahunAkademik } from "@/types/campus";
+import type { Kurikulum } from "@/types/campus";
 import { Badge } from "@/components/ui/badge";
 
-export const tAkademikColumns: ColumnDef<TahunAkademik>[] = [
+export const kurikulumColumns: ColumnDef<Kurikulum>[] = [
   createSelectColumn(),
+  {
+    accessorKey: "kode",
+    header: "Kode",
+  },
+  {
+    accessorKey: "namaKurikulum",
+    header: "Nama Kurikulum",
+  },
+  {
+    accessorKey: "namaProdi",
+    header: "Nama Prodi",
+  },
   {
     accessorKey: "tahun",
     header: "Tahun",
@@ -15,7 +27,11 @@ export const tAkademikColumns: ColumnDef<TahunAkademik>[] = [
     header: "Semester",
   },
   {
-    accessorKey: "isActive",
+    accessorKey: "totalSks",
+    header: "Total SKS",
+  },
+  {
+    accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
       const isActive = row.getValue<boolean>("isActive")

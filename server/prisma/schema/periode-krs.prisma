@@ -1,0 +1,12 @@
+model PeriodeKRS {
+  id              Int @id @default(autoincrement())
+
+  tahunAkademikId Int
+
+  mulai           DateTime
+  selesai         DateTime
+
+  isActive        Boolean @default(false)
+
+  tahunAkademik   TahunAkademik @relation( fields: [tahunAkademikId], references: [id] )
+}

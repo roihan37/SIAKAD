@@ -51,6 +51,8 @@ export const positiveId = (label: string) =>
 
 export const email = z.email("Format email tidak valid.")
 
+export const isActive = z.boolean
+
 export const phoneNumber = requiredText(
   "Nomor telepon",
   8,
@@ -86,4 +88,11 @@ export const jabatan = z.enum(
   {
     error: "Jabatan wajib dipilih.",
   },
+)
+
+export const semester = z.enum(
+  ["GANJIL", "GENAP"],
+    {
+      error: "Semester wajib dipilih.",
+    }
 )

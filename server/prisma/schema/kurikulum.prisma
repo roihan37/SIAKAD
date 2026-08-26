@@ -1,12 +1,20 @@
 model Kurikulum {
-  id            Int   @id @default(autoincrement())
-  prodiId       Int
-  mataKuliahId  Int
-  semester      Int
-  wajib         Boolean  @default(true)
+  id        Int      @id @default(autoincrement())
+  kode      String
+  nama      String
 
-  prodi         Prodi       @relation(fields: [prodiId], references: [id])
-  mataKuliah    MataKuliah  @relation(fields: [mataKuliahId], references: [id])
+  prodiId   Int
+  tahun     Int
 
-  @@unique([prodiId, mataKuliahId])
+  isActive  Boolean  @default(false)
+
+  prodi     Prodi    @relation(fields: [prodiId], references: [id])
+
+  mataKuliah KurikulumMataKuliah[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([prodiId, kode])
+  @@unique([prodiId, tahun])
 }

@@ -1,0 +1,15 @@
+model KurikulumMataKuliah {
+  id           Int @id @default(autoincrement())
+
+  kurikulumId  Int
+  mataKuliahId Int
+
+  semester     Int
+  wajib        Boolean @default(true)
+
+  kurikulum    Kurikulum  @relation(fields: [kurikulumId],references: [id])
+
+  mataKuliah   MataKuliah @relation(fields: [mataKuliahId],references: [id])
+
+  @@unique([kurikulumId, mataKuliahId])
+}

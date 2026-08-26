@@ -64,5 +64,15 @@ export type TahunAkademik = {
   id?: string
   tahun: string
   semester: string
+  isActive: boolean
+}
+
+export type Kurikulum = {
+  id: string
+  namaKurikulum: string
+  namaProdi: string
+  tahun: number | null
+  semester: string
+  totalSks: number
   status: string
 }

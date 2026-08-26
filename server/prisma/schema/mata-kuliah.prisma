@@ -4,7 +4,7 @@ model MataKuliah {
   nama        String
   sks         Int
 
-  kurikulum   Kurikulum[]
+  kurikulum   KurikulumMataKuliah[]
   kelasMK     KelasMataKuliah[]
 
   createdAt   DateTime @default(now())

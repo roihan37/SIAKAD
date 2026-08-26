@@ -1,20 +1,20 @@
-import { tAkademikColumns } from "@/components/tables/column/tAkademikColumns"
+import { kurikulumColumns } from "@/components/tables/column/kurikulumColumns"
 import { DataTable } from "@/components/tables/data-table"
-import { getAllTAkademik } from "@/features/action/tAkademikThunk"
-import { setPage, setSearch, setSorting } from "@/features/slice/ruanganSlice"
+import { getAllKurikulum } from "@/features/action/kurikulumThunk"
+import { setPage, setSearch, setSorting } from "@/features/slice/kurikulumSlice"
 import { useAppDispatch, useAppSelector } from "@/hooks/redux"
 import type { SortingState } from "@tanstack/react-table"
 import { useEffect, useState } from "react"
 
-export default function TahunAkadPage() {
+export default function KurikulumPage() {
    const dispatch = useAppDispatch()
    const {
-        tAkademik,
+        kurikulum,
         page,
         totalPages,
         search,
         sortBy,
-        sortOrder, } = useAppSelector((state) => state.tAkademik)
+        sortOrder, } = useAppSelector((state) => state.kurikulum)
     const [searchInput, setSearchInput] = useState(search)
     const sorting: SortingState = sortBy ? [{ id: sortBy, desc: sortOrder === "desc" }] : []
 
@@ -36,7 +36,7 @@ export default function TahunAkadPage() {
         }, [searchInput, dispatch])
     
         useEffect(() => {
-            dispatch(getAllTAkademik({ page, limit: 10, search, sortBy, sortOrder }));
+            dispatch(getAllKurikulum({ page, limit: 10, search, sortBy, sortOrder }));
         }, [dispatch, page, search, sortBy, sortOrder]);
     
     
@@ -48,8 +48,8 @@ export default function TahunAkadPage() {
                     Tahun Akademik
                 </div>
                 <DataTable
-                    columns={tAkademikColumns}
-                    data={tAkademik}
+                    columns={kurikulumColumns}
+                    data={kurikulum}
                     searchValue={searchInput}
                     onSearchChange={setSearchInput}
                     pageIndex={page - 1}

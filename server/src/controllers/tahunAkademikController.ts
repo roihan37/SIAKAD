@@ -5,8 +5,15 @@ import { Prisma } from "@prisma/client";
 export class Controller {
   static async createTahunAkademik(req: Request, res: Response, next: NextFunction) {
     try {
-      const { tahun, semester } = req.body;
-      const ta = await prisma.tahunAkademik.create({ data: { tahun, semester } });
+      const { tahun, semester, isActive } = req.body
+
+      const ta = await prisma.tahunAkademik.create({
+        data: {
+          tahun,
+          semester,
+          isActive,
+        },
+      })
       res.status(200).json({ message: "Tahun Akademik created", ta });
     } catch (error) {
       next(error);

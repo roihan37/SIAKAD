@@ -9,7 +9,8 @@ import PStudiPage from "@/pages/ProdiPage";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import PublicRoute from "@/components/PublicRoute";
 import RuanganPage from "@/pages/RuanganPage";
-import TahunAkadPage from "@/pages/TahunAkadPage";
+import TAkademikPage from "@/pages/TAkademikPage";
+import KurikulumPage from "@/pages/KurikulumPage";
 
 const router = createBrowserRouter([
   {
@@ -44,7 +45,11 @@ const router = createBrowserRouter([
           },
           {
             path: "/tahun-akademik",
-            element: <TahunAkadPage />,
+            element: <TAkademikPage />,
+          },
+          {
+            path: "/kurikulum",
+            element: <KurikulumPage />,
           },
         ],
       },
