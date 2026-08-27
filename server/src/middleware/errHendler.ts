@@ -19,15 +19,61 @@ export const errorHandler: ErrorRequestHandler = (
       meta?.driverAdapterError?.cause?.constraint?.fields ??
       []
 
-    const formatFieldName = (text: string) =>
-      text
-        .replace(/_/g, " ")
-        .replace(/\b\w/g, (char) => char.toUpperCase())
+    const formatFieldName = (text: string) => {
+      const field = text.replace(/^["']|["']$/g, "")
+
+      const fieldMap: Record<string, string> = {
+        prodiId: "Prodi",
+        mataKuliahId: "Mata Kuliah",
+        kurikulumId: "Kurikulum",
+        fakultasId: "Fakultas",
+        tahunAkademikId: "Tahun Akademik",
+      }
+
+      return (
+        fieldMap[field] ??
+        field
+          .replace(/_/g, " ")
+          .replace(/\b\w/g, (char) =>
+            char.toUpperCase()
+          )
+      )
+    }
+
+    const formatDuplicateMessage = (
+      fields: string[]
+    ) => {
+      const names = fields.map(formatFieldName)
+
+      // Jadikan semua field setelah field pertama lowercase
+      const formattedNames = names.map(
+        (name, index) =>
+          index === 0
+            ? name
+            : name.toLowerCase()
+      )
+
+      if (formattedNames.length === 1) {
+        return `${formattedNames[0]} sudah terdaftar`
+      }
+
+      if (formattedNames.length === 2) {
+        return `${formattedNames[0]} dan ${formattedNames[1]} sudah terdaftar`
+      }
+
+      const last =
+        formattedNames[formattedNames.length - 1]
+
+      const first =
+        formattedNames.slice(0, -1).join(", ")
+
+      return `${first} dan ${last} sudah terdaftar`
+    }
 
     return res.status(409).json({
       code: "DUPLICATE_DATA",
       message: Array.isArray(fields)
-        ? `${fields.map(formatFieldName).join(", ")} sudah terdaftar`
+        ? formatDuplicateMessage(fields)
         : "Data sudah terdaftar",
     })
   }

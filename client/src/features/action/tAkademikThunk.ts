@@ -1,5 +1,5 @@
 import { api } from "@/api/axios";
-import type { Ruangan, TahunAkademik } from "@/types/campus";
+import type { TahunAkademik } from "@/types/campus";
 import type { PaginationParams } from "@/types/param";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
@@ -43,7 +43,7 @@ export const createTAkademik = createAsyncThunk(
   "tAkademik/create",
   async (payload: TahunAkademik, thunkAPI) => {
     try {
-      console.log(payload);
+      
       
       const response = await api.post("/tahun-akademik", payload);
       return response.data;

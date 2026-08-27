@@ -6,6 +6,7 @@ export interface PaginationParams {
   sortOrder?: "asc" | "desc"
   prodiId?: number
   fakultasId?: number
+  tahunAkademikId?: number
 }
 
   export interface CreateStudentPayload {

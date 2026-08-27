@@ -16,7 +16,8 @@ export const getAllJadwal = createAsyncThunk(
       search = "",
       sortBy = "name",
       sortOrder = "desc",
-      prodiId = 1
+      prodiId,
+      tahunAkademikId,
     } = params ?? {};
 
     try {
@@ -27,7 +28,8 @@ export const getAllJadwal = createAsyncThunk(
           search,
           sortBy,
           sortOrder,
-          prodiId
+          prodiId,
+          tahunAkademikId
         },
       });
       // console.log("response.data", response.data);

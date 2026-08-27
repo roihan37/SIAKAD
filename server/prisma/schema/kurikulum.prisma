@@ -1,6 +1,6 @@
 model Kurikulum {
   id        Int      @id @default(autoincrement())
-  kode      String
+  kode      String   
   nama      String
 
   prodiId   Int
@@ -15,6 +15,5 @@ model Kurikulum {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([prodiId, kode])
   @@unique([prodiId, tahun])
 }

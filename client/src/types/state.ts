@@ -69,5 +69,6 @@ export interface Pagination {
     search : string,
     sortBy: string
     sortOrder: "asc" | "desc"
-    prodiId? : number
+    prodiId? : number | undefined
+    tahunAkademikId?: number | undefined
 }

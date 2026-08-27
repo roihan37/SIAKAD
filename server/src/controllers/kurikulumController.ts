@@ -3,13 +3,42 @@ import { prisma } from "../lib/prisma";
 import { Prisma } from "@prisma/client";
 
 export class Controller {
-  // static async createKurikulum(req: Request, res: Response, next: NextFunction) {
-  //   try {
-  //     const { prodiId, mataKuliahId, semester, wajib } = req.body;
-  //     const k = await prisma.kurikulum.create({ data: { prodiId: Number(prodiId), mataKuliahId: Number(mataKuliahId), semester: Number(semester), wajib: Boolean(wajib) } });
-  //     res.status(200).json({ message: "Kurikulum created", k });
-  //   } catch (error) { next(error); }
-  // }
+  static async createKurikulum(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      const {
+        kode,
+        nama,
+        prodiId,
+        tahun,
+        isActive,
+      } = req.body
+
+      const kurikulum =
+        await prisma.kurikulum.create({
+          data: {
+            kode: String(kode).trim(),
+            nama: String(nama).trim(),
+            prodiId: Number(prodiId),
+            tahun: Number(tahun),
+            isActive
+          },
+          include: {
+            prodi: true,
+          },
+        })
+        
+      res.status(201).json({
+        message: "Kurikulum berhasil dibuat",
+        kurikulum,
+      })
+    } catch (error) {
+      next(error)
+    }
+  }
 
   // static async updateKurikulum(req: Request, res: Response, next: NextFunction) {
   //   try {
@@ -228,10 +257,8 @@ export class Controller {
 
             totalSks,
 
-            status:
+            isActive:
               item.isActive
-                ? "Aktif"
-                : "Tidak Aktif",
           }
         }
       )
@@ -240,7 +267,7 @@ export class Controller {
       // RESPONSE
       // =====================================================
 
-      
+
       res.status(200).json({
         kurikulum,
 

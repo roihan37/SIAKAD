@@ -36,7 +36,7 @@ export type Fakultas = {
 }
 
 export type ProgramStudi = {
-  id: string
+  id: number
   kode: string
   name: string
   fakultas: string
@@ -61,7 +61,7 @@ export type Ruangan = {
 }
 
 export type TahunAkademik = {
-  id?: string
+  id?: number
   tahun: string
   semester: string
   isActive: boolean
@@ -91,4 +91,10 @@ export type Jadwal = {
   ruangan : string
   kodeRuangan : string
   semester : string
+}
+
+
+export interface ComboboxItemType {
+  id: number
+  label: string
 }

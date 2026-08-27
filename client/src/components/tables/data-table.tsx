@@ -28,36 +28,70 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
+import {
+  Columns3,
+} from "lucide-react"
 
 import { Input } from "@/components/ui/input"
 import { DialogForm } from "../form-add-data/dialog-form"
+import type { ComboboxItemType } from "@/types/campus"
 
 
 interface DataTableProps<TData, TValue> {
+  // Table
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
+
+  // Search
   searchValue: string
   onSearchChange: (value: string) => void
-  pageIndex: number       // 0-based
+
+  // Pagination
+  pageIndex: number
   pageCount: number
   onPageChange: (pageIndex: number) => void
-  sorting: SortingState 
+
+  // Sorting
+  sorting: SortingState
   onSortingChange: (sorting: SortingState) => void
+
+  // Filter Program Studi
+  prodi?: ComboboxItemType[]
+  selectedProdiId?: number
+  onProdiChange?: (
+    value: number | undefined
+  ) => void
+
+  // Filter Tahun Akademik
+  tahunAkademik?: ComboboxItemType[]
+  selectedTahunAkademikId?: number
+  onTahunAkademikChange?: (
+    value: number | undefined
+  ) => void
+
+  // Loading
   isLoading?: boolean
+  toolbar?: React.ReactNode
+
 }
 
 
 export function DataTable<TData, TValue>({
   columns,
   data,
+
   searchValue,
   onSearchChange,
+
   pageIndex,
   pageCount,
   onPageChange,
+
   sorting,
   onSortingChange,
-  // isLoading,
+
+  toolbar,
+
 }: DataTableProps<TData, TValue>) {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
@@ -90,55 +124,80 @@ export function DataTable<TData, TValue>({
       pagination: { pageIndex, pageSize: 10 },
     },
   })
+
+
+
   return (
     <div>
-      <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
-        {/* Search + Columns */}
-        <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
+      <div className="space-y-3 py-4">
+
+        {/* Search + Action */}
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+
           <Input
-            placeholder="Filter Nama, NIM, NIDN, Kode..."
+            placeholder="Cari mata kuliah, dosen, kelas..."
             value={searchValue}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full sm:max-w-sm"
+            onChange={(e) =>
+              onSearchChange(e.target.value)
+            }
+            className="w-full lg:max-w-md"
           />
 
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button
-                  variant="outline"
-                  className="w-full sm:w-auto"
-                >
-                  Columns
-                </Button>
-              }
-            />
+          <div className="flex w-full gap-2 sm:w-auto">
 
-            <DropdownMenuContent align="end">
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) =>
-                      column.toggleVisibility(!!value)
-                    }
+            <div className="flex-1 sm:flex-none">
+              <DialogForm />
+            </div>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    variant="outline"
+                    className="flex-1 sm:flex-none"
                   >
-                    {(column.columnDef.meta as any)?.label ??
-                      column.id}
-                  </DropdownMenuCheckboxItem>
-                ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                    <Columns3 className="size-4" />
+
+                    <span className="hidden sm:inline">
+                      Columns
+                    </span>
+                  </Button>
+                }
+              />
+
+              <DropdownMenuContent align="end">
+                {table
+                  .getAllColumns()
+                  .filter(
+                    (column) =>
+                      column.getCanHide()
+                  )
+                  .map((column) => (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      className="capitalize"
+                      checked={
+                        column.getIsVisible()
+                      }
+                      onCheckedChange={(value) =>
+                        column.toggleVisibility(
+                          !!value
+                        )
+                      }
+                    >
+                      {(column.columnDef.meta as any)
+                        ?.label ?? column.id}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+          </div>
         </div>
 
-        {/* Add */}
-        <div className="w-full sm:w-auto">
-          <DialogForm />
-        </div>
+        {/* Custom Toolbar */}
+        {toolbar}
+
       </div>
       <div className="overflow-hidden rounded-md border">
         <Table>

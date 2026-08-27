@@ -13,7 +13,8 @@ const initialState: JadwalState = {
     totalRows: 0,
     sortBy: "name",
     sortOrder: "desc",
-    prodiId : 1,
+    prodiId: undefined,
+    tahunAkademikId : undefined,
 
     isCreatingJadwal: false
 }
@@ -31,6 +32,21 @@ const jadwalSilce = createSlice({
         setSorting: (state, action: PayloadAction<{ sortBy: string; sortOrder: "asc" | "desc" }>) => {
             state.sortBy = action.payload.sortBy
             state.sortOrder = action.payload.sortOrder
+            state.page = 1
+        },
+        setProdiId: (
+            state,
+            action: PayloadAction<number | undefined>
+        ) => {
+            state.prodiId = action.payload
+            state.page = 1
+        },
+
+        setTahunAkademikId: (
+            state,
+            action: PayloadAction<number | undefined>
+        ) => {
+            state.tahunAkademikId = action.payload
             state.page = 1
         },
     },
@@ -72,5 +88,5 @@ const jadwalSilce = createSlice({
 
     }
 })
-export const { setPage, setSearch, setSorting } = jadwalSilce.actions;
+export const { setPage, setSearch, setSorting, setProdiId, setTahunAkademikId } = jadwalSilce.actions;
 export default jadwalSilce.reducer
