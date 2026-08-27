@@ -1,10 +1,10 @@
 import { api } from "@/api/axios";
-import type { Kurikulum } from "@/types/campus";
+import type { Jadwal } from "@/types/campus";
 import type { PaginationParams } from "@/types/param";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
-export const getAllKurikulum= createAsyncThunk(
-  "kurikulum/getAll",
+export const getAllJadwal = createAsyncThunk(
+  "jadwal/getAll",
   async (
     params: Partial<PaginationParams> | undefined,
     thunkAPI
@@ -16,21 +16,21 @@ export const getAllKurikulum= createAsyncThunk(
       search = "",
       sortBy = "name",
       sortOrder = "desc",
+      prodiId = 1
     } = params ?? {};
 
     try {
-      const response = await api.get("/kurikulum", {
+      const response = await api.get("/jadwal", {
         params: {
           page,
           limit,
           search,
           sortBy,
           sortOrder,
+          prodiId
         },
       });
-
-      console.log(response.data);
-      
+      // console.log("response.data", response.data);
       return response.data;
 
     } catch (err: any) {
@@ -41,15 +41,14 @@ export const getAllKurikulum= createAsyncThunk(
   }
 );
 
-export const createKurikulum = createAsyncThunk(
-  "kurikulum/create",
-  async (payload: Kurikulum, thunkAPI) => {
+export const createJadwal = createAsyncThunk(
+  "jadwal/create",
+  async (payload: Jadwal, thunkAPI) => {
     try {
-      
-      const response = await api.post("/kurikulum", payload);
+      const response = await api.post("/ruangan", payload);
       return response.data;
     } catch (err: any) {
-      return thunkAPI.rejectWithValue(err.response?.data?.message ?? "Gagal membuat mata kuliah");
+      return thunkAPI.rejectWithValue(err.response?.data?.message ?? "Gagal membuat Jadwal");
     }
   }
 );

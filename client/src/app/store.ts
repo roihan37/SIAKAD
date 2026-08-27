@@ -4,8 +4,9 @@ import usersReducer from '@/features/slice/usersSlice'
 import campusReducer from '@/features/slice/campusSlice'
 import matkulReducer from '@/features/slice/matkulSlice'
 import ruanganReducer from '@/features/slice/ruanganSlice'
-import tAkademikReducer from '@/features/slice/tAkademik'
+import tAkademikReducer from '@/features/slice/tAkademikSlice'
 import kurikulumReducer from '@/features/slice/kurikulumSlice'
+import jadwalReducer from '@/features/slice/jadwalSlice'
 import { injectStore } from '@/api/axios'
 import { toastMiddleware } from './middleware/toast-middleware'
 // ...
@@ -18,7 +19,8 @@ export const store = configureStore({
     matkul: matkulReducer,
     ruangan: ruanganReducer,
     tAkademik: tAkademikReducer,
-    kurikulum: kurikulumReducer
+    kurikulum: kurikulumReducer,
+    jadwal: jadwalReducer
   },
 
   middleware: (getDefaultMiddleware) =>

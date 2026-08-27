@@ -8,18 +8,12 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
-import { useForm, type UseFormReturn } from "react-hook-form"
+import { useForm } from "react-hook-form"
 import { ruanganSchema, type RuanganFormInput, type RuanganFormValues } from "@/schemas"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useAppDispatch } from "@/hooks/redux"
 import type { RuanganFieldProps } from "@/types/props"
-import { useState } from "react"
 import { createRuangan, getAllRuangan } from "@/features/action/ruanganThunk"
-
-
-
-
-
 
 export function RuanganField({
   onSuccess,
@@ -46,9 +40,6 @@ const ruanganForm = useForm<
 
   const {
     register,
-    control,
-    watch,
-    setValue,
     reset,
     formState: {
       errors,

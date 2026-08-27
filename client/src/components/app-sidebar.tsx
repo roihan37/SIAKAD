@@ -102,7 +102,7 @@ const data = {
       items: [
         {
           title: "Jadwal Kuliah",
-          url: "#",
+          url: "/jadwal-kuliah",
         },
         {
           title: "KRS",

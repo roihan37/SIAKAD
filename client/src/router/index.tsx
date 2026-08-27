@@ -11,6 +11,7 @@ import PublicRoute from "@/components/PublicRoute";
 import RuanganPage from "@/pages/RuanganPage";
 import TAkademikPage from "@/pages/TAkademikPage";
 import KurikulumPage from "@/pages/KurikulumPage";
+import JadwalPage from "@/pages/JadwalPage";
 
 const router = createBrowserRouter([
   {
@@ -50,6 +51,10 @@ const router = createBrowserRouter([
           {
             path: "/kurikulum",
             element: <KurikulumPage />,
+          },
+          {
+            path: "/jadwal-kuliah",
+            element: <JadwalPage />,
           },
         ],
       },

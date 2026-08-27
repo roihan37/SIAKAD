@@ -1,6 +1,6 @@
 import type { UsersState } from "@/types/state";
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import { createStudent, getAllLecturers, getAllStudents } from "../action/usersThunk";
+import { createLecturer, createStudent, getAllLecturers, getAllStudents } from "../action/usersThunk";
 
 const initialState : UsersState ={
     error: null,
@@ -40,6 +40,35 @@ const usersSilce = createSlice({
     extraReducers(builder) {
         builder
 
+        // ADD STUDENTS
+        .addCase(createStudent.pending, state => {
+            state.isCreatingStudent = true
+        })
+        .addCase(createStudent.fulfilled, (state) => {
+            state.isCreatingStudent = false
+        })
+        .addCase(createStudent.rejected, (state, action) =>{
+            state.isCreatingStudent = false
+            state.error =
+                typeof action.payload === "string"
+                ? action.payload
+                : action.error.message ?? "Gagal membuat mahasiswa."
+        })
+
+        .addCase(createLecturer.pending, state => {
+            state.isCreatingLecturer = true
+        })
+        .addCase(createLecturer.fulfilled, (state) => {
+            state.isCreatingLecturer = false
+        })
+        .addCase(createLecturer.rejected, (state, action) =>{
+            state.isCreatingLecturer = false
+            state.error =
+                typeof action.payload === "string"
+                ? action.payload
+                : action.error.message ?? "Gagal membuat mahasiswa."
+        })
+
         // STUDENTS
         .addCase(getAllStudents.pending, state => {
             state.isLoadingStudents = true
@@ -57,20 +86,7 @@ const usersSilce = createSlice({
             state.error = action.payload as string;
         })
 
-        // ADD STUDENTS
-        .addCase(createStudent.pending, state => {
-            state.isCreatingStudent = true
-        })
-        .addCase(createStudent.fulfilled, (state) => {
-            state.isCreatingStudent = false
-        })
-        .addCase(createStudent.rejected, (state, action) =>{
-            state.isCreatingStudent = false
-            state.error =
-                typeof action.payload === "string"
-                ? action.payload
-                : action.error.message ?? "Gagal membuat mahasiswa."
-        })
+        
 
         // LECTURERS
         .addCase(getAllLecturers.pending, state => {

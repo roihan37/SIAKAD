@@ -1,4 +1,4 @@
-import type { Dosen, Fakultas, Kurikulum, Mahasiswa, MataKuliah, ProgramStudi, Ruangan, TahunAkademik } from "./campus"
+import type { Dosen, Fakultas, Jadwal, Kurikulum, Mahasiswa, MataKuliah, ProgramStudi, Ruangan, TahunAkademik } from "./campus"
 
 export interface AuthState {
     isLoading : boolean
@@ -22,30 +22,43 @@ export interface CampusState extends Pagination {
     error: string | null
     fakultas: Fakultas[]
     prodi: ProgramStudi[]
+    isCreatingFakultas : boolean
+    isCreatingProdi : boolean
 }
 
 export interface MataKuliahState extends Pagination {
     isLoading : boolean
     error: string | null
     matkul: MataKuliah[]
+    isCreatingMatkul : boolean
 }
 
 export interface RuanganState extends Pagination{
     isLoading : boolean
     error: string | null
     ruangan: Ruangan[]
+    isCreatingRuangan : boolean
 }
 
 export interface TahunAkaState extends Pagination{
     isLoading : boolean
     error: string | null
     tAkademik: TahunAkademik[]
+    isCreatingTAkademik : boolean
 }
 
 export interface KurikulumState extends Pagination {
     isLoading : boolean
     error: string | null
     kurikulum: Kurikulum[]
+    isCreatingKurikulum : boolean
+}
+
+export interface JadwalState extends Pagination{
+    isLoading : boolean
+    error: string | null
+    jadwal: Jadwal[]
+    isCreatingJadwal : boolean
 }
 
 export interface Pagination {
@@ -56,4 +69,5 @@ export interface Pagination {
     search : string,
     sortBy: string
     sortOrder: "asc" | "desc"
+    prodiId? : number
 }

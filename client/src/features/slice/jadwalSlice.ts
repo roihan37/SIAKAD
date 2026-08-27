@@ -1,11 +1,11 @@
-import type { MataKuliahState } from "@/types/state";
+import type { JadwalState } from "@/types/state";
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import { createMatkul, getAllMatkul } from "../action/matkulThunk";
+import { createJadwal, getAllJadwal } from "../action/jadwalThunk";
 
-const initialState: MataKuliahState = {
+const initialState: JadwalState = {
     isLoading: false,
     error: null,
-    matkul: [],
+    jadwal: [],
     search: "",
     page: 1,
     limit: 10,
@@ -13,11 +13,12 @@ const initialState: MataKuliahState = {
     totalRows: 0,
     sortBy: "name",
     sortOrder: "desc",
+    prodiId : 1,
 
-    isCreatingMatkul: false
+    isCreatingJadwal: false
 }
-const matkulSlice = createSlice({
-    name: 'matkul',
+const jadwalSilce = createSlice({
+    name: 'jadwal',
     initialState,
     reducers: {
         setPage: (state, action: PayloadAction<number>) => {
@@ -33,36 +34,37 @@ const matkulSlice = createSlice({
             state.page = 1
         },
     },
+
     extraReducers(builder) {
         builder
 
-            .addCase(createMatkul.pending, state => {
-                state.isCreatingMatkul = true
+            .addCase(createJadwal.pending, state => {
+                state.isCreatingJadwal = true
             })
-            .addCase(createMatkul.fulfilled, (state) => {
-                state.isCreatingMatkul = false
+            .addCase(createJadwal.fulfilled, (state) => {
+                state.isCreatingJadwal = false
             })
-            .addCase(createMatkul.rejected, (state, action) => {
-                state.isCreatingMatkul = false
+            .addCase(createJadwal.rejected, (state, action) => {
+                state.isCreatingJadwal = false
                 state.error =
                     typeof action.payload === "string"
                         ? action.payload
                         : action.error.message ?? "Gagal membuat mahasiswa."
             })
 
-            // MATA KULIAH
-            .addCase(getAllMatkul.pending, state => {
+            // STUDENTS
+            .addCase(getAllJadwal.pending, state => {
                 state.isLoading = true
             })
-            .addCase(getAllMatkul.fulfilled, (state, action) => {
+            .addCase(getAllJadwal.fulfilled, (state, action) => {
                 state.isLoading = false
-                state.matkul = action.payload.mataKuliah
+                state.jadwal = action.payload.jadwal
                 state.page = action.payload.pagination.page;
                 state.limit = action.payload.pagination.limit;
                 state.totalPages = action.payload.pagination.totalPages;
                 state.totalRows = action.payload.pagination.totalRows;
             })
-            .addCase(getAllMatkul.rejected, (state, action) => {
+            .addCase(getAllJadwal.rejected, (state, action) => {
                 state.isLoading = false
                 state.error = action.payload as string;
             })
@@ -70,5 +72,5 @@ const matkulSlice = createSlice({
 
     }
 })
-export const { setPage, setSearch, setSorting } = matkulSlice.actions;
-export default matkulSlice.reducer
+export const { setPage, setSearch, setSorting } = jadwalSilce.actions;
+export default jadwalSilce.reducer

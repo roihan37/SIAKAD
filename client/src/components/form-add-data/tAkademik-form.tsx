@@ -100,10 +100,10 @@ export function TAkademikField({
     }
   }
   const handleInvalid = (
-  errors: FieldErrors<TahunAkademikFormInput>
-) => {
-  console.log("VALIDASI GAGAL:", errors)
-}
+    errors: FieldErrors<TahunAkademikFormInput>
+  ) => {
+    console.log("VALIDASI GAGAL:", errors)
+  }
 
   return (
     <form
@@ -195,38 +195,38 @@ export function TAkademikField({
         />
 
         <Controller
-  control={control}
-  name="isActive"
-  render={({ field, fieldState }) => (
-    <Field
-      orientation="horizontal"
-      className="items-start gap-2"
-      data-invalid={fieldState.invalid}
-    >
-      <Checkbox
-        id="tahun-akademik-active"
-        checked={field.value}
-        onCheckedChange={(checked) => {
-          field.onChange(checked === true)
-        }}
-      />
+          control={control}
+          name="isActive"
+          render={({ field, fieldState }) => (
+            <Field
+              orientation="horizontal"
+              className="items-start gap-2"
+              data-invalid={fieldState.invalid}
+            >
+              <Checkbox
+                id="tahun-akademik-active"
+                checked={field.value}
+                onCheckedChange={(checked) => {
+                  field.onChange(checked === true)
+                }}
+              />
 
-      <FieldContent>
-        <FieldLabel htmlFor="tahun-akademik-active">
-          Aktifkan Tahun Akademik
-        </FieldLabel>
+              <FieldContent>
+                <FieldLabel htmlFor="tahun-akademik-active">
+                  Aktifkan Tahun Akademik
+                </FieldLabel>
 
-        <FieldDescription>
-          Tahun akademik ini akan menjadi periode akademik aktif.
-        </FieldDescription>
+                <FieldDescription>
+                  Tahun akademik ini akan menjadi periode akademik aktif.
+                </FieldDescription>
 
-        <FieldError>
-          {fieldState.error?.message}
-        </FieldError>
-      </FieldContent>
-    </Field>
-  )}
-/>
+                <FieldError>
+                  {fieldState.error?.message}
+                </FieldError>
+              </FieldContent>
+            </Field>
+          )}
+        />
 
         {/* KONFIRMASI */}
         <Field

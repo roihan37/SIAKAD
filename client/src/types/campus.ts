@@ -68,12 +68,27 @@ export type TahunAkademik = {
 }
 
 export type Kurikulum = {
-  id: string
+  id? : number
   nama: string
   kode: string
-  prodi: string
+  prodiId: number
+  prodi?: number
   tahun: number | null
-  semester: string
-  totalSks: number
-  status: string
+  isActive: Boolean
+}
+
+
+export type Jadwal = {
+  id?: string
+  kode: string
+  hari: string
+  jamMulai: number
+  jamSelesai: string
+  jam : string
+  mataKuliah : string
+  kodeMataKuliah : string
+  dosen : string
+  ruangan : string
+  kodeRuangan : string
+  semester : string
 }

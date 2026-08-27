@@ -29,6 +29,7 @@ import RuanganField from "./ruangan-form"
 import { Spinner } from "../ui/spinner"
 import MatkulField from "./matkul-form"
 import { TAkademikField } from "./tAkademik-form"
+import KurikulumField from "./kurikulum-form"
 
 
 type EntityType =
@@ -39,6 +40,7 @@ type EntityType =
   | "matkul"
   | "ruangan"
   | "tAkademik"
+  | "kurikulum"
 
 
 const getEntityType = (pathname: string): EntityType => {
@@ -66,6 +68,10 @@ const getEntityType = (pathname: string): EntityType => {
 
   if (pathname.startsWith("/tahun-akademik")) {
     return "tAkademik"
+  }
+
+  if (pathname.startsWith("/kurikulum")) {
+    return "kurikulum"
   }
 
   return "mahasiswa"
@@ -101,6 +107,10 @@ const entityConfig = {
     label: "Tahun Akademik",
     formId: "tahun-akademik-form",
   },
+  kurikulum: {
+    label: "Kurikulum",
+    formId: "kurikulum-form",
+  },
 } as const
 
 
@@ -109,8 +119,23 @@ export function DialogForm() {
 
   const dispatch = useAppDispatch()
   const { isCreatingStudent, isCreatingLecturer } = useAppSelector((state) => state.users)
+  const { isCreatingProdi, isCreatingFakultas } = useAppSelector((state) => state.campus)
+  const { isCreatingKurikulum } = useAppSelector((state) => state.kurikulum)
+  const { isCreatingMatkul } = useAppSelector((state) => state.matkul)
+  const { isCreatingRuangan } = useAppSelector((state) => state.ruangan)
+  const { isCreatingTAkademik } = useAppSelector((state) => state.tAkademik)
   const entityType = getEntityType(pathname)
   const entity = entityConfig[entityType]
+
+  const isCreating =
+    isCreatingStudent ||
+    isCreatingLecturer ||
+    isCreatingFakultas ||
+    isCreatingKurikulum ||
+    isCreatingMatkul ||
+    isCreatingProdi ||
+    isCreatingRuangan ||
+    isCreatingTAkademik
 
   const { fakultas, prodi } = useAppSelector(
     (state) => state.campus
@@ -236,6 +261,17 @@ export function DialogForm() {
       )
     }
 
+    else if (entityType === "kurikulum") {
+      return (
+        <KurikulumField
+          isConfirmed={isConfirmed}
+          setIsConfirmed={setIsConfirmed}
+          onSuccess={handleClose}
+          onError={setSubmitError}
+        />
+      )
+    }
+
     return null
   }
 
@@ -304,16 +340,16 @@ export function DialogForm() {
           <Button
             type="submit"
             form={entity.formId}
-            disabled={!isConfirmed}
+            disabled={!isConfirmed || isCreating}
           >
-            {isCreatingStudent 
-            || isCreatingLecturer 
-            && (
-              <Spinner data-icon="inline-start" >
-                Processing
-              </Spinner>
+            {isCreating ? (
+              <>
+                <Spinner data-icon="inline-start" />
+                Processing...
+              </>
+            ) : (
+              "Save changes"
             )}
-            Save changes
           </Button>
 
         </DialogFooter>

@@ -54,7 +54,14 @@ export interface RuanganFieldProps {
 }
 
 export interface MatkulFieldProps {
-  prodi: { id: number | string; name: string }[]
+  prodi: ProgramStudi[]
+  isConfirmed: boolean
+  setIsConfirmed: (checked: boolean) => void
+  onSuccess: () => void
+  onError: (message: string) => void
+}
+
+export interface KurikulumFieldProps {
   isConfirmed: boolean
   setIsConfirmed: (checked: boolean) => void
   onSuccess: () => void

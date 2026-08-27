@@ -22,19 +22,14 @@ export const kurikulumColumns: ColumnDef<Kurikulum>[] = [
     accessorKey: "tahun",
     header: "Tahun",
   },
+
   {
-    accessorKey: "semester",
-    header: "Semester",
-  },
-  {
-    accessorKey: "totalSks",
-    header: "Total SKS",
-  },
-  {
-    accessorKey: "status",
+    accessorKey: "isActive",
     header: "Status",
     cell: ({ row }) => {
       const isActive = row.getValue<boolean>("isActive")
+      console.log(isActive);
+      
 
       return (
         <Badge
