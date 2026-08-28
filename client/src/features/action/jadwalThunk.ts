@@ -14,8 +14,8 @@ export const getAllJadwal = createAsyncThunk(
       page = 1,
       limit = 10,
       search = "",
-      sortBy = "name",
-      sortOrder = "desc",
+      sortBy = "hari",
+      sortOrder = "asc",
       prodiId,
       tahunAkademikId,
     } = params ?? {};

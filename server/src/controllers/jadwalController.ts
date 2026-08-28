@@ -2,11 +2,20 @@ import { NextFunction, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { Prisma } from "@prisma/client";
 
+const HARI_URUTAN: Record<string, number> = {
+  SENIN: 1,
+  SELASA: 2,
+  RABU: 3,
+  KAMIS: 4,
+  JUMAT: 5,
+  SABTU: 6,
+}
+
 export class Controller {
   static async createJadwal(req: Request, res: Response, next: NextFunction) {
     try {
       const { kelasMataKuliahId, tahunAkademikId, ruanganId, hari, jamMulai, jamSelesai } = req.body;
-      const j = await prisma.jadwal.create({ data: { kelasMataKuliahId: Number(kelasMataKuliahId), tahunAkademikId: Number(tahunAkademikId), ruanganId: Number(ruanganId), hari, jamMulai, jamSelesai } });
+      const j = await prisma.jadwal.create({ data: { hariUrutan: HARI_URUTAN[hari], kelasMataKuliahId: Number(kelasMataKuliahId), tahunAkademikId: Number(tahunAkademikId), ruanganId: Number(ruanganId), hari, jamMulai, jamSelesai } });
       res.status(200).json({ message: "Jadwal created", j });
     } catch (error) { next(error); }
   }
@@ -25,6 +34,7 @@ export class Controller {
     res: Response,
     next: NextFunction
   ) {
+
     try {
       // ==========================================
       // PAGINATION
@@ -75,7 +85,7 @@ export class Controller {
 
       const sortBy =
         String(
-          req.query.sortBy ?? "jamMulai"
+          req.query.sortBy ?? "hari"
         )
 
       const sortOrder =
@@ -189,9 +199,27 @@ export class Controller {
       // ==========================================
 
       let orderBy:
-        Prisma.JadwalOrderByWithRelationInput
+        | Prisma.JadwalOrderByWithRelationInput
+        | Prisma.JadwalOrderByWithRelationInput[]
 
       switch (sortBy) {
+        case "hari":
+          orderBy = [
+            {
+              hariUrutan: sortOrder,
+            },
+            {
+              jamMulai: sortOrder,
+            },
+          ]
+          break
+
+        case "jamMulai":
+          orderBy = {
+            jamMulai: sortOrder,
+          }
+          break
+
         case "mataKuliah":
           orderBy = {
             kelasMataKuliah: {
@@ -232,16 +260,15 @@ export class Controller {
           }
           break
 
-        case "jamMulai":
-          orderBy = {
-            jamMulai: sortOrder,
-          }
-          break
-
         default:
-          orderBy = {
-            createdAt: sortOrder,
-          }
+          orderBy = [
+            {
+              hariUrutan: "asc",
+            },
+            {
+              jamMulai: "asc",
+            },
+          ]
           break
       }
 

@@ -6,6 +6,7 @@ model Jadwal {
   ruanganId          Int
 
   hari               Hari
+  hariUrutan         Int?
   jamMulai           String
   jamSelesai         String
 

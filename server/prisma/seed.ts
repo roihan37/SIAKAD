@@ -500,16 +500,50 @@ async function main() {
   }
 
   // Jadwal: schedule each kelasMK into a ruangan and time slot
-  const hariValues = [Hari.SENIN, Hari.SELASA, Hari.RABU, Hari.KAMIS, Hari.JUMAT];
+  const hariValues = [
+    Hari.SENIN,
+    Hari.SELASA,
+    Hari.RABU,
+    Hari.KAMIS,
+    Hari.JUMAT,
+  ];
+
+  const hariUrutan: Record<Hari, number> = {
+    [Hari.SENIN]: 1,
+    [Hari.SELASA]: 2,
+    [Hari.RABU]: 3,
+    [Hari.KAMIS]: 4,
+    [Hari.JUMAT]: 5,
+    [Hari.SABTU]: 6
+  };
+
   for (let i = 0; i < kelasMKList.length; i++) {
     const km = kelasMKList[i];
     const ru = ruanganList[i % ruanganList.length];
     const hari = hariValues[i % hariValues.length];
-    const jamMulai = `${8 + (i % 6)}:00`;
-    const jamSelesai = `${9 + (i % 6)}:30`;
+
+    const jamMulai =
+  `${String(8 + (i % 6)).padStart(2, "0")}:00`;
+
+const jamSelesai =
+  `${String(9 + (i % 6)).padStart(2, "0")}:30`;
+
     try {
-      await prisma.jadwal.create({ data: { kelasMataKuliahId: km.id, tahunAkademikId: activeTA?.id ?? 0, ruanganId: ru.id, hari, jamMulai, jamSelesai } });
-    } catch (err: any) {
+      await prisma.jadwal.create({
+        data: {
+          kelasMataKuliahId: km.id,
+          tahunAkademikId: activeTA?.id ?? 0,
+          ruanganId: ru.id,
+
+          hari,
+          hariUrutan: hariUrutan[hari],
+
+          jamMulai,
+          jamSelesai,
+        },
+      });
+    }
+    catch (err: any) {
       console.warn("Warning: could not create jadwal for kelasMK", km.id, err?.message ?? err);
     }
   }
