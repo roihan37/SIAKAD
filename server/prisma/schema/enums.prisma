@@ -43,3 +43,10 @@ enum Hari {
   SABTU
 }
 
+enum StatusKRS {
+  DRAFT
+  DIAJUKAN
+  DISETUJUI
+  DITOLAK
+}
+

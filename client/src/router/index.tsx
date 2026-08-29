@@ -12,6 +12,7 @@ import RuanganPage from "@/pages/RuanganPage";
 import TAkademikPage from "@/pages/TAkademikPage";
 import KurikulumPage from "@/pages/KurikulumPage";
 import JadwalPage from "@/pages/JadwalPage";
+import KRSPage from "@/pages/KRSPage";
 
 const router = createBrowserRouter([
   {
@@ -55,6 +56,10 @@ const router = createBrowserRouter([
           {
             path: "/jadwal-kuliah",
             element: <JadwalPage />,
+          },
+          {
+            path: "/krs",
+            element: <KRSPage />,
           },
         ],
       },

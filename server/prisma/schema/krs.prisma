@@ -4,6 +4,9 @@ model KRS {
   mahasiswaId     String
   tahunAkademikId Int
 
+  status          StatusKRS @default(DRAFT)
+
+
   mahasiswa       Mahasiswa      @relation(fields: [mahasiswaId], references: [id])
   tahunAkademik   TahunAkademik  @relation(fields: [tahunAkademikId], references: [id])
 

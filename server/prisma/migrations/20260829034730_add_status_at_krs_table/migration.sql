@@ -1,0 +1,5 @@
+-- CreateEnum
+CREATE TYPE "StatusKRS" AS ENUM ('DRAFT', 'DIAJUKAN', 'DISETUJUI', 'DITOLAK');
+
+-- AlterTable
+ALTER TABLE "KRS" ADD COLUMN     "status" "StatusKRS" NOT NULL DEFAULT 'DRAFT';

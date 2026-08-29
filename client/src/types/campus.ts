@@ -93,6 +93,22 @@ export type Jadwal = {
   semester : string
 }
 
+export type KRS = {
+  id? : string
+  krsId: string
+  nama: string
+  nim: string
+  prodi: string
+  angkatan: number
+  totalSKS: number | null
+  status: string
+  tahunAkademik: {
+    id: number;
+    tahun: string;
+    semester: string;
+  }
+}
+
 
 export interface ComboboxItemType {
   id: number

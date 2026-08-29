@@ -1,4 +1,4 @@
-import type { Dosen, Fakultas, Jadwal, Kurikulum, Mahasiswa, MataKuliah, ProgramStudi, Ruangan, TahunAkademik } from "./campus"
+import type { Dosen, Fakultas, Jadwal, KRS, Kurikulum, Mahasiswa, MataKuliah, ProgramStudi, Ruangan, TahunAkademik } from "./campus"
 
 export interface AuthState {
     isLoading : boolean
@@ -59,6 +59,13 @@ export interface JadwalState extends Pagination{
     error: string | null
     jadwal: Jadwal[]
     isCreatingJadwal : boolean
+}
+
+export interface KRSState extends Pagination{
+    isLoading : boolean
+    error: string | null
+    krs: KRS[]
+    isCreatingKRS : boolean
 }
 
 export interface Pagination {

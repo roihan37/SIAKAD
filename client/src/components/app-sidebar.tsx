@@ -106,7 +106,7 @@ const data = {
         },
         {
           title: "KRS",
-          url: "#",
+          url: "/krs",
         },
         {
           title: "Presensi",

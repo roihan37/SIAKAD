@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
+import { Prisma } from "@prisma/client";
 
 export class Controller {
   static async createKRS(req: Request, res: Response, next: NextFunction) {
@@ -19,11 +20,278 @@ export class Controller {
     } catch (error) { next(error); }
   }
 
-  static async getAllKRS(req: Request, res: Response, next: NextFunction) {
+  static async getAllKRS(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
     try {
-      const rows = await prisma.kRS.findMany();
-      res.status(200).json({ krs: rows });
-    } catch (error) { next(error); }
+      // ==========================================
+      // PAGINATION
+      // ==========================================
+
+      const page =
+        Number(req.query.page) || 1
+
+      const limit =
+        Number(req.query.limit) || 10
+
+      const skip =
+        (page - 1) * limit
+
+      // ==========================================
+      // SEARCH
+      // ==========================================
+
+      const search =
+        String(
+          req.query.search ?? ""
+        ).trim()
+
+      // ==========================================
+      // FILTER
+      // ==========================================
+
+      const prodiId =
+        req.query.prodiId
+          ? Number(req.query.prodiId)
+          : undefined
+
+      const tahunAkademikId =
+        req.query.tahunAkademikId
+          ? Number(req.query.tahunAkademikId)
+          : undefined
+
+      const angkatan =
+        req.query.angkatan
+          ? Number(req.query.angkatan)
+          : undefined
+
+      const status =
+        req.query.status
+          ? String(req.query.status)
+          : undefined
+
+      // ==========================================
+      // SORTING
+      // ==========================================
+
+      const sortBy =
+        String(
+          req.query.sortBy ?? "nama"
+        )
+
+      const sortOrder =
+        req.query.sortOrder === "asc"
+          ? "asc"
+          : "desc"
+
+      // ==========================================
+      // WHERE MAHASISWA
+      // ==========================================
+
+      const where: Prisma.MahasiswaWhereInput = {
+        ...(prodiId !== undefined && {
+          prodiId,
+        }),
+
+        ...(angkatan !== undefined && {
+          angkatan,
+        }),
+
+        ...(search
+          ? {
+            OR: [
+              {
+                nim: {
+                  contains: search,
+                  mode: Prisma.QueryMode.insensitive,
+                },
+              },
+
+              {
+                user: {
+                  name: {
+                    contains: search,
+                    mode: Prisma.QueryMode.insensitive,
+                  },
+                },
+              },
+
+              {
+                prodi: {
+                  name: {
+                    contains: search,
+                    mode: Prisma.QueryMode.insensitive,
+                  },
+                },
+              },
+            ],
+          }
+          : {}),
+      }
+
+      // ==========================================
+      // QUERY
+      // ==========================================
+
+      const [rows, total] =
+        await Promise.all([
+          prisma.mahasiswa.findMany({
+            where,
+
+            skip,
+            take: limit,
+
+            include: {
+              user: true,
+              prodi: true,
+
+              krs: {
+                where:
+                  tahunAkademikId !== undefined
+                    ? {
+                      tahunAkademikId,
+                    }
+                    : undefined,
+
+                include: {
+                  details: {
+                    include: {
+                      kelasMataKuliah: {
+                        include: {
+                          mataKuliah: true,
+                        },
+                      },
+                    },
+                  },
+
+                  tahunAkademik: true,
+                },
+              },
+            },
+
+            orderBy:
+              sortBy === "nim"
+                ? {
+                  nim: sortOrder,
+                }
+                : sortBy === "angkatan"
+                  ? {
+                    angkatan: sortOrder,
+                  }
+                  : {
+                    user: {
+                      name: sortOrder,
+                    },
+                  },
+          }),
+
+          prisma.mahasiswa.count({
+            where,
+          }),
+        ])
+
+      // ==========================================
+      // MAPPING
+      // ==========================================
+
+      let krs = rows.map((mahasiswa) => {
+        const currentKRS =
+          mahasiswa.krs[0]
+
+        const totalSks =
+          currentKRS?.details.reduce(
+            (total, detail) =>
+              total +
+              detail.kelasMataKuliah
+                .mataKuliah.sks,
+            0
+          ) ?? 0
+
+        let currentStatus =
+          currentKRS
+            ? "MENUNGGU"
+            : "BELUM_KRS"
+
+        // Jika nanti KRS punya field status,
+        // gunakan status dari database.
+        //
+        // currentStatus = currentKRS?.status ?? "MENUNGGU"
+
+        return {
+          id: mahasiswa.id,
+
+          krsId:
+            currentKRS?.id ?? null,
+
+          nim: mahasiswa.nim,
+
+          nama:
+            mahasiswa.user.name,
+
+          prodi:
+            mahasiswa.prodi.name,
+
+          angkatan:
+            mahasiswa.angkatan,
+
+          totalSks,
+
+          status: currentStatus,
+
+          tahunAkademik:
+            currentKRS?.tahunAkademik
+              ? {
+                id:
+                  currentKRS.tahunAkademik.id,
+
+                tahun:
+                  currentKRS.tahunAkademik.tahun,
+
+                semester:
+                  currentKRS.tahunAkademik.semester,
+              }
+              : null,
+        }
+      })
+
+      // ==========================================
+      // FILTER STATUS
+      // ==========================================
+
+      if (status) {
+        krs = krs.filter(
+          (item) =>
+            item.status === status
+        )
+      }
+
+      // ==========================================
+      // RESPONSE
+      // ==========================================
+      
+      
+      res.status(200).json({
+        krs,
+
+        pagination: {
+          page,
+          limit,
+
+          totalRows: total,
+
+          totalPages: Math.max(
+            1,
+            Math.ceil(
+              total / limit
+            )
+          ),
+        },
+      })
+    } catch (error) {
+      next(error)
+    }
   }
 
   static async getKRSById(req: Request, res: Response, next: NextFunction) {
