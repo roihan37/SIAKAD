@@ -32,6 +32,18 @@ export const getAllStudents = createAsyncThunk(
   }
 );
 
+export const getStudentById = createAsyncThunk(
+  "students/getId",
+  async (id: string, thunkAPI) => {
+    try {
+      const response = await api.get(`/students/${id}`)
+      return response.data
+    } catch (err: any) {
+      return thunkAPI.rejectWithValue(err.response.data.message)
+    }
+  }
+)
+
 export const getAllLecturers = createAsyncThunk(
   "lecturers/getAll",
   async ({ page, limit, search, sortBy, sortOrder, prodiId }: PaginationParams,

@@ -246,7 +246,11 @@ export class Controller {
         }
     }
 
-    static async getStudentById(req: Request, res: Response, next: NextFunction) {
+    static async getStudentById(
+        req: Request,
+        res: Response,
+        next: NextFunction
+    ) {
         try {
             const { id } = req.params;
 
@@ -255,18 +259,94 @@ export class Controller {
                     id: id as string,
                     role: "Mahasiswa",
                 },
-                include: {
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    phoneNumber: true,
+                    address: true,
+                    birthDate: true,
+                    gender: true,
                     mahasiswa: {
-                        include: { prodi: true },
+                        select: {
+                            id: true,
+                            nim: true,
+                            angkatan: true,
+                            semester: true,
+                            status: true,
+                            prodi: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    fakultas: {
+                                        select: {
+                                            id: true,
+                                            name: true,
+                                        },
+                                    },
+                                },
+                            },
+                            dosen: {
+                                select: {
+                                    id: true,
+                                    user: {
+                                        select: {
+                                            name: true,
+                                        },
+                                    },
+                                },
+                            },
+                        },
                     },
                 },
             });
 
-            if (!student) {
-                throw { name: "NotFound", message: "Mahasiswa tidak ditemukan" };
+            if (!student || !student.mahasiswa) {
+                throw {
+                    name: "NotFound",
+                    message: "Mahasiswa tidak ditemukan",
+                };
             }
 
-            res.status(200).json(student);
+            const mahasiswa = student.mahasiswa;
+            const jenisKelamin = student.gender === "Male" ? "L" : student.gender === "Female" ? "P" : null;
+            const tanggalLahir = student.birthDate
+                ? new Date(student.birthDate).toISOString().split("T")[0]
+                : null;
+
+            res.status(200).json({
+                student: {
+                    id: student.id,
+                    nim: mahasiswa.nim,
+                    nama: student.name,
+                    nik: null,
+                    tempatLahir: null,
+                    tanggalLahir,
+                    jenisKelamin,
+                    email: student.email,
+                    noHp: student.phoneNumber ?? null,
+                    alamat: student.address ?? null,
+                    angkatan: mahasiswa.angkatan,
+                    prodi: mahasiswa.prodi
+                        ? {
+                              id: mahasiswa.prodi.id,
+                              nama: mahasiswa.prodi.name,
+                          }
+                        : null,
+                    fakultas: mahasiswa.prodi?.fakultas
+                        ? {
+                              id: mahasiswa.prodi.fakultas.id,
+                              nama: mahasiswa.prodi.fakultas.name,
+                          }
+                        : null,
+                    dosenPembimbing: mahasiswa.dosen?.user
+                        ? {
+                              id: mahasiswa.dosen.id,
+                              nama: mahasiswa.dosen.user.name,
+                          }
+                        : null,
+                },
+            });
         } catch (error) {
             next(error);
         }

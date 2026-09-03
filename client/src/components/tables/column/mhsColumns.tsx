@@ -4,6 +4,8 @@ import { createSelectColumn } from "../select-column";
 import type { Mahasiswa } from "@/types/campus";
 import { Button } from "../../ui/button";
 import { ArrowUpDown } from "lucide-react";
+import { Link } from "react-router"
+
 
 // helper reusable, biar tiap header sortable nggak copy-paste JSX yang sama
 function createSortableHeader(label: string) {
@@ -29,13 +31,25 @@ export const mhsColumns: ColumnDef<Mahasiswa>[] = [
     header: createSortableHeader("NIM"),
     meta: { label: "NIM" },
   },
-  {
+ {
     accessorKey: "name",
-    header: "Name",
-    meta: {
-      label: "Name",
-    },
-  },
+    header: "Nama",
+    cell: ({ row }) => {
+    const student = row.original
+
+    console.log("STUDENT:", student)
+    console.log("ID:", student.id)
+
+    return (
+        <Link
+            to={`/mahasiswa/${student.id}`}
+            className="font-medium hover:underline"
+        >
+            {student.name}
+        </Link>
+    )
+},
+},
   {
     accessorKey: "mahasiswa.prodi.name",
     header: "Prodi",

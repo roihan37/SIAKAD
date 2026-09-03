@@ -7,10 +7,9 @@ import { useEffect, useState } from "react"
 import { getAllJadwal } from "@/features/action/jadwalThunk"
 import { jadwalColumns } from "@/components/tables/column/jadwalColumns"
 import { getAllTAkademik } from "@/features/action/tAkademikThunk"
-import type { ComboboxItemType } from "@/types/campus"
-import { RotateCcw } from "lucide-react"
-import { ComboboxPopup } from "@/components/combobox"
-import { Button } from "@/components/ui/button"
+import type { ComboboxOption } from "@/types/combobox"
+import { PageFilters } from "@/components/PageFilters"
+import { filtersData } from "@/components/filters-data"
 
 
 
@@ -123,131 +122,78 @@ export default function JadwalPage() {
   }, [dispatch])
 
 
-  const prodiItems: ComboboxItemType[] = [
+  const {
+      tahunAkademikItems, 
+      prodiItems} 
+      = filtersData({
+      tAkademik,
+      prodi
+    })
+
+  const jadwalFilters = [
     {
-      id: 0,
-      label: "Semua Program Studi",
+      key: "tahunAkademik",
+      items: tahunAkademikItems,
+      value: tahunAkademikItems.find(
+        (item) =>
+          item.id ===
+          (tahunAkademikId ?? 0)
+      ),
+      placeholder: "Tahun Akademik",
+      width: "w-full sm:w-56",
+
+      onChange: (item: ComboboxOption) => {
+        dispatch(
+          setTahunAkademikId(
+            item.id === 0
+              ? undefined
+              : item.id
+          )
+        )
+      },
     },
 
-    ...prodi.map((item) => ({
-      id: item.id,
-      label: item.name,
-    })),
-  ]
-  const tahunAkademikItems: ComboboxItemType[] = [
     {
-      id: 0,
-      label: "Semua Tahun Akademik",
+      key: "prodi",
+      items: prodiItems,
+      value: prodiItems.find(
+        (item) =>
+          item.id ===
+          (prodiId ?? 0)
+      ),
+      placeholder: "Program Studi",
+      width: "w-full sm:w-56",
+
+      onChange: (item: ComboboxOption) => {
+        dispatch(
+          setProdiId(
+            item.id === 0
+              ? undefined
+              : item.id
+          )
+        )
+      },
     },
-
-    ...(tAkademik ?? [])
-      .filter(
-        (item): item is typeof item & { id: number } =>
-          item.id !== undefined
-      )
-      .map((item) => ({
-        id: item.id,
-        label: `${item.tahun} - ${item.semester}`,
-      })),
   ]
-
-  const jadwalFilter = (
-  <div className="flex flex-col gap-2 rounded-lg border bg-muted/30 p-2 sm:flex-row sm:items-center">
-
-    <div className="hidden shrink-0 px-2 text-sm font-medium text-muted-foreground sm:block">
-      Filter
-    </div>
-
-    <div className="w-full sm:w-64">
-      <ComboboxPopup
-        items={tahunAkademikItems ?? []}
-        value={tahunAkademikItems?.find(
-          (item) =>
-            item.id ===
-            (tahunAkademikId ?? 0)
-        )}
-        placeholder="Tahun Akademik"
-        onValueChange={(item) => {
-          dispatch(
-            setTahunAkademikId(
-              item.id === 0
-                ? undefined
-                : item.id
-            )
-          )
-        }}
-      />
-    </div>
-
-    <div className="w-full sm:w-64">
-      <ComboboxPopup
-        items={prodiItems ?? []}
-        value={prodiItems?.find(
-          (item) =>
-            item.id ===
-            (prodiId ?? 0)
-        )}
-        placeholder="Program Studi"
-        onValueChange={(item) => {
-          dispatch(
-            setProdiId(
-              item.id === 0
-                ? undefined
-                : item.id
-            )
-          )
-        }}
-      />
-    </div>
-
-    {(prodiId !== undefined ||
-      tahunAkademikId !== undefined) && (
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        onClick={() => {
-          dispatch(
-            setProdiId(undefined)
-          )
-
-          dispatch(
-            setTahunAkademikId(
-              undefined
-            )
-          )
-        }}
-      >
-        <RotateCcw className="size-4" />
-        Reset
-      </Button>
-    )}
-  </div>
-)
 
   return (
-    <div className="container mx-auto mt-4 px-4">
+    <div className="container mx-auto mt-4 ">
       <div >
-        
+
         <div className="text-2xl font-medium">
-                    Jadwal Kuliah
-                </div>
+          Jadwal Kuliah
+        </div>
 
         <p className="text-sm text-muted-foreground">
           Kelola jadwal perkuliahan berdasarkan
           tahun akademik dan program studi.
         </p>
       </div>
-      
+
 
       <DataTable
         columns={jadwalColumns}
         data={jadwal}
-
-        prodi={prodiItems}
-        tahunAkademik={
-          tahunAkademikItems
-        }
 
         selectedProdiId={prodiId}
         selectedTahunAkademikId={
@@ -280,7 +226,19 @@ export default function JadwalPage() {
         onSortingChange={
           handleSortingChange
         }
-        toolbar={jadwalFilter}
+        toolbar={
+          <PageFilters
+            filters={jadwalFilters}
+            onReset={() => {
+              dispatch(
+                setTahunAkademikId(undefined)
+              )
+
+              dispatch(
+                setProdiId(undefined)
+              )
+            }}
+          />}
 
       />
     </div>

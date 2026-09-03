@@ -1,4 +1,4 @@
-import type { Dosen, Fakultas, Jadwal, KRS, Kurikulum, Mahasiswa, MataKuliah, ProgramStudi, Ruangan, TahunAkademik } from "./campus"
+import type { Dosen, Fakultas, Jadwal, KRS, Kurikulum, Mahasiswa, MataKuliah, ProgramStudi, Ruangan, StudentDetail, TahunAkademik } from "./campus"
 
 export interface AuthState {
     isLoading : boolean
@@ -15,6 +15,7 @@ export interface UsersState extends Pagination{
     isCreatingStudent: boolean
     isLoadingLecturers: boolean
     isCreatingLecturer: boolean
+    studentDetail: StudentDetail | null
 }
 
 export interface CampusState extends Pagination {
@@ -66,6 +67,10 @@ export interface KRSState extends Pagination{
     error: string | null
     krs: KRS[]
     isCreatingKRS : boolean
+    totalMahasiswaAktif: number
+    totalKRSDisetujui: number
+    totalKRSMenunggu: number
+    totalBelumKRS: number
 }
 
 export interface Pagination {
@@ -78,4 +83,6 @@ export interface Pagination {
     sortOrder: "asc" | "desc"
     prodiId? : number | undefined
     tahunAkademikId?: number | undefined
+    angkatan?: number
+    status? : string
 }

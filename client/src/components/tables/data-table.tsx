@@ -34,7 +34,6 @@ import {
 
 import { Input } from "@/components/ui/input"
 import { DialogForm } from "../form-add-data/dialog-form"
-import type { ComboboxItemType } from "@/types/campus"
 
 
 interface DataTableProps<TData, TValue> {
@@ -56,14 +55,14 @@ interface DataTableProps<TData, TValue> {
   onSortingChange: (sorting: SortingState) => void
 
   // Filter Program Studi
-  prodi?: ComboboxItemType[]
+  
   selectedProdiId?: number
   onProdiChange?: (
     value: number | undefined
   ) => void
 
   // Filter Tahun Akademik
-  tahunAkademik?: ComboboxItemType[]
+  // tahunAkademik?: ComboboxItemType[]
   selectedTahunAkademikId?: number
   onTahunAkademikChange?: (
     value: number | undefined
@@ -72,6 +71,7 @@ interface DataTableProps<TData, TValue> {
   // Loading
   isLoading?: boolean
   toolbar?: React.ReactNode
+  toolbar2?: React.ReactNode
 
 }
 
@@ -91,6 +91,7 @@ export function DataTable<TData, TValue>({
   onSortingChange,
 
   toolbar,
+  toolbar2,
 
 }: DataTableProps<TData, TValue>) {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -196,6 +197,7 @@ export function DataTable<TData, TValue>({
         </div>
 
         {/* Custom Toolbar */}
+        {toolbar2}
         {toolbar}
 
       </div>

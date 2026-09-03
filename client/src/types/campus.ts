@@ -109,8 +109,31 @@ export type KRS = {
   }
 }
 
-
-export interface ComboboxItemType {
-  id: number
-  label: string
-}
+export type StudentDetail = {
+  student: {
+    id: string;
+    nim: string;
+    nama: string;
+    nik: string | null;
+    tempatLahir: string | null;
+    tanggalLahir: string | null;
+    jenisKelamin: string | null;
+    email: string;
+    noHp: string | null;
+    alamat: string | null;
+    angkatan: number;
+    status?: string;
+    prodi: {
+      id: string;
+      nama: string;
+    } | null;
+    fakultas: {
+      id: string;
+      nama: string;
+    } | null;
+    dosenPembimbing: {
+      id: string;
+      nama: string;
+    } | null;
+  };
+};

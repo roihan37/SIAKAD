@@ -1,6 +1,6 @@
 import type { UsersState } from "@/types/state";
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import { createLecturer, createStudent, getAllLecturers, getAllStudents } from "../action/usersThunk";
+import { createLecturer, createStudent, getAllLecturers, getAllStudents, getStudentById } from "../action/usersThunk";
 
 const initialState : UsersState ={
     error: null,
@@ -13,6 +13,8 @@ const initialState : UsersState ={
     totalRows: 0,
     sortBy: "name",
     sortOrder: "asc",
+
+    studentDetail: null,
 
     isLoadingStudents: false,
     isCreatingStudent: false,
@@ -84,6 +86,19 @@ const usersSilce = createSlice({
         .addCase(getAllStudents.rejected, (state, action) =>{
             state.isLoadingStudents = false
             state.error = action.payload as string;
+        })
+
+        // GET ID STUDENTS
+        .addCase(getStudentById.pending, state => {
+            // state.isLoadingStudents = true
+        })
+        .addCase(getStudentById.fulfilled, (state, action) => {
+            // state.isLoadingStudents = false
+            state.studentDetail = action.payload
+            
+        })
+        .addCase(getStudentById.rejected, (state, action) =>{
+            state.studentDetail = null
         })
 
         

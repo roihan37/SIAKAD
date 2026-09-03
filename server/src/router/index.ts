@@ -1,4 +1,5 @@
 import express, { Request, Response } from "express";
+import { authMiddleware } from "../middleware/authMid";
 import routerUser from "./users";
 import routerProdi from "./prodi";
 import routerAunth from "./auth";
@@ -6,7 +7,6 @@ import routerStudents from "./students";
 import routerLecturers from "./lecturers";
 import routerFakultas from "./fakultas";
 import routerAvatars from "./avatars";
-import { authMiddleware } from "../middleware/authMid";
 import routerRuangan from "./ruangan";
 import routerTahunAkademik from "./tahun-akademik";
 import routerKelas from "./kelas";

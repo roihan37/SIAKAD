@@ -72,6 +72,11 @@ export class Controller {
           ? String(req.query.status)
           : undefined
 
+      const krsWhere: Prisma.KRSWhereInput =
+        tahunAkademikId !== undefined
+          ? { tahunAkademikId }
+          : {}
+
       // ==========================================
       // SORTING
       // ==========================================
@@ -91,6 +96,8 @@ export class Controller {
       // ==========================================
 
       const where: Prisma.MahasiswaWhereInput = {
+        status: "Aktif",
+
         ...(prodiId !== undefined && {
           prodiId,
         }),
@@ -135,7 +142,7 @@ export class Controller {
       // QUERY
       // ==========================================
 
-      const [rows, total] =
+      const [rows, total, totalMahasiswaAktif, totalKRSDisetujui, totalKRSMenunggu, totalBelumKRS] =
         await Promise.all([
           prisma.mahasiswa.findMany({
             where,
@@ -189,6 +196,47 @@ export class Controller {
 
           prisma.mahasiswa.count({
             where,
+          }),
+
+          prisma.mahasiswa.count({
+            where: {
+              status: "Aktif",
+            },
+          }),
+
+          prisma.mahasiswa.count({
+            where: {
+              status: "Aktif",
+              krs: {
+                some: {
+                  ...krsWhere,
+                  status: "DISETUJUI",
+                },
+              },
+            },
+          }),
+
+          prisma.mahasiswa.count({
+            where: {
+              status: "Aktif",
+              krs: {
+                some: {
+                  ...krsWhere,
+                  status: {
+                    not: "DISETUJUI",
+                  },
+                },
+              },
+            },
+          }),
+
+          prisma.mahasiswa.count({
+            where: {
+              status: "Aktif",
+              krs: {
+                none: krsWhere,
+              },
+            },
           }),
         ])
 
@@ -271,9 +319,15 @@ export class Controller {
       // RESPONSE
       // ==========================================
       
-      
       res.status(200).json({
         krs,
+
+        summary: {
+          totalMahasiswaAktif,
+          totalKRSDisetujui,
+          totalKRSMenunggu,
+          totalBelumKRS,
+        },
 
         pagination: {
           page,

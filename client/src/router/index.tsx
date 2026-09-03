@@ -1,18 +1,19 @@
 import BaseLayout from "@/layouts/BaseLayout";
 import LoginPage from "@/pages/LoginPage";
 import { createBrowserRouter } from "react-router";
-import MahasiswaPage from "@/pages/MahasiswaPage";
+import MahasiswaPage from "@/pages/Mahasiswa/MahasiswaPage";
 import DosenPage from "@/pages/DosenPage";
 import FakultasPage from "@/pages/FakultasPage";
 import MatkulPage from "@/pages/MatkulPage";
 import PStudiPage from "@/pages/ProdiPage";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import PublicRoute from "@/components/PublicRoute";
+import ProtectedRoute from "@/components/protect-web/ProtectedRoute";
+import PublicRoute from "@/components/protect-web/PublicRoute";
 import RuanganPage from "@/pages/RuanganPage";
 import TAkademikPage from "@/pages/TAkademikPage";
 import KurikulumPage from "@/pages/KurikulumPage";
-import JadwalPage from "@/pages/JadwalPage";
+import JadwalPage from "@/pages/JadwalKuliahPage";
 import KRSPage from "@/pages/KRSPage";
+import MahasiswaDetailPage from "@/pages/Mahasiswa/MahasiswaDetailPage";
 
 const router = createBrowserRouter([
   {
@@ -24,6 +25,10 @@ const router = createBrowserRouter([
           {
             path: "/mahasiswa",
             element: <MahasiswaPage />,
+          },
+          {
+            path: "/mahasiswa/:id",
+            element: <MahasiswaDetailPage />,
           },
           {
             path: "/dosen",

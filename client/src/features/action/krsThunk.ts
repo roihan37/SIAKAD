@@ -10,25 +10,16 @@ export const getAllKRS = createAsyncThunk(
     thunkAPI
   ) => {
 
-    const {
-      page = 1,
-      limit = 10,
-      search = "",
-      // sortBy = "hari",
-      sortOrder = "asc",
-    } = params ?? {};
+    // const {
+    //   page = 1,
+    //   limit = 10,
+    //   search = "",
+    //   sortOrder = "asc",
+    // } = params ?? {};
 
     try {
       const response = await api.get("/krs", {
-        params: {
-          page,
-          limit,
-          search,
-          // sortBy,
-          sortOrder,
-        },
-      });
-      console.log("response.data", response.data);
+        params});
       return response.data;
 
     } catch (err: any) {

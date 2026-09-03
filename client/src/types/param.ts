@@ -7,6 +7,8 @@ export interface PaginationParams {
   prodiId?: number
   fakultasId?: number
   tahunAkademikId?: number
+  angkatan? : number
+  status? : string
 }
 
   export interface CreateStudentPayload {

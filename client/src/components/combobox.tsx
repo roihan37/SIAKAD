@@ -10,20 +10,10 @@ import {
 } from "@/components/ui/combobox"
 
 import { Button } from "@/components/ui/button"
+import type { ComboboxPopupProps } from "@/types/combobox"
 
-interface ComboboxItem {
-  id: number
-  label: string
-}
 
-interface ComboboxPopupProps {
-  items: ComboboxItem[]
-  value?: ComboboxItem
-  placeholder?: string
-  onValueChange?: (
-    value: ComboboxItem
-  ) => void
-}
+
 export function ComboboxPopup({
   items,
   value,
