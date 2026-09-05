@@ -1,6 +1,6 @@
 import type { MahasiswaState } from "@/types/state";
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import { createStudent, getAllStudents, getStudentById, getStudentHistorySemester, getStudentKRS, getStudentNilai } from "../action/mahasiswaThunk";
+import { createStudent, getAllStudents, getStudentById, getStudentHistorySemester, getStudentKRS, getStudentNilai, updateStudent } from "../action/mahasiswaThunk";
 
 const initialState : MahasiswaState ={
     error: null,
@@ -51,6 +51,21 @@ const mahasiswaSilce = createSlice({
             state.isCreatingStudent = false
         })
         .addCase(createStudent.rejected, (state, action) =>{
+            state.isCreatingStudent = false
+            state.error =
+                typeof action.payload === "string"
+                ? action.payload
+                : action.error.message ?? "Gagal membuat mahasiswa."
+        })
+
+        // UPDATE STUDENTS
+        .addCase(updateStudent.pending, state => {
+            state.isCreatingStudent = true
+        })
+        .addCase(updateStudent.fulfilled, (state) => {
+            state.isCreatingStudent = false
+        })
+        .addCase(updateStudent.rejected, (state, action) =>{
             state.isCreatingStudent = false
             state.error =
                 typeof action.payload === "string"

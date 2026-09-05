@@ -12,11 +12,29 @@ export interface PaginationParams {
 }
 
   export interface CreateStudentPayload {
-    name: string; email: string; username: string; password: string;
+    name: string; email: string; nik: string; birthPlace: string; username: string; password: string;
     gender: string; phoneNumber: string; address: string; birthDate?: string;
     nim: string; angkatan: number; semester: number; status: string;
     prodiId: number; dosenId: string; avatarKey?: string;
 }
+
+  export interface UpdateStudentPayload {
+    name: string
+    email: string
+    nik?: string
+    birthPlace?: string
+    phoneNumber: string
+    address: string
+    birthDate?: string
+    gender: string
+    nim: string
+    angkatan: number
+    semester: number
+    status: string
+    prodiId: number
+    dosenId: string
+    avatarKey?: string
+  }
 
 export interface CreateLecturerPayload {
   name: string; email: string; username: string; password: string;

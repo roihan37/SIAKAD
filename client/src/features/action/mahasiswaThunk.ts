@@ -1,5 +1,5 @@
 import { api } from "@/api/axios";
-import type { CreateLecturerPayload, CreateStudentPayload, PaginationParams } from "@/types/param";
+import type { CreateStudentPayload, PaginationParams, UpdateStudentPayload } from "@/types/param";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
 export const getAllStudents = createAsyncThunk(
@@ -46,9 +46,10 @@ export const getStudentById = createAsyncThunk(
 
 export const updateStudent = createAsyncThunk(
   "students/update",
-  async ({ id, payload }: { id: string; payload: Record<string, unknown> }, thunkAPI) => {
+  async ({ id, payload }: { id: string; payload: UpdateStudentPayload }, thunkAPI) => {
     try {
-      const response = await api.patch(`/students/${id}`, payload)
+      console.log(id, payload, "ID & PAYLOAD");
+      const response = await api.put(`/students/${id}`, payload)
       return response.data
     } catch (err: any) {
       return thunkAPI.rejectWithValue(err.response?.data?.message ?? "Gagal memperbarui mahasiswa")

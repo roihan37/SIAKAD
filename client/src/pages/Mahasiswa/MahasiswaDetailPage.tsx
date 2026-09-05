@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Activity, ArrowLeft, Ban, BookOpen, CalendarDays, Check, Ellipsis, GraduationCap, KeyRound, Pencil, UserRound } from "lucide-react"
@@ -94,7 +94,7 @@ export default function MahasiswaDetailPage() {
 				<div className="absolute -right-16 -top-20 size-56 rounded-full border-32 border-primary-foreground/10" />
 				<div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
 					<div className="flex min-w-0 items-center gap-4 sm:gap-5">
-						<Avatar className="size-16 shrink-0 border-2 border-primary-foreground/20 sm:size-20"><AvatarFallback className="bg-primary-foreground/15 text-lg text-primary-foreground sm:text-xl">{getInitials(String(studentDetail?.student.nama))}</AvatarFallback></Avatar>
+						<Avatar className="size-16 shrink-0 border-2 border-primary-foreground/20 sm:size-20"><AvatarImage src={studentDetail.student.avatarUrl ?? undefined} alt={`Foto ${studentDetail.student.nama}`} /><AvatarFallback className="bg-primary-foreground/15 text-lg text-primary-foreground sm:text-xl">{getInitials(String(studentDetail.student.nama))}</AvatarFallback></Avatar>
 						<div className="min-w-0">
 							<h1 className="truncate text-2xl font-semibold tracking-tight sm:text-3xl">{studentDetail?.student.nama}</h1>
 							<p className="mt-1 text-sm text-primary-foreground/70">{studentDetail?.student.nim}</p>

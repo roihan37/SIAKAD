@@ -13,7 +13,7 @@ export class Controller {
         next: NextFunction
     ) {
         const {
-            name, email, username, password, phoneNumber, gender, address,
+            name, email, nik, birthPlace, username, password, phoneNumber, gender, address,
             nim, angkatan, semester, status, prodiId, birthDate, avatarKey, dosenId
         } = req.body
         try {
@@ -39,6 +39,8 @@ export class Controller {
                         phoneNumber,
                         gender,
                         address,
+                        nik, 
+                        birthPlace,
                         avatarKey,
                         avatarUrl
                     }
@@ -83,93 +85,521 @@ export class Controller {
         }
     }
 
-    static async updateStudentById(req: Request, res: Response, next: NextFunction) {
-        try {
-            const { id } = req.params
+    static async updateStudentById(
+    req: Request,
+    res: Response,
+    next: NextFunction
+) {
+    let newAvatarKeyForCleanup: string | null = null;
 
-            const {
-                name,
-                email,
-                username,
-                password,
-                phoneNumber,
-                gender,
-                address,
-                nik,
-                birthPlace,
-                nim,
-                angkatan,
-                semester,
-                status,
-                prodiId,
-                birthDate,
-                avatarKey,
-                dosenId
-            } = req.body
+    try {
+        const userId = String(req.params.id);
 
+        const {
+            name,
+            email,
+            username,
+            password,
+            phoneNumber,
+            gender,
+            address,
+            nik,
+            birthPlace,
+            nim,
+            angkatan,
+            semester,
+            status,
+            prodiId,
+            birthDate,
+            avatarKey,
+            dosenId,
+        } = req.body;
 
+        // ==========================================
+        // 1. Cari User + Mahasiswa
+        // ==========================================
+        const existingUser = await prisma.user.findUnique({
+            where: {
+                id: userId,
+            },
+            select: {
+                id: true,
+                avatarKey: true,
 
-            const existingUser = await prisma.user.findUnique({
-                where: { id: id as string },
-                include: { mahasiswa: true },
-            });
-
-            if (!existingUser) throw { name: "NotFound", message: "User tidak ditemukan" };
-            if (!existingUser.mahasiswa) throw { name: "BadRequest", message: "User ini bukan mahasiswa" };
-
-            let avatarUrl: string | undefined;
-            let oldAvatarKey: string | null = null;
-
-            if (avatarKey) {
-                await AvatarService.verifyKey(avatarKey);
-                avatarUrl = AvatarService.getPublicUrl(avatarKey);
-                oldAvatarKey = existingUser.avatarKey; // simpan referensi foto lama untuk dihapus setelah update sukses
-            }
-
-            const hash = password ? await hashPassword(password) : existingUser.password;
-
-            const userUpdate = await prisma.user.update({
-                where: { id: id as string },
-                data: {
-                    name,
-                    email,
-                    username,
-                    password: hash,
-                    birthDate,
-                    phoneNumber,
-                    gender,
-                    address,
-                    nik,
-                    birthPlace,
-                    ...(avatarKey ? { avatarKey, avatarUrl } : {}),
-                    mahasiswa: {
-                        update: {
-                            nim,
-                            angkatan,
-                            semester,
-                            status,
-                            prodiId,
-                            dosenId,
-                        },
+                mahasiswa: {
+                    select: {
+                        id: true,
+                        nim: true,
+                        angkatan: true,
+                        semester: true,
+                        status: true,
+                        prodiId: true,
+                        dosenId: true,
                     },
                 },
-                include: {
-                    mahasiswa: true, // opsional: biar response langsung bawa data mahasiswa terbaru
+            },
+        });
+
+        if (!existingUser) {
+            throw {
+                name: "NotFound",
+                message: "User tidak ditemukan",
+            };
+        }
+
+        if (!existingUser.mahasiswa) {
+            throw {
+                name: "BadRequest",
+                message: "User ini bukan mahasiswa",
+            };
+        }
+
+        const oldAvatarKey = existingUser.avatarKey;
+
+        // ==========================================
+        // 2. Parse & Validate Birth Date
+        // ==========================================
+        let parsedBirthDate: Date | null | undefined;
+
+        if (birthDate !== undefined) {
+            if (
+                birthDate === null ||
+                birthDate === ""
+            ) {
+                parsedBirthDate = null;
+            } else {
+                const birthDateString = String(
+                    birthDate
+                );
+
+                const dateRegex =
+                    /^\d{4}-\d{2}-\d{2}$/;
+
+                if (!dateRegex.test(birthDateString)) {
+                    throw {
+                        name: "BadRequest",
+                        message:
+                            "birthDate harus menggunakan format YYYY-MM-DD",
+                    };
+                }
+
+                const [
+                    year,
+                    month,
+                    day,
+                ] = birthDateString
+                    .split("-")
+                    .map(Number);
+
+                const date = new Date(
+                    Date.UTC(
+                        year,
+                        month - 1,
+                        day
+                    )
+                );
+
+                // Validasi tanggal sebenarnya.
+                // Contoh 2024-02-31 harus ditolak.
+                if (
+                    date.getUTCFullYear() !== year ||
+                    date.getUTCMonth() !== month - 1 ||
+                    date.getUTCDate() !== day
+                ) {
+                    throw {
+                        name: "BadRequest",
+                        message: "birthDate tidak valid",
+                    };
+                }
+
+                parsedBirthDate = date;
+            }
+        }
+
+        // ==========================================
+        // 3. Parse & Validate Angkatan
+        // ==========================================
+        let parsedAngkatan: number | undefined;
+
+        if (angkatan !== undefined) {
+            parsedAngkatan = Number(angkatan);
+
+            if (
+                !Number.isInteger(parsedAngkatan) ||
+                parsedAngkatan <= 0
+            ) {
+                throw {
+                    name: "BadRequest",
+                    message:
+                        "angkatan harus berupa angka positif",
+                };
+            }
+        }
+
+        // ==========================================
+        // 4. Parse & Validate Semester
+        // ==========================================
+        let parsedSemester: number | undefined;
+
+        if (semester !== undefined) {
+            parsedSemester = Number(semester);
+
+            if (
+                !Number.isInteger(parsedSemester) ||
+                parsedSemester <= 0
+            ) {
+                throw {
+                    name: "BadRequest",
+                    message:
+                        "semester harus berupa angka positif",
+                };
+            }
+        }
+
+        // ==========================================
+        // 5. Parse & Validate Prodi
+        // ==========================================
+        let parsedProdiId: number | undefined;
+
+        if (prodiId !== undefined) {
+            parsedProdiId = Number(prodiId);
+
+            if (
+                !Number.isInteger(parsedProdiId) ||
+                parsedProdiId <= 0
+            ) {
+                throw {
+                    name: "BadRequest",
+                    message:
+                        "prodiId harus berupa angka positif",
+                };
+            }
+
+            const prodi = await prisma.prodi.findUnique({
+                where: {
+                    id: parsedProdiId,
+                },
+                select: {
+                    id: true,
                 },
             });
 
-            if (oldAvatarKey) {
-                await S3Service.deleteUrl(oldAvatarKey)
+            if (!prodi) {
+                throw {
+                    name: "NotFound",
+                    message: "Program Studi tidak ditemukan",
+                };
+            }
+        }
+
+        // ==========================================
+        // 6. Validate Dosen
+        // ==========================================
+        let parsedDosenId: string | null | undefined;
+
+        if (dosenId !== undefined) {
+            if (
+                dosenId === null ||
+                dosenId === ""
+            ) {
+                parsedDosenId = null;
+            } else {
+                parsedDosenId = String(dosenId);
+
+                const dosen = await prisma.dosen.findUnique({
+                    where: {
+                        id: parsedDosenId,
+                    },
+                    select: {
+                        id: true,
+                    },
+                });
+
+                if (!dosen) {
+                    throw {
+                        name: "NotFound",
+                        message: "Dosen tidak ditemukan",
+                    };
+                }
+            }
+        }
+
+        // ==========================================
+        // 7. Handle Avatar
+        // ==========================================
+        let avatarUpdate:
+            | {
+                  avatarKey: string | null;
+              }
+            | undefined;
+
+        if (avatarKey !== undefined) {
+            // --------------------------------------
+            // Hapus avatar
+            // --------------------------------------
+            if (
+                avatarKey === null ||
+                avatarKey === ""
+            ) {
+                avatarUpdate = {
+                    avatarKey: null,
+                };
             }
 
-            res.status(200).json({
-                message: "User berhasil diperbarui",
-                data: userUpdate.id,
-            });
-        } catch (error) {
-            next(error)
+            // --------------------------------------
+            // Ganti / upload avatar baru
+            // --------------------------------------
+            else {
+                const newAvatarKey = String(
+                    avatarKey
+                );
+
+                // Pastikan key benar-benar milik
+                // mahasiswa/user yang sedang diedit.
+                const expectedPrefix =
+                    `students/${userId}/`;
+
+                if (
+                    !newAvatarKey.startsWith(
+                        expectedPrefix
+                    )
+                ) {
+                    throw {
+                        name: "BadRequest",
+                        message:
+                            "Avatar tidak valid",
+                    };
+                }
+
+                // Pastikan object memang ada di S3
+                const exists =
+                    await S3Service.checkObjectExists(
+                        newAvatarKey
+                    );
+
+                if (!exists) {
+                    throw {
+                        name: "BadRequest",
+                        message:
+                            "File avatar tidak ditemukan",
+                    };
+                }
+
+                avatarUpdate = {
+                    avatarKey: newAvatarKey,
+                };
+
+                // Untuk cleanup jika DB update gagal
+                if (
+                    newAvatarKey !== oldAvatarKey
+                ) {
+                    newAvatarKeyForCleanup =
+                        newAvatarKey;
+                }
+            }
         }
+
+        // ==========================================
+        // 8. Password
+        // ==========================================
+        let hashedPassword: string | undefined;
+
+        if (
+            password !== undefined &&
+            password !== null &&
+            password !== ""
+        ) {
+            hashedPassword =
+                await hashPassword(password);
+        }
+
+        // ==========================================
+        // 9. Update User + Mahasiswa
+        // ==========================================
+        const userUpdate = await prisma.user.update({
+            where: {
+                id: userId,
+            },
+
+            data: {
+                // ==============================
+                // USER
+                // ==============================
+
+                ...(name !== undefined && {
+                    name,
+                }),
+
+                ...(email !== undefined && {
+                    email,
+                }),
+
+                ...(username !== undefined && {
+                    username,
+                }),
+
+                ...(hashedPassword !== undefined && {
+                    password: hashedPassword,
+                }),
+
+                ...(parsedBirthDate !== undefined && {
+                    birthDate: parsedBirthDate,
+                }),
+
+                ...(phoneNumber !== undefined && {
+                    phoneNumber,
+                }),
+
+                ...(gender !== undefined && {
+                    gender,
+                }),
+
+                ...(address !== undefined && {
+                    address,
+                }),
+
+                ...(nik !== undefined && {
+                    nik,
+                }),
+
+                ...(birthPlace !== undefined && {
+                    birthPlace,
+                }),
+
+                ...(avatarUpdate && {
+                    avatarKey:
+                        avatarUpdate.avatarKey,
+                    avatarUrl: null,
+                }),
+
+                // ==============================
+                // MAHASISWA
+                // ==============================
+
+                mahasiswa: {
+                    update: {
+                        ...(nim !== undefined && {
+                            nim,
+                        }),
+
+                        ...(parsedAngkatan !== undefined && {
+                            angkatan: parsedAngkatan,
+                        }),
+
+                        ...(parsedSemester !== undefined && {
+                            semester: parsedSemester,
+                        }),
+
+                        ...(status !== undefined && {
+                            status,
+                        }),
+
+                        ...(parsedProdiId !== undefined && {
+                            prodiId: parsedProdiId,
+                        }),
+
+                        ...(dosenId !== undefined && {
+                            dosenId: parsedDosenId,
+                        }),
+                    },
+                },
+            },
+
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                username: true,
+                avatarKey: true,
+
+                mahasiswa: {
+                    select: {
+                        id: true,
+                        nim: true,
+                        angkatan: true,
+                        semester: true,
+                        status: true,
+                        prodiId: true,
+                        dosenId: true,
+                    },
+                },
+            },
+        });
+
+        // ==========================================
+        // 10. Hapus Avatar Lama
+        // ==========================================
+        if (
+            avatarUpdate &&
+            oldAvatarKey &&
+            oldAvatarKey !==
+                avatarUpdate.avatarKey
+        ) {
+            try {
+                await S3Service.deleteUrl(
+                    oldAvatarKey
+                );
+            } catch (error) {
+                console.error(
+                    "Gagal menghapus avatar lama:",
+                    error
+                );
+            }
+        }
+
+        // ==========================================
+        // 11. Generate Presigned Read URL
+        // ==========================================
+        let avatarUrl: string | null = null;
+
+        if (userUpdate.avatarKey) {
+            avatarUrl =
+                await S3Service.createReadUrl(
+                    userUpdate.avatarKey
+                );
+        }
+
+        // ==========================================
+        // 12. Response
+        // ==========================================
+        return res.status(200).json({
+            message:
+                "Mahasiswa berhasil diperbarui",
+
+            data: {
+                id: userUpdate.id,
+
+                nama: userUpdate.name,
+                email: userUpdate.email,
+                username: userUpdate.username,
+
+                avatarUrl,
+
+                mahasiswa:
+                    userUpdate.mahasiswa,
+            },
+        });
+    } catch (error) {
+        // console.log(error, "<< ERROR UPDATE MAHASISWA");
+        // ==========================================
+        // Cleanup avatar baru jika DB gagal
+        // ==========================================
+        if (newAvatarKeyForCleanup) {
+            try {
+                await S3Service.deleteUrl(
+                    newAvatarKeyForCleanup
+                );
+            } catch (cleanupError) {
+                console.error(
+                    "Gagal cleanup avatar baru:",
+                    cleanupError
+                );
+            }
+        }
+
+        next(error);
     }
+}
 
     static async deleteUserById(req: Request, res: Response, next: NextFunction) {
         try {
@@ -222,6 +652,7 @@ export class Controller {
                         id: true,
                         name: true,
                         role: true,
+                        avatarUrl: true,
                         mahasiswa: {
                             select: {
                                 id: true,
@@ -239,7 +670,10 @@ export class Controller {
             ]);
 
             res.status(200).json({
-                students,
+                students: students.map((student) => ({
+                    ...student,
+                    avatarUrl: student.avatarUrl ?? null,
+                })),
                 pagination: {
                     page,
                     limit,
@@ -257,10 +691,11 @@ export class Controller {
         res: Response,
         next: NextFunction
     ) {
+        
         try {
             const { id } = req.params;
 
-            const student = await prisma.user.findFirst({
+            const student = await prisma.user.findUnique({
                 where: {
                     id: id as string,
                     role: "Mahasiswa",
@@ -275,6 +710,7 @@ export class Controller {
                     gender: true,
                     nik: true,
                     birthPlace: true,
+                    avatarKey: true,
                     mahasiswa: {
                         select: {
                             id: true,
@@ -352,6 +788,14 @@ export class Controller {
                 },
             });
 
+            let avatarUrl: string | null = null;
+
+            if (student?.avatarKey) {
+                avatarUrl = await S3Service.createReadUrl(
+                    student.avatarKey
+                );
+            }
+
             if (!student || !student.mahasiswa) {
                 throw {
                     name: "NotFound",
@@ -391,10 +835,11 @@ export class Controller {
                 return Math.max(latest, currentSemester);
             }, mahasiswa.semester);
 
-            console.log(mahasiswa.prodi?.kurikulum[0], "<< KURIKULUM TERAKHIR");
+            
             res.status(200).json({
                 student: {
                     id: student.id,
+                    avatarUrl,
                     nim: mahasiswa.nim,
                     nama: student.name,
                     nik: student.nik ?? null,
@@ -440,6 +885,7 @@ export class Controller {
                 },
             });
         } catch (error) {
+            // console.error
             next(error);
         }
     }

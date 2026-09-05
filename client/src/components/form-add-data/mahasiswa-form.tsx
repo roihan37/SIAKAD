@@ -411,6 +411,35 @@ export function MahasiswaField({
 
         </Field>
 
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field data-invalid={!!errors.nik}>
+            <FieldLabel htmlFor="form-nik">NIK</FieldLabel>
+            <Input
+              id="form-nik"
+              type="text"
+              inputMode="numeric"
+              maxLength={16}
+              placeholder="327xxxxxxxxxxxxx"
+              aria-invalid={!!errors.nik}
+              {...register("nik")}
+            />
+            <FieldDescription>Masukkan 16 digit NIK.</FieldDescription>
+            <FieldError>{errors.nik?.message}</FieldError>
+          </Field>
+
+          <Field data-invalid={!!errors.birthPlace}>
+            <FieldLabel htmlFor="form-birth-place">Tempat Lahir</FieldLabel>
+            <Input
+              id="form-birth-place"
+              type="text"
+              placeholder="Contoh: Tasikmalaya"
+              aria-invalid={!!errors.birthPlace}
+              {...register("birthPlace")}
+            />
+            <FieldError>{errors.birthPlace?.message}</FieldError>
+          </Field>
+        </div>
+
 
         {/* =================================================
             USERNAME + EMAIL

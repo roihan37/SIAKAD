@@ -143,6 +143,7 @@ export type StudentNilai = {
 export type StudentDetail = {
   student: {
     id: string;
+    avatarUrl: string | null;
     nim: string;
     nama: string;
     nik: string | null;

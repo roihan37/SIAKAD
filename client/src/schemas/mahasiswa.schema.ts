@@ -10,6 +10,11 @@ import {
 import { personSchema } from "./person.schema"
 
 export const mahasiswaSchema = personSchema.extend({
+  nik: requiredText("NIK", 16, 16)
+    .regex(/^\d{16}$/, "NIK harus terdiri dari 16 digit angka."),
+
+  birthPlace: requiredText("Tempat lahir", 2, 100),
+
   nim: requiredText("NIM", 5, 30)
     .regex(/^\d+$/, "NIM hanya boleh berisi angka."),
 
@@ -32,3 +37,12 @@ export type MahasiswaFormInput =
 
 export type MahasiswaFormValues =
   z.output<typeof mahasiswaSchema>
+
+export const mahasiswaEditSchema = mahasiswaSchema.extend({
+  password: z.string().optional(),
+  nik: z.string().optional(),
+  birthPlace: z.string().optional(),
+})
+
+export type MahasiswaEditFormInput = z.input<typeof mahasiswaEditSchema>
+export type MahasiswaEditFormValues = z.output<typeof mahasiswaEditSchema>
