@@ -1,4 +1,4 @@
-import type { Dosen, Fakultas, Jadwal, KRS, Kurikulum, Mahasiswa, MataKuliah, ProgramStudi, Ruangan, StudentDetail, TahunAkademik } from "./campus"
+import type { Dosen, Fakultas, Jadwal, KRS, Kurikulum, Mahasiswa, MataKuliah, Nilai, ProgramStudi, riwayatSemester, Ruangan, StudentDetail, StudentKRS, StudentNilai, TahunAkademik } from "./campus"
 
 export interface AuthState {
     isLoading : boolean
@@ -7,15 +7,23 @@ export interface AuthState {
     initialized: boolean
 }
 
-export interface UsersState extends Pagination{
+export interface MahasiswaState extends Pagination{
     error: string | null
     students: Mahasiswa[]
-    lecturers: Dosen[]
     isLoadingStudents: boolean
     isCreatingStudent: boolean
+    isLoadingStudentsDetail: boolean
+    studentDetail: StudentDetail | null
+    riwayatSemester : riwayatSemester[]
+    krsMahasiswa : StudentKRS | null
+    nilaiMahasiswa : StudentNilai | null
+}
+
+export interface DosenState extends Pagination{
+    error: string | null
+    lecturers: Dosen[]
     isLoadingLecturers: boolean
     isCreatingLecturer: boolean
-    studentDetail: StudentDetail | null
 }
 
 export interface CampusState extends Pagination {

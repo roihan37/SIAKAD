@@ -1,8 +1,8 @@
 
 import { DataTable } from "@/components/tables/data-table"
 import { mhsColumns } from "@/components/tables/column/mhsColumns"
-import { getAllStudents } from "@/features/action/usersThunk"
-import { setPage, setSearch, setSorting } from "@/features/slice/usersSlice"
+import { getAllStudents } from "@/features/action/mahasiswaThunk"
+import { setPage, setSearch, setSorting } from "@/features/slice/mahasiswaSlice"
 import { useAppDispatch, useAppSelector } from "@/hooks/redux"
 import type { SortingState } from "@tanstack/react-table"
 import { useEffect, useState } from "react"
@@ -17,7 +17,7 @@ export default function MahasiswaPage() {
         search,
         sortBy,
         sortOrder,
-    } = useAppSelector((state) => state.users)
+    } = useAppSelector((state) => state.students)
 
 
     const [searchInput, setSearchInput] = useState(search)

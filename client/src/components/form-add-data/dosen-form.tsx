@@ -14,7 +14,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useEffect, useState, type ChangeEvent } from "react"
 import { useAppDispatch, useAppSelector } from "@/hooks/redux"
 import { getAllProdi } from "@/features/action/campusThunk"
-import { createLecturer, getAllLecturers, getLecturerAvatarUploadUrl } from "@/features/action/usersThunk"
+import { createLecturer, getAllLecturers, getLecturerAvatarUploadUrl } from "@/features/action/dosenThunk"
 
 const genderList = [{ label: "Laki-laki", value: "Male" }, { label: "Perempuan", value: "Female" }]
 const statusList = [

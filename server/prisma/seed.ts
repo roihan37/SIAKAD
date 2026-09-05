@@ -570,6 +570,189 @@ const jamSelesai =
     }
   }
 
+  // Data akademik realistis khusus untuk Mahasiswa 1
+  const mahasiswaPertama = await prisma.mahasiswa.findUnique({
+    where: { nim: "2024000000" },
+  });
+
+  if (mahasiswaPertama) {
+    await prisma.user.update({
+      where: { id: mahasiswaPertama.userId },
+      data: {
+        nik: "3278011508010001",
+        birthPlace: "Tasikmalaya",
+        birthDate: new Date("2001-08-15T00:00:00.000Z"),
+      },
+    });
+
+    const krsLama = await prisma.kRS.findMany({
+      where: {
+        mahasiswaId: mahasiswaPertama.id,
+        tahunAkademik: {
+          tahun: "2023/2024",
+        },
+      },
+      select: {
+        id: true,
+        details: {
+          select: {
+            id: true,
+          },
+        },
+      },
+    });
+
+    for (const krs of krsLama) {
+      const detailIds = krs.details.map((detail) => detail.id);
+      await prisma.transkrip.deleteMany({
+        where: { krsDetailId: { in: detailIds } },
+      });
+      await prisma.kRSDetail.deleteMany({
+        where: { krsId: krs.id },
+      });
+      await prisma.kRS.delete({
+        where: { id: krs.id },
+      });
+    }
+
+    const periodeMahasiswaPertama = [
+      { tahun: "2024/2025", semester: Semester.GANJIL },
+      { tahun: "2024/2025", semester: Semester.GENAP },
+      { tahun: "2025/2026", semester: Semester.GANJIL },
+    ];
+
+    const tahunAkademikMahasiswaPertama = [];
+    for (const periode of periodeMahasiswaPertama) {
+      const tahunAkademik = await prisma.tahunAkademik.upsert({
+        where: {
+          tahun_semester: periode,
+        },
+        update: {},
+        create: {
+          ...periode,
+          isActive: false,
+        },
+      });
+
+      tahunAkademikMahasiswaPertama.push(tahunAkademik);
+    }
+
+    const mataKuliahMahasiswaPertama = createdMataKuliah
+      .filter((mataKuliah) => mataKuliah.prodiId === mahasiswaPertama.prodiId)
+      .slice(0, 4);
+    const dosenMahasiswaPertama = allDosen.find(
+      (dosen) => dosen.prodiId === mahasiswaPertama.prodiId
+    );
+
+    if (mataKuliahMahasiswaPertama.length === 4 && dosenMahasiswaPertama) {
+      const nilaiPerSemester = [
+        [85, 80, 88, 82],
+        [78, 86, 90, 84],
+        [92, 88, 85, 90],
+      ];
+      const gradePerSemester = [
+        ["A", "A-", "A", "A-"],
+        ["B+", "A-", "A", "A-"],
+        ["A", "A", "A-", "A"],
+      ];
+      const bobotPerGrade: Record<string, number> = {
+        A: 4.0,
+        "A-": 3.7,
+        "B+": 3.3,
+      };
+
+      for (let semesterIndex = 0; semesterIndex < tahunAkademikMahasiswaPertama.length; semesterIndex++) {
+        const tahunAkademik = tahunAkademikMahasiswaPertama[semesterIndex];
+        const kelas = await prisma.kelas.upsert({
+          where: {
+            nama_prodiId_tahunAkademikId: {
+              nama: "Kelas Mahasiswa 1",
+              prodiId: mahasiswaPertama.prodiId,
+              tahunAkademikId: tahunAkademik.id,
+            },
+          },
+          update: {},
+          create: {
+            nama: "Kelas Mahasiswa 1",
+            prodiId: mahasiswaPertama.prodiId,
+            tahunAkademikId: tahunAkademik.id,
+            tingkat: semesterIndex + 1,
+          },
+        });
+
+        const krs = await prisma.kRS.upsert({
+          where: {
+            mahasiswaId_tahunAkademikId: {
+              mahasiswaId: mahasiswaPertama.id,
+              tahunAkademikId: tahunAkademik.id,
+            },
+          },
+          update: { status: "DISETUJUI" },
+          create: {
+            mahasiswaId: mahasiswaPertama.id,
+            tahunAkademikId: tahunAkademik.id,
+            status: "DISETUJUI",
+          },
+        });
+
+        for (let courseIndex = 0; courseIndex < mataKuliahMahasiswaPertama.length; courseIndex++) {
+          const mataKuliahId = mataKuliahMahasiswaPertama[courseIndex].id;
+          const kelasMataKuliah = await prisma.kelasMataKuliah.upsert({
+            where: {
+              kelasId_mataKuliahId: {
+                kelasId: kelas.id,
+                mataKuliahId,
+              },
+            },
+            update: {},
+            create: {
+              kelasId: kelas.id,
+              mataKuliahId,
+              dosenId: dosenMahasiswaPertama.id,
+            },
+          });
+
+          const detail = await prisma.kRSDetail.upsert({
+            where: {
+              krsId_kelasMataKuliahId: {
+                krsId: krs.id,
+                kelasMataKuliahId: kelasMataKuliah.id,
+              },
+            },
+            update: { status: KRSStatus.DISETUJUI },
+            create: {
+              krsId: krs.id,
+              kelasMataKuliahId: kelasMataKuliah.id,
+              status: KRSStatus.DISETUJUI,
+            },
+          });
+
+          const grade = gradePerSemester[semesterIndex][courseIndex];
+          await prisma.transkrip.upsert({
+            where: {
+              mahasiswaId_krsDetailId: {
+                mahasiswaId: mahasiswaPertama.id,
+                krsDetailId: detail.id,
+              },
+            },
+            update: {
+              nilaiAngka: nilaiPerSemester[semesterIndex][courseIndex],
+              nilaiHuruf: grade,
+              bobot: bobotPerGrade[grade],
+            },
+            create: {
+              mahasiswaId: mahasiswaPertama.id,
+              krsDetailId: detail.id,
+              nilaiAngka: nilaiPerSemester[semesterIndex][courseIndex],
+              nilaiHuruf: grade,
+              bobot: bobotPerGrade[grade],
+            },
+          });
+        }
+      }
+    }
+  }
+
   console.log("✅ Full seed selesai: created mata kuliah, kurikulum, ruangan, tahun akademik, kelas, kelas-mata-kuliah, jadwal, dan KRS.");
 }
 

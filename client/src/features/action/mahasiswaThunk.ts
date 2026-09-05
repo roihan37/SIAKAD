@@ -44,34 +44,54 @@ export const getStudentById = createAsyncThunk(
   }
 )
 
-export const getAllLecturers = createAsyncThunk(
-  "lecturers/getAll",
-  async ({ page, limit, search, sortBy, sortOrder, prodiId }: PaginationParams,
-    thunkAPI) => {
+export const updateStudent = createAsyncThunk(
+  "students/update",
+  async ({ id, payload }: { id: string; payload: Record<string, unknown> }, thunkAPI) => {
     try {
-      const response = await api.get("/lecturers", {
-        params: {
-          page,
-          limit,
-          search,
-          sortBy,
-          sortOrder,
-          prodiId
-        }
-      })
-      console.log(response.data, "NN");
-      return response.data;
-
+      const response = await api.patch(`/students/${id}`, payload)
+      return response.data
     } catch (err: any) {
-
-      return thunkAPI.rejectWithValue(
-        err.response.data.message
-      );
+      return thunkAPI.rejectWithValue(err.response?.data?.message ?? "Gagal memperbarui mahasiswa")
     }
   }
+)
 
+export const getStudentHistorySemester = createAsyncThunk(
+  "students/getHistorySemester",
+  async (id: string, thunkAPI) => {
+    try {
+      console.log(id, "IDDD");
+      const response = await api.get(`/students/${id}/history-semester`)
+      return response.data
+    } catch (err: any) {
+      return thunkAPI.rejectWithValue(err.response.data.message)
+    }
+  }
+)
 
-);
+export const getStudentKRS = createAsyncThunk(
+  "students/getKRS",
+  async ({ id, tahunAkademikId }: { id: string; tahunAkademikId: number }, thunkAPI) => {
+    try {
+      const response = await api.get(`/students/${id}/krs`, { params: { tahunAkademikId } })
+      return response.data
+    } catch (err: any) {
+      return thunkAPI.rejectWithValue(err.response.data.message)
+    }
+  }
+)
+
+export const getStudentNilai = createAsyncThunk(
+  "students/getNilai",
+  async ({ id, tahunAkademikId }: { id: string; tahunAkademikId: number }, thunkAPI) => {
+    try {
+      const response = await api.get(`/students/${id}/nilai`, { params: { tahunAkademikId } })
+      return response.data
+    } catch (err: any) {
+      return thunkAPI.rejectWithValue(err.response.data.message)
+    }
+  }
+)
 
 export const createStudent = createAsyncThunk(
   "students/create",
@@ -106,23 +126,11 @@ export const getAvatarUploadUrl = createAsyncThunk(
   }
 )
 
-export const createLecturer = createAsyncThunk(
-  "lecturers/create",
-  async (payload: CreateLecturerPayload, thunkAPI) => {
+export const getStudentAvatarUploadUrl = createAsyncThunk(
+  "students/studentAvatarUploadUrl",
+  async ({ id, contentType }: { id: string; contentType: string }, thunkAPI) => {
     try {
-      const response = await api.post("/lecturers", payload)
-      return response.data
-    } catch (err: any) {
-      return thunkAPI.rejectWithValue(err.response?.data?.message ?? "Gagal membuat dosen")
-    }
-  }
-)
-
-export const getLecturerAvatarUploadUrl = createAsyncThunk(
-  "lecturers/avatarUploadUrl",
-  async (contentType: string, thunkAPI) => {
-    try {
-      const response = await api.post("/avatars/lecturers/upload-url", { contentType })
+      const response = await api.post(`/avatars/students/${id}/upload-url`, { contentType })
       return response.data as { uploadUrl: string; key: string }
     } catch (err: any) {
       return thunkAPI.rejectWithValue(err.response?.data?.message ?? "Gagal menyiapkan upload foto")

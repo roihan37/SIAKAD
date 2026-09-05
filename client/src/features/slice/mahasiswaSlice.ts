@@ -1,11 +1,10 @@
-import type { UsersState } from "@/types/state";
+import type { MahasiswaState } from "@/types/state";
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import { createLecturer, createStudent, getAllLecturers, getAllStudents, getStudentById } from "../action/usersThunk";
+import { createStudent, getAllStudents, getStudentById, getStudentHistorySemester, getStudentKRS, getStudentNilai } from "../action/mahasiswaThunk";
 
-const initialState : UsersState ={
+const initialState : MahasiswaState ={
     error: null,
     students: [],
-    lecturers: [],
     search: "",
     page: 1,
     limit: 10,
@@ -13,17 +12,19 @@ const initialState : UsersState ={
     totalRows: 0,
     sortBy: "name",
     sortOrder: "asc",
+    riwayatSemester: [],
+    krsMahasiswa: null,
+    nilaiMahasiswa: null,
 
     studentDetail: null,
 
     isLoadingStudents: false,
+    isLoadingStudentsDetail: false,
     isCreatingStudent: false,
-    isLoadingLecturers: false,
-    isCreatingLecturer: false
     
 }
-const usersSilce = createSlice({
-    name : 'users',
+const mahasiswaSilce = createSlice({
+    name : 'students',
     initialState,
     reducers: {
         setPage: (state, action: PayloadAction<number>) => {
@@ -57,19 +58,6 @@ const usersSilce = createSlice({
                 : action.error.message ?? "Gagal membuat mahasiswa."
         })
 
-        .addCase(createLecturer.pending, state => {
-            state.isCreatingLecturer = true
-        })
-        .addCase(createLecturer.fulfilled, (state) => {
-            state.isCreatingLecturer = false
-        })
-        .addCase(createLecturer.rejected, (state, action) =>{
-            state.isCreatingLecturer = false
-            state.error =
-                typeof action.payload === "string"
-                ? action.payload
-                : action.error.message ?? "Gagal membuat mahasiswa."
-        })
 
         // STUDENTS
         .addCase(getAllStudents.pending, state => {
@@ -90,38 +78,63 @@ const usersSilce = createSlice({
 
         // GET ID STUDENTS
         .addCase(getStudentById.pending, state => {
-            // state.isLoadingStudents = true
+            state.isLoadingStudentsDetail = true
         })
         .addCase(getStudentById.fulfilled, (state, action) => {
-            // state.isLoadingStudents = false
+            state.isLoadingStudentsDetail = false
             state.studentDetail = action.payload
             
         })
         .addCase(getStudentById.rejected, (state, action) =>{
+            state.isLoadingStudentsDetail = false
             state.studentDetail = null
         })
 
-        
+        // GET HISTORY SEMESTER STUDENTS
+         .addCase(getStudentHistorySemester.pending, state => {
+            state.isLoadingStudentsDetail = true
+        })
+        .addCase(getStudentHistorySemester.fulfilled, (state, action) => {
+            state.isLoadingStudentsDetail = false
+            state.riwayatSemester = action.payload.riwayatSemester
+            
+        })
+        .addCase(getStudentHistorySemester.rejected, (state, action) =>{
+            state.isLoadingStudentsDetail = false
+            state.riwayatSemester = []
+        })
 
-        // LECTURERS
-        .addCase(getAllLecturers.pending, state => {
-            state.isLoadingLecturers = true
+        // GET KRS STUDENTS
+        .addCase(getStudentKRS.pending, state => {
+            state.isLoadingStudentsDetail = true
         })
-        .addCase(getAllLecturers.fulfilled, (state, action) => {
-            state.isLoadingLecturers = false
-            state.lecturers = action.payload.lecturers
-            state.page = action.payload.pagination.page;
-            state.limit = action.payload.pagination.limit;
-            state.totalPages = action.payload.pagination.totalPages;
-            state.totalRows = action.payload.pagination.totalRows;
+        .addCase(getStudentKRS.fulfilled, (state, action) => {
+            state.isLoadingStudentsDetail = false
+            state.krsMahasiswa = action.payload.krs
+            
         })
-        .addCase(getAllLecturers.rejected, (state, action) =>{
-            state.isLoadingLecturers = false
-            state.error = action.payload as string;
+        .addCase(getStudentKRS.rejected, (state, action) =>{
+            state.isLoadingStudentsDetail = false
+            state.krsMahasiswa = null
         })
+
+        // GET NILAI STUDENTS
+        .addCase(getStudentNilai.pending, state => {
+            state.isLoadingStudentsDetail = true
+        })
+        .addCase(getStudentNilai.fulfilled, (state, action) => {
+            state.isLoadingStudentsDetail = false
+            state.nilaiMahasiswa = action.payload.nilai
+            
+        })
+        .addCase(getStudentNilai.rejected, (state, action) =>{
+            state.isLoadingStudentsDetail = false
+            state.nilaiMahasiswa = null
+        })
+        
 
 
     }
 })
-export const { setPage, setSearch, setSorting } = usersSilce.actions;
-export default usersSilce.reducer
+export const { setPage, setSearch, setSorting } = mahasiswaSilce.actions;
+export default mahasiswaSilce.reducer

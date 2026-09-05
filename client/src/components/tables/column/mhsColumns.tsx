@@ -1,4 +1,4 @@
-import { type ColumnDef } from "@tanstack/react-table";
+import { type ColumnDef, type HeaderContext } from "@tanstack/react-table";
 import { createActionColumn } from "../action-column";
 import { createSelectColumn } from "../select-column";
 import type { Mahasiswa } from "@/types/campus";
@@ -9,7 +9,7 @@ import { Link } from "react-router"
 
 // helper reusable, biar tiap header sortable nggak copy-paste JSX yang sama
 function createSortableHeader(label: string) {
-  return function SortableHeader({ column }: { column: any }) {
+  return function SortableHeader<TData>({ column }: HeaderContext<TData, unknown>) {
     const isSorted = column.getIsSorted(); // false | "asc" | "desc"
     return (
       <Button
@@ -71,5 +71,5 @@ export const mhsColumns: ColumnDef<Mahasiswa>[] = [
       label: "Status",
     },
   },
-  createActionColumn(),
+  createActionColumn<Mahasiswa>(undefined, undefined, undefined, (student) => `/mahasiswa/${student.id}`),
 ];

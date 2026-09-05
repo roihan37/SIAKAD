@@ -14,6 +14,7 @@ import KurikulumPage from "@/pages/KurikulumPage";
 import JadwalPage from "@/pages/JadwalKuliahPage";
 import KRSPage from "@/pages/KRSPage";
 import MahasiswaDetailPage from "@/pages/Mahasiswa/MahasiswaDetailPage";
+import MahasiswaEditPage from "@/pages/Mahasiswa/MahasiswaEditPage";
 
 const router = createBrowserRouter([
   {
@@ -29,6 +30,10 @@ const router = createBrowserRouter([
           {
             path: "/mahasiswa/:id",
             element: <MahasiswaDetailPage />,
+          },
+          {
+            path: "/mahasiswa/:id/edit",
+            element: <MahasiswaEditPage />,
           },
           {
             path: "/dosen",

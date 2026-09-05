@@ -71,7 +71,7 @@ export type Kurikulum = {
   id? : number
   nama: string
   kode: string
-  prodiId: number
+  prodiId?: number
   prodi?: number
   tahun: number | null
   isActive: Boolean
@@ -102,11 +102,42 @@ export type KRS = {
   angkatan: number
   totalSKS: number | null
   status: string
-  tahunAkademik: {
-    id: number;
-    tahun: string;
-    semester: string;
+  tahunAkademik: TahunAkademik
+}
+
+export type Nilai = {
+  tahunAkademik: TahunAkademik
+  details: string
+  summary: {
+    totalSKS: number
+    ips: number
+    ipk: number
   }
+}
+
+export type StudentKRS = {
+  id: string
+  tahunAkademik: TahunAkademik & { label: string }
+  status: string
+  totalSKS: number
+  details: Array<{
+    id: string
+    mataKuliah: { kode: string; nama: string; sks: number }
+    kelas: { nama: string }
+    status: string
+  }>
+}
+
+export type StudentNilai = {
+  tahunAkademik: TahunAkademik & { label: string }
+  details: Array<{
+    id: string
+    mataKuliah: { kode: string; nama: string; sks: number }
+    nilai: number | null
+    grade: string | null
+    bobot: number | null
+  }>
+  summary: { totalSKS: number; ips: number; ipk: number }
 }
 
 export type StudentDetail = {
@@ -123,6 +154,7 @@ export type StudentDetail = {
     alamat: string | null;
     angkatan: number;
     status?: string;
+    kurikulum?: Kurikulum | null;
     prodi: {
       id: string;
       nama: string;
@@ -135,5 +167,17 @@ export type StudentDetail = {
       id: string;
       nama: string;
     } | null;
+    summary: {
+      totalSKS: number; ips: number; ipk: number, semester: number, kehadiran: number
+    }
   };
 };
+
+export type riwayatSemester = {
+  semester: number
+  tahunAkademik: TahunAkademik & { label: string }
+  sks: number
+  ips: number
+  ipk: number
+  status: string
+}

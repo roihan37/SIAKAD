@@ -8,11 +8,13 @@ model User {
   avatarUrl     String?
   role          Role
   phoneNumber   String?
+  nik           String?        @unique
   photo         String?
   address       String?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   birthDate     DateTime?
+  birthPlace    String?
   gender        Gender
   dosen         Dosen?
   mahasiswa     Mahasiswa?

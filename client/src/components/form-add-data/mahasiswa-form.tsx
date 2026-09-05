@@ -51,10 +51,9 @@ import { useEffect, useState, type ChangeEvent } from "react"
 
 import {
   createStudent,
-  getAllLecturers,
   getAllStudents,
   getAvatarUploadUrl,
-} from "@/features/action/usersThunk"
+} from "@/features/action/mahasiswaThunk"
 
 import {
   getAllProdi,
@@ -63,6 +62,7 @@ import {
 import { useAppDispatch, useAppSelector } from "@/hooks/redux"
 
 import type { MahasiswaFieldProps } from "@/types/props"
+import { getAllLecturers } from "@/features/action/dosenThunk"
 
 
 const genderList = [
@@ -138,7 +138,7 @@ export function MahasiswaField({
     search,
     sortBy,
     sortOrder,
-  } = useAppSelector((state)=>state.users)
+  } = useAppSelector((state)=>state.students)
 
   const getDefaultBirthDate = () => {
     const date = new Date()

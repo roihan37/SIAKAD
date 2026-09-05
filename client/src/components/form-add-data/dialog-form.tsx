@@ -118,7 +118,8 @@ export function DialogForm() {
   const { pathname } = useLocation()
 
   const dispatch = useAppDispatch()
-  const { isCreatingStudent, isCreatingLecturer } = useAppSelector((state) => state.users)
+  const { isCreatingStudent } = useAppSelector((state) => state.students)
+  const { isCreatingLecturer } = useAppSelector((state) => state.lecturers)
   const { isCreatingProdi, isCreatingFakultas } = useAppSelector((state) => state.campus)
   const { isCreatingKurikulum } = useAppSelector((state) => state.kurikulum)
   const { isCreatingMatkul } = useAppSelector((state) => state.matkul)
@@ -142,7 +143,7 @@ export function DialogForm() {
   )
 
   const { lecturers } = useAppSelector(
-    (state) => state.users
+    (state) => state.lecturers
   )
 
   const [dialogOpen, setDialogOpen] = useState(false)

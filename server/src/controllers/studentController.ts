@@ -78,7 +78,7 @@ export class Controller {
                     );
                 }
             }
-            
+
             next(error)
         }
     }
@@ -95,13 +95,16 @@ export class Controller {
                 phoneNumber,
                 gender,
                 address,
+                nik,
+                birthPlace,
                 nim,
                 angkatan,
                 semester,
                 status,
                 prodiId,
                 birthDate,
-                avatarKey
+                avatarKey,
+                dosenId
             } = req.body
 
 
@@ -136,6 +139,8 @@ export class Controller {
                     phoneNumber,
                     gender,
                     address,
+                    nik,
+                    birthPlace,
                     ...(avatarKey ? { avatarKey, avatarUrl } : {}),
                     mahasiswa: {
                         update: {
@@ -144,6 +149,7 @@ export class Controller {
                             semester,
                             status,
                             prodiId,
+                            dosenId,
                         },
                     },
                 },
@@ -267,6 +273,8 @@ export class Controller {
                     address: true,
                     birthDate: true,
                     gender: true,
+                    nik: true,
+                    birthPlace: true,
                     mahasiswa: {
                         select: {
                             id: true,
@@ -284,6 +292,21 @@ export class Controller {
                                             name: true,
                                         },
                                     },
+                                    kurikulum: {
+                                        where: {
+                                            isActive: true,
+                                        },
+                                        orderBy: {
+                                            tahun: "desc",
+                                        },
+                                        take: 1,
+                                        select: {
+                                            id: true,
+                                            kode: true,
+                                            nama: true,
+                                            tahun: true,
+                                        },
+                                    },
                                 },
                             },
                             dosen: {
@@ -292,6 +315,34 @@ export class Controller {
                                     user: {
                                         select: {
                                             name: true,
+                                        },
+                                    },
+                                },
+                            },
+                            krs: {
+                                select: {
+                                    tahunAkademik: {
+                                        select: {
+                                            tahun: true,
+                                            semester: true,
+                                        },
+                                    },
+                                    details: {
+                                        select: {
+                                            kelasMataKuliah: {
+                                                select: {
+                                                    mataKuliah: {
+                                                        select: {
+                                                            sks: true,
+                                                        },
+                                                    },
+                                                },
+                                            },
+                                            transkrip: {
+                                                select: {
+                                                    bobot: true,
+                                                },
+                                            },
                                         },
                                     },
                                 },
@@ -313,14 +364,41 @@ export class Controller {
             const tanggalLahir = student.birthDate
                 ? new Date(student.birthDate).toISOString().split("T")[0]
                 : null;
+            const semesterOrder = {
+                GANJIL: 1,
+                GENAP: 2,
+            } as const;
+            const getStartYear = (tahun: string) => Number(tahun.split("/")[0]);
+            const round = (value: number) => Math.round(value * 100) / 100;
 
+            const gradedDetails = mahasiswa.krs.flatMap((krs) =>
+                krs.details
+                    .filter((detail) => detail.transkrip[0]?.bobot != null)
+                    .map((detail) => ({
+                        sks: detail.kelasMataKuliah.mataKuliah.sks,
+                        bobot: Number(detail.transkrip[0]!.bobot),
+                    }))
+            );
+            const totalSKS = gradedDetails.reduce((total, detail) => total + detail.sks, 0);
+            const totalGradePoints = gradedDetails.reduce(
+                (total, detail) => total + detail.sks * detail.bobot,
+                0
+            );
+            const semester = mahasiswa.krs.reduce((latest, krs) => {
+                const currentSemester =
+                    (getStartYear(krs.tahunAkademik.tahun) - mahasiswa.angkatan) * 2 +
+                    semesterOrder[krs.tahunAkademik.semester];
+                return Math.max(latest, currentSemester);
+            }, mahasiswa.semester);
+
+            console.log(mahasiswa.prodi?.kurikulum[0], "<< KURIKULUM TERAKHIR");
             res.status(200).json({
                 student: {
                     id: student.id,
                     nim: mahasiswa.nim,
                     nama: student.name,
-                    nik: null,
-                    tempatLahir: null,
+                    nik: student.nik ?? null,
+                    tempatLahir: student.birthPlace ?? null,
                     tanggalLahir,
                     jenisKelamin,
                     email: student.email,
@@ -329,22 +407,36 @@ export class Controller {
                     angkatan: mahasiswa.angkatan,
                     prodi: mahasiswa.prodi
                         ? {
-                              id: mahasiswa.prodi.id,
-                              nama: mahasiswa.prodi.name,
-                          }
+                            id: mahasiswa.prodi.id,
+                            nama: mahasiswa.prodi.name,
+                        }
                         : null,
                     fakultas: mahasiswa.prodi?.fakultas
                         ? {
-                              id: mahasiswa.prodi.fakultas.id,
-                              nama: mahasiswa.prodi.fakultas.name,
-                          }
+                            id: mahasiswa.prodi.fakultas.id,
+                            nama: mahasiswa.prodi.fakultas.name,
+                        }
+                        : null,
+                    kurikulum: mahasiswa.prodi?.kurikulum[0]
+                        ? {
+                            id: mahasiswa.prodi.kurikulum[0].id,
+                            kode: mahasiswa.prodi.kurikulum[0].kode,
+                            nama: mahasiswa.prodi.kurikulum[0].nama,
+                            tahun: mahasiswa.prodi.kurikulum[0].tahun,
+                        }
                         : null,
                     dosenPembimbing: mahasiswa.dosen?.user
                         ? {
-                              id: mahasiswa.dosen.id,
-                              nama: mahasiswa.dosen.user.name,
-                          }
+                            id: mahasiswa.dosen.id,
+                            nama: mahasiswa.dosen.user.name,
+                        }
                         : null,
+                    summary: {
+                        ipk: totalSKS > 0 ? round(totalGradePoints / totalSKS) : 0,
+                        totalSKS,
+                        semester,
+                        kehadiran: null,
+                    },
                 },
             });
         } catch (error) {
@@ -352,4 +444,773 @@ export class Controller {
         }
     }
 
+    static async getStudentSemesterHistory(
+        req: Request,
+        res: Response,
+        next: NextFunction
+    ) {
+        try {
+            // ID yang dikirim FE adalah User.id
+            const userId = String(req.params.id);
+
+            // ==========================================
+            // 1. Cari User sekaligus relasi Mahasiswa
+            // ==========================================
+            const user = await prisma.user.findUnique({
+                where: {
+                    id: userId,
+                },
+                select: {
+                    id: true,
+                    role: true,
+                    mahasiswa: {
+                        select: {
+                            id: true,
+                            angkatan: true,
+                        },
+                    },
+                },
+            });
+
+            if (!user || user.role !== "Mahasiswa" || !user.mahasiswa) {
+                throw {
+                    name: "NotFound",
+                    message: "Mahasiswa tidak ditemukan",
+                };
+            }
+
+            const mahasiswaId = user.mahasiswa.id;
+            const angkatan = user.mahasiswa.angkatan;
+
+            // ==========================================
+            // 2. Ambil seluruh KRS mahasiswa
+            // ==========================================
+            const krsRows = await prisma.kRS.findMany({
+                where: {
+                    mahasiswaId,
+                },
+                select: {
+                    id: true,
+                    status: true,
+
+                    tahunAkademik: {
+                        select: {
+                            id: true,
+                            tahun: true,
+                            semester: true,
+                        },
+                    },
+
+                    details: {
+                        select: {
+                            id: true,
+
+                            kelasMataKuliah: {
+                                select: {
+                                    mataKuliah: {
+                                        select: {
+                                            sks: true,
+                                        },
+                                    },
+                                },
+                            },
+
+                            transkrip: {
+                                where: {
+                                    mahasiswaId,
+                                },
+                                select: {
+                                    bobot: true,
+                                },
+                            },
+                        },
+                    },
+                },
+            });
+
+            // ==========================================
+            // 3. Urutan semester
+            // ==========================================
+            const semesterOrder = {
+                GANJIL: 1,
+                GENAP: 2,
+            } as const;
+
+            // ==========================================
+            // 4. Ambil tahun awal akademik
+            // Contoh:
+            // "2024/2025" -> 2024
+            // ==========================================
+            const getStartYear = (tahun: string) => {
+                return Number(tahun.split("/")[0]);
+            };
+
+            // ==========================================
+            // 5. Hitung semester mahasiswa
+            //
+            // Angkatan 2024:
+            // 2024/2025 Ganjil -> 1
+            // 2024/2025 Genap  -> 2
+            // 2025/2026 Ganjil -> 3
+            // 2025/2026 Genap  -> 4
+            // ==========================================
+            const getSemesterNumber = (
+                tahun: string,
+                semester: keyof typeof semesterOrder
+            ) => {
+                const startYear = getStartYear(tahun);
+
+                return (
+                    (startYear - angkatan) * 2 +
+                    semesterOrder[semester]
+                );
+            };
+
+            // ==========================================
+            // 6. Pembulatan
+            // ==========================================
+            const round = (value: number) => {
+                return Math.round(value * 100) / 100;
+            };
+
+            // ==========================================
+            // 7. Sort KRS berdasarkan tahun + semester
+            // ==========================================
+            const orderedKrsRows = [...krsRows].sort((a, b) => {
+                const yearA = getStartYear(
+                    a.tahunAkademik.tahun
+                );
+
+                const yearB = getStartYear(
+                    b.tahunAkademik.tahun
+                );
+
+                if (yearA !== yearB) {
+                    return yearA - yearB;
+                }
+
+                return (
+                    semesterOrder[a.tahunAkademik.semester] -
+                    semesterOrder[b.tahunAkademik.semester]
+                );
+            });
+
+            // ==========================================
+            // 8. Variable untuk IPK kumulatif
+            // ==========================================
+            let cumulativeSks = 0;
+            let cumulativeGradePoints = 0;
+
+            // ==========================================
+            // 9. Build riwayat semester
+            // ==========================================
+            const riwayatSemester = orderedKrsRows.map((krs) => {
+                // Hanya mata kuliah yang sudah memiliki bobot
+                const gradedDetails = krs.details.filter(
+                    (detail) =>
+                        detail.transkrip[0]?.bobot != null
+                );
+
+                // Total SKS semester
+                const sks = gradedDetails.reduce(
+                    (total, detail) => {
+                        return (
+                            total +
+                            detail.kelasMataKuliah.mataKuliah.sks
+                        );
+                    },
+                    0
+                );
+
+                // Total nilai berbobot
+                const gradePoints = gradedDetails.reduce(
+                    (total, detail) => {
+                        const bobot = Number(
+                            detail.transkrip[0]!.bobot
+                        );
+
+                        const sks =
+                            detail.kelasMataKuliah.mataKuliah.sks;
+
+                        return total + bobot * sks;
+                    },
+                    0
+                );
+
+                // ==========================================
+                // Update nilai kumulatif
+                // ==========================================
+                cumulativeSks += sks;
+                cumulativeGradePoints += gradePoints;
+
+                // ==========================================
+                // IPS
+                // ==========================================
+                const ips =
+                    sks > 0
+                        ? round(gradePoints / sks)
+                        : 0;
+
+                // ==========================================
+                // IPK
+                // ==========================================
+                const ipk =
+                    cumulativeSks > 0
+                        ? round(
+                            cumulativeGradePoints /
+                            cumulativeSks
+                        )
+                        : 0;
+
+                // ==========================================
+                // Label semester
+                // ==========================================
+                const labelSemester =
+                    krs.tahunAkademik.semester === "GANJIL"
+                        ? "Ganjil"
+                        : "Genap";
+
+                return {
+                    semester: getSemesterNumber(
+                        krs.tahunAkademik.tahun,
+                        krs.tahunAkademik.semester
+                    ),
+
+                    tahunAkademik: {
+                        id: krs.tahunAkademik.id,
+                        tahun: krs.tahunAkademik.tahun,
+                        semester: krs.tahunAkademik.semester,
+                        label: `${krs.tahunAkademik.tahun} ${labelSemester}`,
+                    },
+
+                    sks,
+
+                    ips,
+
+                    ipk,
+
+                    status:
+                        krs.status === "DISETUJUI"
+                            ? "SELESAI"
+                            : krs.status,
+                };
+            });
+
+            // console.log(riwayatSemester, "<< RIWAYAT SEMESTER");
+            return res.status(200).json({
+                riwayatSemester,
+            });
+        } catch (error) {
+            console.error(error);
+            next(error);
+        }
+    }
+
+    static async getStudentKRS(
+        req: Request,
+        res: Response,
+        next: NextFunction
+    ) {
+        try {
+            // ID dari FE adalah User.id
+            const userId = String(req.params.id);
+
+            // ==========================================
+            // 1. Cari User dan relasi Mahasiswa
+            // ==========================================
+            const user = await prisma.user.findUnique({
+                where: {
+                    id: userId,
+                },
+                select: {
+                    id: true,
+                    role: true,
+                    mahasiswa: {
+                        select: {
+                            id: true,
+                        },
+                    },
+                },
+            });
+
+            if (
+                !user ||
+                user.role !== "Mahasiswa" ||
+                !user.mahasiswa
+            ) {
+                throw {
+                    name: "NotFound",
+                    message: "Mahasiswa tidak ditemukan",
+                };
+            }
+
+            const mahasiswaId = user.mahasiswa.id;
+
+            // ==========================================
+            // 2. Validate tahunAkademikId
+            // ==========================================
+            const tahunAkademikIdParam =
+                req.query.tahunAkademikId;
+
+            if (tahunAkademikIdParam === undefined) {
+                throw {
+                    name: "BadRequest",
+                    message: "tahunAkademikId wajib diisi",
+                };
+            }
+
+            const tahunAkademikId =
+                Number(tahunAkademikIdParam);
+
+            if (
+                !Number.isInteger(tahunAkademikId) ||
+                tahunAkademikId <= 0
+            ) {
+                throw {
+                    name: "BadRequest",
+                    message:
+                        "tahunAkademikId harus berupa angka positif",
+                };
+            }
+
+            // ==========================================
+            // 3. Ambil KRS
+            // ==========================================
+            const krs = await prisma.kRS.findUnique({
+                where: {
+                    mahasiswaId_tahunAkademikId: {
+                        mahasiswaId,
+                        tahunAkademikId,
+                    },
+                },
+
+                select: {
+                    id: true,
+
+                    status: true,
+
+                    tahunAkademik: {
+                        select: {
+                            id: true,
+                            tahun: true,
+                            semester: true,
+                        },
+                    },
+
+                    details: {
+                        select: {
+                            id: true,
+                            status: true,
+
+                            kelasMataKuliah: {
+                                select: {
+                                    mataKuliah: {
+                                        select: {
+                                            id: true,
+                                            kode: true,
+                                            nama: true,
+                                            sks: true,
+                                        },
+                                    },
+
+                                    kelas: {
+                                        select: {
+                                            id: true,
+                                            nama: true,
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            });
+
+            // ==========================================
+            // 4. KRS belum tersedia
+            // ==========================================
+            if (!krs) {
+                return res.status(200).json({
+                    krs: null,
+                });
+            }
+
+            // ==========================================
+            // 5. Label semester
+            // ==========================================
+            const labelSemester =
+                krs.tahunAkademik.semester === "GANJIL"
+                    ? "Ganjil"
+                    : "Genap";
+
+            // ==========================================
+            // 6. Mapping details
+            // ==========================================
+            const details = krs.details.map((detail) => ({
+                id: detail.id,
+
+                mataKuliah: {
+                    id: detail.kelasMataKuliah.mataKuliah.id,
+                    kode: detail.kelasMataKuliah.mataKuliah.kode,
+                    nama: detail.kelasMataKuliah.mataKuliah.nama,
+                    sks: detail.kelasMataKuliah.mataKuliah.sks,
+                },
+
+                kelas: {
+                    id: detail.kelasMataKuliah.kelas.id,
+                    nama: detail.kelasMataKuliah.kelas.nama,
+                },
+
+                status: detail.status,
+            }));
+
+            // ==========================================
+            // 7. Total SKS
+            // ==========================================
+            const totalSKS = details.reduce(
+                (total, detail) =>
+                    total + detail.mataKuliah.sks,
+                0
+            );
+
+            // ==========================================
+            // 8. Response
+            // ==========================================
+            return res.status(200).json({
+                krs: {
+                    id: krs.id,
+
+                    tahunAkademik: {
+                        id: krs.tahunAkademik.id,
+                        tahun: krs.tahunAkademik.tahun,
+                        semester: krs.tahunAkademik.semester,
+                        label: `${krs.tahunAkademik.tahun} ${labelSemester}`,
+                    },
+
+                    status: krs.status,
+
+                    totalSKS,
+
+                    details,
+                },
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    static async getStudentNilai(
+        req: Request,
+        res: Response,
+        next: NextFunction
+    ) {
+        try {
+            // ID dari FE adalah User.id
+            const userId = String(req.params.id);
+
+            // ==========================================
+            // 1. Cari User dan relasi Mahasiswa
+            // ==========================================
+            const user = await prisma.user.findUnique({
+                where: {
+                    id: userId,
+                },
+                select: {
+                    id: true,
+                    role: true,
+                    mahasiswa: {
+                        select: {
+                            id: true,
+                        },
+                    },
+                },
+            });
+
+            if (
+                !user ||
+                user.role !== "Mahasiswa" ||
+                !user.mahasiswa
+            ) {
+                throw {
+                    name: "NotFound",
+                    message: "Mahasiswa tidak ditemukan",
+                };
+            }
+
+            const mahasiswaId = user.mahasiswa.id;
+
+            // ==========================================
+            // 2. Validate tahunAkademikId
+            // ==========================================
+            const tahunAkademikIdParam =
+                req.query.tahunAkademikId;
+
+            if (tahunAkademikIdParam === undefined) {
+                throw {
+                    name: "BadRequest",
+                    message: "tahunAkademikId wajib diisi",
+                };
+            }
+
+            const tahunAkademikId =
+                Number(tahunAkademikIdParam);
+
+            if (
+                !Number.isInteger(tahunAkademikId) ||
+                tahunAkademikId <= 0
+            ) {
+                throw {
+                    name: "BadRequest",
+                    message:
+                        "tahunAkademikId harus berupa angka positif",
+                };
+            }
+
+            // ==========================================
+            // 3. Get KRS semester yang dipilih
+            //    + seluruh KRS untuk IPK
+            // ==========================================
+            const [krs, allKrs] = await Promise.all([
+                prisma.kRS.findUnique({
+                    where: {
+                        mahasiswaId_tahunAkademikId: {
+                            mahasiswaId,
+                            tahunAkademikId,
+                        },
+                    },
+
+                    select: {
+                        id: true,
+
+                        tahunAkademik: {
+                            select: {
+                                id: true,
+                                tahun: true,
+                                semester: true,
+                            },
+                        },
+
+                        details: {
+                            select: {
+                                id: true,
+
+                                kelasMataKuliah: {
+                                    select: {
+                                        mataKuliah: {
+                                            select: {
+                                                id: true,
+                                                kode: true,
+                                                nama: true,
+                                                sks: true,
+                                            },
+                                        },
+                                    },
+                                },
+
+                                transkrip: {
+                                    where: {
+                                        mahasiswaId,
+                                    },
+                                    select: {
+                                        nilaiAngka: true,
+                                        nilaiHuruf: true,
+                                        bobot: true,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                }),
+
+                prisma.kRS.findMany({
+                    where: {
+                        mahasiswaId,
+                    },
+
+                    select: {
+                        tahunAkademikId: true,
+
+                        details: {
+                            select: {
+                                kelasMataKuliah: {
+                                    select: {
+                                        mataKuliah: {
+                                            select: {
+                                                sks: true,
+                                            },
+                                        },
+                                    },
+                                },
+
+                                transkrip: {
+                                    where: {
+                                        mahasiswaId,
+                                    },
+                                    select: {
+                                        bobot: true,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                }),
+            ]);
+
+            // ==========================================
+            // 4. KRS belum tersedia
+            // ==========================================
+            if (!krs) {
+                return res.status(200).json({
+                    nilai: null,
+                });
+            }
+
+            // ==========================================
+            // 5. Hanya nilai yang sudah mempunyai bobot
+            // ==========================================
+            const gradedDetails = krs.details.filter(
+                (detail) =>
+                    detail.transkrip[0]?.bobot != null
+            );
+
+            // ==========================================
+            // 6. Mapping nilai
+            // ==========================================
+            const details = gradedDetails.map((detail) => {
+                const transkrip = detail.transkrip[0]!;
+
+                return {
+                    id: detail.id,
+
+                    mataKuliah: {
+                        id: detail.kelasMataKuliah.mataKuliah.id,
+                        kode: detail.kelasMataKuliah.mataKuliah.kode,
+                        nama: detail.kelasMataKuliah.mataKuliah.nama,
+                        sks: detail.kelasMataKuliah.mataKuliah.sks,
+                    },
+
+                    nilai:
+                        transkrip.nilaiAngka != null
+                            ? Number(transkrip.nilaiAngka)
+                            : null,
+
+                    grade: transkrip.nilaiHuruf,
+
+                    bobot:
+                        transkrip.bobot != null
+                            ? Number(transkrip.bobot)
+                            : null,
+                };
+            });
+
+            // ==========================================
+            // 7. Calculate SKS + Grade Points
+            // ==========================================
+            const calculatePoints = (
+                rows: typeof allKrs
+            ) => {
+                return rows.reduce(
+                    (summary, row) => {
+                        row.details.forEach((detail) => {
+                            const transkrip =
+                                detail.transkrip[0];
+
+                            if (transkrip?.bobot == null) {
+                                return;
+                            }
+
+                            const sks =
+                                detail
+                                    .kelasMataKuliah
+                                    .mataKuliah
+                                    .sks;
+
+                            const bobot =
+                                Number(transkrip.bobot);
+
+                            summary.sks += sks;
+                            summary.points +=
+                                bobot * sks;
+                        });
+
+                        return summary;
+                    },
+                    {
+                        sks: 0,
+                        points: 0,
+                    }
+                );
+            };
+
+            // ==========================================
+            // 8. IPS semester yang dipilih
+            // ==========================================
+            const currentSummary =
+                calculatePoints(
+                    allKrs.filter(
+                        (row) =>
+                            row.tahunAkademikId ===
+                            tahunAkademikId
+                    )
+                );
+
+            // ==========================================
+            // 9. IPK kumulatif
+            // ==========================================
+            const cumulativeSummary =
+                calculatePoints(allKrs);
+
+            // ==========================================
+            // 10. Helper pembulatan
+            // ==========================================
+            const round = (value: number) =>
+                Math.round(value * 100) / 100;
+
+            // ==========================================
+            // 11. Label semester
+            // ==========================================
+            const labelSemester =
+                krs.tahunAkademik.semester === "GANJIL"
+                    ? "Ganjil"
+                    : "Genap";
+
+            // ==========================================
+            // 12. Response
+            // ==========================================
+            return res.status(200).json({
+                nilai: {
+                    tahunAkademik: {
+                        id: krs.tahunAkademik.id,
+                        tahun: krs.tahunAkademik.tahun,
+                        semester: krs.tahunAkademik.semester,
+                        label: `${krs.tahunAkademik.tahun} ${labelSemester}`,
+                    },
+
+                    details,
+
+                    summary: {
+                        totalSKS: currentSummary.sks,
+
+                        ips:
+                            currentSummary.sks > 0
+                                ? round(
+                                    currentSummary.points /
+                                    currentSummary.sks
+                                )
+                                : 0,
+
+                        ipk:
+                            cumulativeSummary.sks > 0
+                                ? round(
+                                    cumulativeSummary.points /
+                                    cumulativeSummary.sks
+                                )
+                                : 0,
+                    },
+                },
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
 }

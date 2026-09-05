@@ -1,6 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit'
 import authReducer from '@/features/slice/authSlice'
-import usersReducer from '@/features/slice/usersSlice'
+import dosenReducer from '@/features/slice/dosenSlice'
+import mahasiswaReducer from '@/features/slice/mahasiswaSlice'
 import campusReducer from '@/features/slice/campusSlice'
 import matkulReducer from '@/features/slice/matkulSlice'
 import ruanganReducer from '@/features/slice/ruanganSlice'
@@ -15,7 +16,8 @@ import { toastMiddleware } from './middleware/toast-middleware'
 export const store = configureStore({
   reducer: {
     auth: authReducer,
-    users: usersReducer,
+    lecturers: dosenReducer,
+    students: mahasiswaReducer,
     campus: campusReducer,
     matkul: matkulReducer,
     ruangan: ruanganReducer,
