@@ -11,17 +11,20 @@ export function createSelectColumn<T>(): ColumnDef<T> {
     header: ({ table }) => (
       <Checkbox
         checked={table.getIsAllPageRowsSelected()}
+        indeterminate={table.getIsSomePageRowsSelected()}
+        disabled={!table.getRowModel().rows.some((row) => row.getCanSelect())}
         onCheckedChange={(value) =>
           table.toggleAllPageRowsSelected(!!value)
         }
-        aria-label="Select all"
+        aria-label="Pilih semua di halaman ini"
       />
     ),
     cell: ({ row }) => (
       <Checkbox
         checked={row.getIsSelected()}
+        disabled={!row.getCanSelect()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
+        aria-label="Pilih baris"
       />
     ),
     enableSorting: false,

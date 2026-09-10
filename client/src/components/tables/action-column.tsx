@@ -3,7 +3,7 @@ import { type ColumnDef } from "@tanstack/react-table";
 import { ActionCell } from "./action-cell";
 
 export function createActionColumn<T>(
-  onEdit?: (row: T) => void,
+  onEdit?: (row: T) => string | void,
   onDelete?: (row: T) => void,
   onDetail?: (row: T) => void,
   detailPath?: (row: T) => string

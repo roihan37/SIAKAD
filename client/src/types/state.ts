@@ -1,3 +1,4 @@
+import type { LecturerDetailResponse } from "./lecturer-detail"
 import type { Dosen, Fakultas, Jadwal, KRS, Kurikulum, Mahasiswa, MataKuliah, Nilai, ProgramStudi, riwayatSemester, Ruangan, StudentDetail, StudentKRS, StudentNilai, TahunAkademik } from "./campus"
 
 export interface AuthState {
@@ -8,6 +9,9 @@ export interface AuthState {
 }
 
 export interface MahasiswaState extends Pagination{
+    isBulkMutating: boolean
+    deletingStudentId: string | null
+    isResettingPassword: boolean
     error: string | null
     students: Mahasiswa[]
     isLoadingStudents: boolean
@@ -20,6 +24,10 @@ export interface MahasiswaState extends Pagination{
 }
 
 export interface DosenState extends Pagination{
+    lecturerDetail: LecturerDetailResponse["lecturer"] | null
+    isLoadingLecturerDetail: boolean
+    lecturerDetailError: string | null
+    lecturerDetailRequestId: string | null
     error: string | null
     lecturers: Dosen[]
     isLoadingLecturers: boolean

@@ -1,15 +1,16 @@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { StudentDetail } from "@/types/campus"
+import { Skeleton } from "@/components/ui/skeleton"
+import type { StudentDetail, TahunAkademik } from "@/types/campus"
 import { useAppSelector } from "@/hooks/redux"
-import { ArrowLeft,  BookOpen, CalendarDays,  GraduationCap,  Pencil, UserRound, Wallet } from "lucide-react"
+import { ArrowLeft, BookOpen, CalendarDays, CircleCheck, GraduationCap, History, UserRound, Wallet } from "lucide-react"
 import { useState } from "react"
 import { TabContentSkeleton } from "../loading/tab-content-skeleton"
 
 
 
-const tabs = ["Informasi Pribadi", "Akademik", "KRS", "Nilai", "Presensi", "Keuangan", "Akun"] as const
+const tabs = ["Informasi Pribadi", "Akademik", "Status Mahasiswa", "KRS", "Nilai", "Presensi", "Keuangan", "Akun"] as const
 type Tab = (typeof tabs)[number]
 
 const attendanceCourses = [
@@ -37,12 +38,12 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 }
 
 
-export function TabContent({ tab, student, currentStatus }: { tab: Tab; student: StudentDetail['student']; currentStatus: string }) {
+export function TabContent({ tab, student, currentStatus, academicYears, selectedKrsAcademicYearId, onKrsAcademicYearChange, selectedNilaiAcademicYearId, onNilaiAcademicYearChange }: { tab: Tab; student: StudentDetail['student']; currentStatus: string; academicYears: TahunAkademik[]; selectedKrsAcademicYearId?: number; onKrsAcademicYearChange: (id: number) => void; selectedNilaiAcademicYearId?: number; onNilaiAcademicYearChange: (id: number) => void }) {
 	const [selectedCourse, setSelectedCourse] = useState<string | null>(null)
 	const [selectedTransaction, setSelectedTransaction] = useState<string | null>(null)
 	const { riwayatSemester, krsMahasiswa, nilaiMahasiswa, isLoadingStudentsDetail } = useAppSelector((state) => state.students)
 
-	if (isLoadingStudentsDetail && ["Akademik", "KRS", "Nilai"].includes(tab)) {
+	if (isLoadingStudentsDetail && tab === "Akademik") {
 		return <TabContentSkeleton tab={tab} />
 	}
 
@@ -76,7 +77,7 @@ export function TabContent({ tab, student, currentStatus }: { tab: Tab; student:
 						<InfoRow label="Dosen Pembimbing Akademik" value={student.dosenPembimbing?.nama || "-"} />
 					</dl></CardContent>
 				</Card>
-				<div className="flex justify-end"><Button><Pencil /> Edit Data</Button></div>
+				{/* <div className="flex justify-end"><Button><Pencil /> Edit Data</Button></div> */}
 			</div>
 		)
 	}
@@ -133,7 +134,57 @@ export function TabContent({ tab, student, currentStatus }: { tab: Tab; student:
 		)
 	}
 
+	if (tab === "Status Mahasiswa") {
+		const statusHistory = student.riwayatStatus ?? []
+		const formatStatusDate = (date: string) => new Intl.DateTimeFormat("id-ID", { day: "2-digit", month: "long", year: "numeric" }).format(new Date(date))
+
+		return (
+			<div className="space-y-5">
+				<Card>
+					<CardHeader>
+						<CardTitle className="flex items-center gap-2"><CircleCheck className="size-4 text-muted-foreground" /> Status Mahasiswa</CardTitle>
+						<p className="text-sm text-muted-foreground">Status studi mahasiswa saat ini.</p>
+					</CardHeader>
+					<CardContent>
+						<div className="space-y-2">
+							<p className="text-sm font-medium text-muted-foreground">Status Saat Ini</p>
+							<Badge className="border-0 bg-emerald-100 px-3 py-1 text-sm font-semibold uppercase tracking-wide text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">{currentStatus}</Badge>
+						</div>
+					</CardContent>
+				</Card>
+
+				<Card>
+					<CardHeader>
+						<CardTitle className="flex items-center gap-2"><History className="size-4 text-muted-foreground" /> Riwayat Status Mahasiswa</CardTitle>
+						<p className="text-sm text-muted-foreground">Perubahan status studi yang tercatat.</p>
+					</CardHeader>
+					<CardContent>
+					<div className="grid gap-4 lg:grid-cols-2">
+						{statusHistory.length ? statusHistory.map((entry) => (
+							<div key={entry.id} className="rounded-lg border bg-muted/20 p-4">
+								<div className="space-y-5">
+									<div>
+										<p className="font-semibold">{entry.statusBaru}</p>
+										<p className="mt-1 text-sm text-muted-foreground">{formatStatusDate(entry.tanggal)}</p>
+									</div>
+									<div className="border-t pt-4">
+										<p className="text-sm font-medium text-muted-foreground">Alasan</p>
+										<p className="mt-1 text-sm leading-6">{entry.alasan}</p>
+									</div>
+								</div>
+							</div>
+						)) : <div className="rounded-lg border border-dashed px-4 py-10 text-center text-sm text-muted-foreground lg:col-span-2">Belum ada riwayat perubahan status.</div>}
+					</div>
+					</CardContent>
+				</Card>
+			</div>
+		)
+	}
+
 	if (tab === "KRS") {
+		const isLoadingKrs = isLoadingStudentsDetail
+		const krsDetails = krsMahasiswa?.details ?? []
+
 		return (
 			<div className="space-y-5">
 				<Card>
@@ -144,10 +195,9 @@ export function TabContent({ tab, student, currentStatus }: { tab: Tab; student:
 						<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 							<label className="space-y-2 text-sm font-medium">
 								<span className="text-muted-foreground">Tahun Akademik</span>
-								<select defaultValue="2026/2027 Ganjil" className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm font-medium shadow-xs outline-none transition-colors focus:border-ring focus:ring-3 focus:ring-ring/50">
-									<option>2026/2027 Ganjil</option>
-									<option>2025/2026 Genap</option>
-									<option>2025/2026 Ganjil</option>
+								<select value={selectedKrsAcademicYearId?.toString() ?? ""} onChange={(event) => onKrsAcademicYearChange(Number(event.target.value))} disabled={!academicYears.length || isLoadingKrs} className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm font-medium shadow-xs outline-none transition-colors focus:border-ring focus:ring-3 focus:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-60">
+									<option value="" disabled>{academicYears.length ? "Pilih tahun akademik" : "Memuat tahun akademik..."}</option>
+									{academicYears.filter((year) => year.id !== undefined).map((year) => <option key={year.id} value={year.id}>{year.tahun} - {year.semester}{year.isActive ? " (Aktif)" : ""}</option>)}
 								</select>
 							</label>
 							<div className="space-y-2 text-sm font-medium">
@@ -156,7 +206,7 @@ export function TabContent({ tab, student, currentStatus }: { tab: Tab; student:
 							</div>
 							<div className="rounded-lg bg-muted/50 px-4 py-3 sm:text-right">
 								<p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Total SKS</p>
-								<p className="mt-1 text-xl font-semibold">{krsMahasiswa?.totalSKS ?? 0} <span className="text-sm font-medium text-muted-foreground">SKS</span></p>
+								{isLoadingKrs ? <Skeleton className="mt-2 ml-auto h-7 w-18" /> : <p className="mt-1 text-xl font-semibold">{krsMahasiswa?.totalSKS ?? 0} <span className="text-sm font-medium text-muted-foreground">SKS</span></p>}
 							</div>
 						</div>
 					</CardContent>
@@ -177,13 +227,19 @@ export function TabContent({ tab, student, currentStatus }: { tab: Tab; student:
 									</tr>
 								</thead>
 								<tbody className="divide-y">
-										{krsMahasiswa?.details.map((course) => <tr key={course.id} className="transition-colors hover:bg-muted/30">
+									{isLoadingKrs ? Array.from({ length: 4 }, (_, index) => <tr key={index}>
+										<td className="px-6 py-4"><Skeleton className="h-4 w-16" /></td>
+										<td className="px-6 py-4"><Skeleton className="h-4 w-48" /></td>
+										<td className="px-6 py-4"><Skeleton className="ml-auto h-4 w-8" /></td>
+										<td className="px-6 py-4"><Skeleton className="h-4 w-24" /></td>
+										<td className="px-6 py-4"><Skeleton className="h-5 w-18 rounded-full" /></td>
+									</tr>) : krsDetails.length ? krsDetails.map((course) => <tr key={course.id} className="transition-colors hover:bg-muted/30">
 										<td className="px-6 py-4 font-medium">{course.mataKuliah.kode}</td>
 										<td className="px-6 py-4">{course.mataKuliah.nama}</td>
 										<td className="px-6 py-4 text-right">{course.mataKuliah.sks}</td>
 										<td className="px-6 py-4 text-muted-foreground">{course.kelas.nama}</td>
 										<td className="px-6 py-4"><Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">{course.status}</Badge></td>
-									</tr>)}
+									</tr>) : <tr><td colSpan={5} className="px-6 py-12 text-center"><div className="flex flex-col items-center gap-2 text-muted-foreground"><BookOpen className="size-5" /><p className="text-sm font-medium text-foreground">Belum ada mata kuliah</p><p className="text-sm">Tidak ada data KRS untuk tahun akademik yang dipilih.</p></div></td></tr>}
 								</tbody>
 							</table>
 						</div>
@@ -194,6 +250,9 @@ export function TabContent({ tab, student, currentStatus }: { tab: Tab; student:
 	}
 
 	if (tab === "Nilai") {
+		const isLoadingNilai = isLoadingStudentsDetail
+		const nilaiDetails = nilaiMahasiswa?.details ?? []
+
 		return (
 			<div className="space-y-5">
 				<Card>
@@ -203,10 +262,9 @@ export function TabContent({ tab, student, currentStatus }: { tab: Tab; student:
 					<CardContent>
 						<label className="block max-w-sm space-y-2 text-sm font-medium">
 							<span className="text-muted-foreground">Tahun Akademik</span>
-							<select defaultValue="2026/2027 Ganjil" className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm font-medium shadow-xs outline-none transition-colors focus:border-ring focus:ring-3 focus:ring-ring/50">
-								<option>2026/2027 Ganjil</option>
-								<option>2025/2026 Genap</option>
-								<option>2025/2026 Ganjil</option>
+							<select value={selectedNilaiAcademicYearId?.toString() ?? ""} onChange={(event) => onNilaiAcademicYearChange(Number(event.target.value))} disabled={!academicYears.length || isLoadingNilai} className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm font-medium shadow-xs outline-none transition-colors focus:border-ring focus:ring-3 focus:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-60">
+								<option value="" disabled>{academicYears.length ? "Pilih tahun akademik" : "Memuat tahun akademik..."}</option>
+								{academicYears.filter((year) => year.id !== undefined).map((year) => <option key={year.id} value={year.id}>{year.tahun} - {year.semester}{year.isActive ? " (Aktif)" : ""}</option>)}
 							</select>
 						</label>
 					</CardContent>
@@ -227,13 +285,19 @@ export function TabContent({ tab, student, currentStatus }: { tab: Tab; student:
 									</tr>
 								</thead>
 								<tbody className="divide-y">
-									{nilaiMahasiswa?.details.map((course) => <tr key={course.id} className="transition-colors hover:bg-muted/30">
+									{isLoadingNilai ? Array.from({ length: 4 }, (_, index) => <tr key={index}>
+										<td className="px-6 py-4"><Skeleton className="h-4 w-16" /></td>
+										<td className="px-6 py-4"><Skeleton className="h-4 w-48" /></td>
+										<td className="px-6 py-4"><Skeleton className="ml-auto h-4 w-8" /></td>
+										<td className="px-6 py-4"><Skeleton className="ml-auto h-4 w-10" /></td>
+										<td className="px-6 py-4"><Skeleton className="h-5 w-9 rounded-full" /></td>
+									</tr>) : nilaiDetails.length ? nilaiDetails.map((course) => <tr key={course.id} className="transition-colors hover:bg-muted/30">
 										<td className="px-6 py-4 font-medium">{course.mataKuliah.kode}</td>
 										<td className="px-6 py-4">{course.mataKuliah.nama}</td>
 										<td className="px-6 py-4 text-right">{course.mataKuliah.sks}</td>
 										<td className="px-6 py-4 text-right">{course.nilai ?? "-"}</td>
 										<td className="px-6 py-4"><Badge variant="secondary" className="min-w-9 justify-center bg-sky-100 font-semibold text-sky-700 dark:bg-sky-900/30 dark:text-sky-300">{course.grade}</Badge></td>
-									</tr>)}
+									</tr>) : <tr><td colSpan={5} className="px-6 py-12 text-center"><div className="flex flex-col items-center gap-2 text-muted-foreground"><GraduationCap className="size-5" /><p className="text-sm font-medium text-foreground">Belum ada data nilai</p><p className="text-sm">Tidak ada nilai untuk tahun akademik yang dipilih.</p></div></td></tr>}
 								</tbody>
 							</table>
 						</div>
@@ -241,8 +305,8 @@ export function TabContent({ tab, student, currentStatus }: { tab: Tab; student:
 				</Card>
 
 				<div className="grid gap-4 sm:grid-cols-2">
-					<Card className="bg-primary text-primary-foreground ring-0"><CardContent className="p-5"><p className="text-sm text-primary-foreground/70">IPS</p><p className="mt-1 text-3xl font-semibold tracking-tight">{nilaiMahasiswa?.summary.ips.toFixed(2) ?? "-"}</p></CardContent></Card>
-					<Card><CardContent className="p-5"><p className="text-sm text-muted-foreground">IPK</p><p className="mt-1 text-3xl font-semibold tracking-tight">{nilaiMahasiswa?.summary.ipk.toFixed(2) ?? "-"}</p></CardContent></Card>
+					<Card className="bg-primary text-primary-foreground ring-0"><CardContent className="p-5"><p className="text-sm text-primary-foreground/70">IPS</p>{isLoadingNilai ? <Skeleton className="mt-2 h-9 w-20 bg-primary-foreground/20" /> : <p className="mt-1 text-3xl font-semibold tracking-tight">{nilaiMahasiswa?.summary.ips.toFixed(2) ?? "-"}</p>}</CardContent></Card>
+					<Card><CardContent className="p-5"><p className="text-sm text-muted-foreground">IPK</p>{isLoadingNilai ? <Skeleton className="mt-2 h-9 w-20" /> : <p className="mt-1 text-3xl font-semibold tracking-tight">{nilaiMahasiswa?.summary.ipk.toFixed(2) ?? "-"}</p>}</CardContent></Card>
 				</div>
 			</div>
 		)

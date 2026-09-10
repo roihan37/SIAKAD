@@ -1,5 +1,7 @@
+import { isAxiosError } from "axios";
+import type { LecturerDetailResponse } from "@/types/lecturer-detail";
 import { api } from "@/api/axios";
-import type { CreateLecturerPayload, CreateStudentPayload, PaginationParams } from "@/types/param";
+import type { CreateLecturerPayload, PaginationParams } from "@/types/param";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
 
@@ -69,3 +71,16 @@ export const getLecturerAvatarUploadUrl = createAsyncThunk(
     }
   }
 )
+
+export const getLecturerById = createAsyncThunk<
+  LecturerDetailResponse, string, { rejectValue: string }
+>("lecturers/getById", async (id, { rejectWithValue, signal }) => {
+  try {
+    const response = await api.get<LecturerDetailResponse>(`/lecturers/${encodeURIComponent(id)}`, { signal })
+    return response.data
+  } catch (error) {
+    return rejectWithValue(isAxiosError<{ message?: string }>(error)
+      ? error.response?.data?.message ?? "Gagal memuat detail dosen. Silakan coba lagi."
+      : "Gagal memuat detail dosen. Silakan coba lagi.")
+  }
+})

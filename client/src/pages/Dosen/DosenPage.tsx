@@ -17,7 +17,7 @@ export default function DosenPage() {
         sortBy,
         sortOrder,
         lecturers
-    } = useAppSelector((state) => state.users)
+    } = useAppSelector((state) => state.lecturers)
 
 
     const [searchInput, setSearchInput] = useState(search)

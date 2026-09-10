@@ -3,6 +3,9 @@ model Dosen {
   nidn      String       @unique
   status    Status
   jabatan   JabatanDosen @default(Dosen)
+  pendidikanTerakhir  Pendidikan?
+  bidangKeahlian      String?
+  
   userId    String       @unique
   prodiId   Int
   createdAt DateTime     @default(now())

@@ -7,6 +7,42 @@ import { S3Service } from "../services/s3.service";
 
 export class Controller {
 
+    static async bulkUpdateStatus(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { ids, status, statusReason } = req.body;
+            if (!Array.isArray(ids) || ids.length === 0 || ids.length > 100 ||
+                !ids.every((id: unknown) => typeof id === "string" && id.trim())) {
+                throw { name: "BadRequest", message: "Pilih 1 sampai 100 mahasiswa yang valid" };
+            }
+            if (status !== "Aktif" && status !== "Cuti" && status !== "Lulus" && status !== "Nonaktif") {
+                throw { name: "BadRequest", message: "Status mahasiswa tidak valid" };
+            }
+            if (typeof statusReason !== "string" || !statusReason.trim() || statusReason.trim().length > 1000) {
+                throw { name: "BadRequest", message: "Alasan wajib diisi, maksimal 1000 karakter" };
+            }
+            const userIds = [...new Set<string>(ids.map((id: string) => id.trim()))];
+            const changedCount = await prisma.$transaction(async (tx) => {
+                const users = await tx.user.findMany({
+                    where: { id: { in: userIds }, role: "Mahasiswa" },
+                    select: { mahasiswa: { select: { id: true, status: true } } },
+                });
+                if (users.length !== userIds.length || users.some((user) => !user.mahasiswa)) {
+                    throw { name: "NotFound", message: "Satu atau lebih mahasiswa tidak ditemukan" };
+                }
+                const changed = users.flatMap((user) => user.mahasiswa && user.mahasiswa.status !== status ? [user.mahasiswa] : []);
+                for (const student of changed) {
+                    await tx.mahasiswa.update({ where: { id: student.id }, data: { status } });
+                    await tx.riwayatStatusMahasiswa.create({ data: {
+                        mahasiswaId: student.id, statusLama: student.status,
+                        statusBaru: status, alasan: statusReason.trim(),
+                    } });
+                }
+                return changed.length;
+            });
+            return res.status(200).json({ message: `${changedCount} mahasiswa berhasil diperbarui`, data: { ids: userIds, changedCount, status } });
+        } catch (error) { next(error); }
+    }
+
     static async createStudent(
         req: Request,
         res: Response,
@@ -39,7 +75,7 @@ export class Controller {
                         phoneNumber,
                         gender,
                         address,
-                        nik, 
+                        nik,
                         birthPlace,
                         avatarKey,
                         avatarUrl
@@ -86,526 +122,802 @@ export class Controller {
     }
 
     static async updateStudentById(
-    req: Request,
-    res: Response,
-    next: NextFunction
-) {
-    let newAvatarKeyForCleanup: string | null = null;
+        req: Request,
+        res: Response,
+        next: NextFunction
+    ) {
+        let newAvatarKeyForCleanup: string | null = null;
 
-    try {
-        const userId = String(req.params.id);
+        try {
+            const userId = String(req.params.id);
 
-        const {
-            name,
-            email,
-            username,
-            password,
-            phoneNumber,
-            gender,
-            address,
-            nik,
-            birthPlace,
-            nim,
-            angkatan,
-            semester,
-            status,
-            prodiId,
-            birthDate,
-            avatarKey,
-            dosenId,
-        } = req.body;
+            const {
+                name,
+                email,
+                username,
+                password,
+                phoneNumber,
+                gender,
+                address,
+                nik,
+                birthPlace,
+                nim,
+                angkatan,
+                semester,
+                status,
+                statusReason,
+                prodiId,
+                birthDate,
+                avatarKey,
+                dosenId,
+            } = req.body;
 
-        // ==========================================
-        // 1. Cari User + Mahasiswa
-        // ==========================================
-        const existingUser = await prisma.user.findUnique({
-            where: {
-                id: userId,
-            },
-            select: {
-                id: true,
-                avatarKey: true,
-
-                mahasiswa: {
-                    select: {
-                        id: true,
-                        nim: true,
-                        angkatan: true,
-                        semester: true,
-                        status: true,
-                        prodiId: true,
-                        dosenId: true,
-                    },
-                },
-            },
-        });
-
-        if (!existingUser) {
-            throw {
-                name: "NotFound",
-                message: "User tidak ditemukan",
-            };
-        }
-
-        if (!existingUser.mahasiswa) {
-            throw {
-                name: "BadRequest",
-                message: "User ini bukan mahasiswa",
-            };
-        }
-
-        const oldAvatarKey = existingUser.avatarKey;
-
-        // ==========================================
-        // 2. Parse & Validate Birth Date
-        // ==========================================
-        let parsedBirthDate: Date | null | undefined;
-
-        if (birthDate !== undefined) {
-            if (
-                birthDate === null ||
-                birthDate === ""
-            ) {
-                parsedBirthDate = null;
-            } else {
-                const birthDateString = String(
-                    birthDate
-                );
-
-                const dateRegex =
-                    /^\d{4}-\d{2}-\d{2}$/;
-
-                if (!dateRegex.test(birthDateString)) {
-                    throw {
-                        name: "BadRequest",
-                        message:
-                            "birthDate harus menggunakan format YYYY-MM-DD",
-                    };
-                }
-
-                const [
-                    year,
-                    month,
-                    day,
-                ] = birthDateString
-                    .split("-")
-                    .map(Number);
-
-                const date = new Date(
-                    Date.UTC(
-                        year,
-                        month - 1,
-                        day
-                    )
-                );
-
-                // Validasi tanggal sebenarnya.
-                // Contoh 2024-02-31 harus ditolak.
-                if (
-                    date.getUTCFullYear() !== year ||
-                    date.getUTCMonth() !== month - 1 ||
-                    date.getUTCDate() !== day
-                ) {
-                    throw {
-                        name: "BadRequest",
-                        message: "birthDate tidak valid",
-                    };
-                }
-
-                parsedBirthDate = date;
-            }
-        }
-
-        // ==========================================
-        // 3. Parse & Validate Angkatan
-        // ==========================================
-        let parsedAngkatan: number | undefined;
-
-        if (angkatan !== undefined) {
-            parsedAngkatan = Number(angkatan);
-
-            if (
-                !Number.isInteger(parsedAngkatan) ||
-                parsedAngkatan <= 0
-            ) {
-                throw {
-                    name: "BadRequest",
-                    message:
-                        "angkatan harus berupa angka positif",
-                };
-            }
-        }
-
-        // ==========================================
-        // 4. Parse & Validate Semester
-        // ==========================================
-        let parsedSemester: number | undefined;
-
-        if (semester !== undefined) {
-            parsedSemester = Number(semester);
-
-            if (
-                !Number.isInteger(parsedSemester) ||
-                parsedSemester <= 0
-            ) {
-                throw {
-                    name: "BadRequest",
-                    message:
-                        "semester harus berupa angka positif",
-                };
-            }
-        }
-
-        // ==========================================
-        // 5. Parse & Validate Prodi
-        // ==========================================
-        let parsedProdiId: number | undefined;
-
-        if (prodiId !== undefined) {
-            parsedProdiId = Number(prodiId);
-
-            if (
-                !Number.isInteger(parsedProdiId) ||
-                parsedProdiId <= 0
-            ) {
-                throw {
-                    name: "BadRequest",
-                    message:
-                        "prodiId harus berupa angka positif",
-                };
-            }
-
-            const prodi = await prisma.prodi.findUnique({
-                where: {
-                    id: parsedProdiId,
-                },
-                select: {
-                    id: true,
-                },
-            });
-
-            if (!prodi) {
-                throw {
-                    name: "NotFound",
-                    message: "Program Studi tidak ditemukan",
-                };
-            }
-        }
-
-        // ==========================================
-        // 6. Validate Dosen
-        // ==========================================
-        let parsedDosenId: string | null | undefined;
-
-        if (dosenId !== undefined) {
-            if (
-                dosenId === null ||
-                dosenId === ""
-            ) {
-                parsedDosenId = null;
-            } else {
-                parsedDosenId = String(dosenId);
-
-                const dosen = await prisma.dosen.findUnique({
+            // ==========================================
+            // 1. Cari User + Mahasiswa
+            // ==========================================
+            const existingUser =
+                await prisma.user.findUnique({
                     where: {
-                        id: parsedDosenId,
+                        id: userId,
                     },
                     select: {
                         id: true,
+                        avatarKey: true,
+
+                        mahasiswa: {
+                            select: {
+                                id: true,
+                                nim: true,
+                                angkatan: true,
+                                semester: true,
+                                status: true,
+                                prodiId: true,
+                                dosenId: true,
+                            },
+                        },
                     },
                 });
 
-                if (!dosen) {
-                    throw {
-                        name: "NotFound",
-                        message: "Dosen tidak ditemukan",
-                    };
-                }
-            }
-        }
-
-        // ==========================================
-        // 7. Handle Avatar
-        // ==========================================
-        let avatarUpdate:
-            | {
-                  avatarKey: string | null;
-              }
-            | undefined;
-
-        if (avatarKey !== undefined) {
-            // --------------------------------------
-            // Hapus avatar
-            // --------------------------------------
-            if (
-                avatarKey === null ||
-                avatarKey === ""
-            ) {
-                avatarUpdate = {
-                    avatarKey: null,
+            if (!existingUser) {
+                throw {
+                    name: "NotFound",
+                    message: "User tidak ditemukan",
                 };
             }
 
-            // --------------------------------------
-            // Ganti / upload avatar baru
-            // --------------------------------------
-            else {
-                const newAvatarKey = String(
-                    avatarKey
-                );
+            if (!existingUser.mahasiswa) {
+                throw {
+                    name: "BadRequest",
+                    message: "User ini bukan mahasiswa",
+                };
+            }
 
-                // Pastikan key benar-benar milik
-                // mahasiswa/user yang sedang diedit.
-                const expectedPrefix =
-                    `students/${userId}/`;
+            const mahasiswa =
+                existingUser.mahasiswa;
 
+            const oldAvatarKey =
+                existingUser.avatarKey;
+
+            const oldStatus =
+                mahasiswa.status;
+
+            // ==========================================
+            // 2. Cek perubahan status
+            // ==========================================
+            const statusChanged =
+                status !== undefined &&
+                status !== oldStatus;
+
+            // ==========================================
+            // 3. Validasi alasan status
+            // ==========================================
+            if (statusChanged) {
                 if (
-                    !newAvatarKey.startsWith(
-                        expectedPrefix
-                    )
+                    statusReason === undefined ||
+                    statusReason === null ||
+                    String(statusReason).trim() === ""
                 ) {
                     throw {
                         name: "BadRequest",
                         message:
-                            "Avatar tidak valid",
+                            "Alasan perubahan status wajib diisi",
                     };
                 }
+            }
 
-                // Pastikan object memang ada di S3
-                const exists =
-                    await S3Service.checkObjectExists(
-                        newAvatarKey
+            // Kalau status tidak berubah,
+            // statusReason tidak perlu diproses.
+            const parsedStatusReason =
+                statusChanged
+                    ? String(statusReason).trim()
+                    : undefined;
+
+            // ==========================================
+            // 4. Parse & Validate Birth Date
+            // ==========================================
+            let parsedBirthDate:
+                | Date
+                | null
+                | undefined;
+
+            if (birthDate !== undefined) {
+                if (
+                    birthDate === null ||
+                    birthDate === ""
+                ) {
+                    parsedBirthDate = null;
+                } else {
+                    const birthDateString =
+                        String(birthDate);
+
+                    const dateRegex =
+                        /^\d{4}-\d{2}-\d{2}$/;
+
+                    if (
+                        !dateRegex.test(
+                            birthDateString
+                        )
+                    ) {
+                        throw {
+                            name: "BadRequest",
+                            message:
+                                "birthDate harus menggunakan format YYYY-MM-DD",
+                        };
+                    }
+
+                    const [
+                        year,
+                        month,
+                        day,
+                    ] = birthDateString
+                        .split("-")
+                        .map(Number);
+
+                    const date = new Date(
+                        Date.UTC(
+                            year,
+                            month - 1,
+                            day
+                        )
                     );
 
-                if (!exists) {
+                    if (
+                        date.getUTCFullYear() !==
+                        year ||
+                        date.getUTCMonth() !==
+                        month - 1 ||
+                        date.getUTCDate() !==
+                        day
+                    ) {
+                        throw {
+                            name: "BadRequest",
+                            message:
+                                "birthDate tidak valid",
+                        };
+                    }
+
+                    parsedBirthDate = date;
+                }
+            }
+
+            // ==========================================
+            // 5. Parse Angkatan
+            // ==========================================
+            let parsedAngkatan:
+                | number
+                | undefined;
+
+            if (angkatan !== undefined) {
+                parsedAngkatan = Number(
+                    angkatan
+                );
+
+                if (
+                    !Number.isInteger(
+                        parsedAngkatan
+                    ) ||
+                    parsedAngkatan <= 0
+                ) {
                     throw {
                         name: "BadRequest",
                         message:
-                            "File avatar tidak ditemukan",
+                            "angkatan harus berupa angka positif",
+                    };
+                }
+            }
+
+            // ==========================================
+            // 6. Parse Semester
+            // ==========================================
+            let parsedSemester:
+                | number
+                | undefined;
+
+            if (semester !== undefined) {
+                parsedSemester = Number(
+                    semester
+                );
+
+                if (
+                    !Number.isInteger(
+                        parsedSemester
+                    ) ||
+                    parsedSemester <= 0
+                ) {
+                    throw {
+                        name: "BadRequest",
+                        message:
+                            "semester harus berupa angka positif",
+                    };
+                }
+            }
+
+            // ==========================================
+            // 7. Parse Prodi
+            // ==========================================
+            let parsedProdiId:
+                | number
+                | undefined;
+
+            if (prodiId !== undefined) {
+                parsedProdiId = Number(
+                    prodiId
+                );
+
+                if (
+                    !Number.isInteger(
+                        parsedProdiId
+                    ) ||
+                    parsedProdiId <= 0
+                ) {
+                    throw {
+                        name: "BadRequest",
+                        message:
+                            "prodiId harus berupa angka positif",
                     };
                 }
 
-                avatarUpdate = {
-                    avatarKey: newAvatarKey,
-                };
+                const prodi =
+                    await prisma.prodi.findUnique({
+                        where: {
+                            id: parsedProdiId,
+                        },
+                        select: {
+                            id: true,
+                        },
+                    });
 
-                // Untuk cleanup jika DB update gagal
-                if (
-                    newAvatarKey !== oldAvatarKey
-                ) {
-                    newAvatarKeyForCleanup =
-                        newAvatarKey;
+                if (!prodi) {
+                    throw {
+                        name: "NotFound",
+                        message:
+                            "Program Studi tidak ditemukan",
+                    };
                 }
             }
-        }
 
-        // ==========================================
-        // 8. Password
-        // ==========================================
-        let hashedPassword: string | undefined;
+            // ==========================================
+            // 8. Validate Dosen
+            // ==========================================
+            let parsedDosenId:
+                | string
+                | null
+                | undefined;
 
-        if (
-            password !== undefined &&
-            password !== null &&
-            password !== ""
-        ) {
-            hashedPassword =
-                await hashPassword(password);
-        }
+            if (dosenId !== undefined) {
+                if (
+                    dosenId === null ||
+                    dosenId === ""
+                ) {
+                    parsedDosenId = null;
+                } else {
+                    parsedDosenId =
+                        String(dosenId);
 
-        // ==========================================
-        // 9. Update User + Mahasiswa
-        // ==========================================
-        const userUpdate = await prisma.user.update({
-            where: {
-                id: userId,
-            },
+                    const dosen =
+                        await prisma.dosen.findUnique({
+                            where: {
+                                id: parsedDosenId,
+                            },
+                            select: {
+                                id: true,
+                            },
+                        });
 
-            data: {
-                // ==============================
-                // USER
-                // ==============================
+                    if (!dosen) {
+                        throw {
+                            name: "NotFound",
+                            message:
+                                "Dosen tidak ditemukan",
+                        };
+                    }
+                }
+            }
 
-                ...(name !== undefined && {
-                    name,
-                }),
+            // ==========================================
+            // 9. Handle Avatar
+            // ==========================================
+            let avatarUpdate:
+                | {
+                    avatarKey: string | null;
+                }
+                | undefined;
 
-                ...(email !== undefined && {
-                    email,
-                }),
+            if (avatarKey !== undefined) {
+                // Hapus avatar
+                if (
+                    avatarKey === null ||
+                    avatarKey === ""
+                ) {
+                    avatarUpdate = {
+                        avatarKey: null,
+                    };
+                } else {
+                    const newAvatarKey =
+                        String(avatarKey);
 
-                ...(username !== undefined && {
-                    username,
-                }),
+                    const expectedPrefix =
+                        `students/${userId}/`;
 
-                ...(hashedPassword !== undefined && {
-                    password: hashedPassword,
-                }),
+                    if (
+                        !newAvatarKey.startsWith(
+                            expectedPrefix
+                        )
+                    ) {
+                        throw {
+                            name: "BadRequest",
+                            message:
+                                "Avatar tidak valid",
+                        };
+                    }
 
-                ...(parsedBirthDate !== undefined && {
-                    birthDate: parsedBirthDate,
-                }),
+                    const exists =
+                        await S3Service.checkObjectExists(
+                            newAvatarKey
+                        );
 
-                ...(phoneNumber !== undefined && {
-                    phoneNumber,
-                }),
+                    if (!exists) {
+                        throw {
+                            name: "BadRequest",
+                            message:
+                                "File avatar tidak ditemukan",
+                        };
+                    }
 
-                ...(gender !== undefined && {
-                    gender,
-                }),
+                    avatarUpdate = {
+                        avatarKey:
+                            newAvatarKey,
+                    };
 
-                ...(address !== undefined && {
-                    address,
-                }),
+                    if (
+                        newAvatarKey !==
+                        oldAvatarKey
+                    ) {
+                        newAvatarKeyForCleanup =
+                            newAvatarKey;
+                    }
+                }
+            }
 
-                ...(nik !== undefined && {
-                    nik,
-                }),
+            // ==========================================
+            // 10. Password
+            // ==========================================
+            let hashedPassword:
+                | string
+                | undefined;
 
-                ...(birthPlace !== undefined && {
-                    birthPlace,
-                }),
+            if (
+                password !== undefined &&
+                password !== null &&
+                password !== ""
+            ) {
+                hashedPassword =
+                    await hashPassword(
+                        password
+                    );
+            }
 
-                ...(avatarUpdate && {
-                    avatarKey:
-                        avatarUpdate.avatarKey,
-                    avatarUrl: null,
-                }),
+            // ==========================================
+            // 11. Transaction
+            // ==========================================
+            const userUpdate =
+                await prisma.$transaction(
+                    async (tx) => {
 
-                // ==============================
-                // MAHASISWA
-                // ==============================
+                        // ------------------------------
+                        // Update User + Mahasiswa
+                        // ------------------------------
+                        const updatedUser =
+                            await tx.user.update({
+                                where: {
+                                    id: userId,
+                                },
 
-                mahasiswa: {
-                    update: {
-                        ...(nim !== undefined && {
-                            nim,
-                        }),
+                                data: {
+                                    ...(name !==
+                                        undefined && {
+                                        name,
+                                    }),
 
-                        ...(parsedAngkatan !== undefined && {
-                            angkatan: parsedAngkatan,
-                        }),
+                                    ...(email !==
+                                        undefined && {
+                                        email,
+                                    }),
 
-                        ...(parsedSemester !== undefined && {
-                            semester: parsedSemester,
-                        }),
+                                    ...(username !==
+                                        undefined && {
+                                        username,
+                                    }),
 
-                        ...(status !== undefined && {
-                            status,
-                        }),
+                                    ...(hashedPassword !==
+                                        undefined && {
+                                        password:
+                                            hashedPassword,
+                                    }),
 
-                        ...(parsedProdiId !== undefined && {
-                            prodiId: parsedProdiId,
-                        }),
+                                    ...(parsedBirthDate !==
+                                        undefined && {
+                                        birthDate:
+                                            parsedBirthDate,
+                                    }),
 
-                        ...(dosenId !== undefined && {
-                            dosenId: parsedDosenId,
-                        }),
-                    },
-                },
-            },
+                                    ...(phoneNumber !==
+                                        undefined && {
+                                        phoneNumber,
+                                    }),
 
-            select: {
-                id: true,
-                name: true,
-                email: true,
-                username: true,
-                avatarKey: true,
+                                    ...(gender !==
+                                        undefined && {
+                                        gender,
+                                    }),
 
-                mahasiswa: {
-                    select: {
-                        id: true,
-                        nim: true,
-                        angkatan: true,
-                        semester: true,
-                        status: true,
-                        prodiId: true,
-                        dosenId: true,
-                    },
-                },
-            },
-        });
+                                    ...(address !==
+                                        undefined && {
+                                        address,
+                                    }),
 
-        // ==========================================
-        // 10. Hapus Avatar Lama
-        // ==========================================
-        if (
-            avatarUpdate &&
-            oldAvatarKey &&
-            oldAvatarKey !==
+                                    ...(nik !==
+                                        undefined && {
+                                        nik,
+                                    }),
+
+                                    ...(birthPlace !==
+                                        undefined && {
+                                        birthPlace,
+                                    }),
+
+                                    ...(avatarUpdate && {
+                                        avatarKey:
+                                            avatarUpdate.avatarKey,
+
+                                        avatarUrl:
+                                            null,
+                                    }),
+
+                                    mahasiswa: {
+                                        update: {
+                                            ...(nim !==
+                                                undefined && {
+                                                nim,
+                                            }),
+
+                                            ...(parsedAngkatan !==
+                                                undefined && {
+                                                angkatan:
+                                                    parsedAngkatan,
+                                            }),
+
+                                            ...(parsedSemester !==
+                                                undefined && {
+                                                semester:
+                                                    parsedSemester,
+                                            }),
+
+                                            ...(status !==
+                                                undefined && {
+                                                status,
+                                            }),
+
+                                            ...(parsedProdiId !==
+                                                undefined && {
+                                                prodiId:
+                                                    parsedProdiId,
+                                            }),
+
+                                            ...(dosenId !==
+                                                undefined && {
+                                                dosenId:
+                                                    parsedDosenId,
+                                            }),
+                                        },
+                                    },
+                                },
+
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    email: true,
+                                    username: true,
+                                    avatarKey: true,
+
+                                    mahasiswa: {
+                                        select: {
+                                            id: true,
+                                            nim: true,
+                                            angkatan: true,
+                                            semester: true,
+                                            status: true,
+                                            prodiId: true,
+                                            dosenId: true,
+                                        },
+                                    },
+                                },
+                            });
+
+                        // ------------------------------
+                        // Create status history
+                        // ------------------------------
+                        let statusHistory = null;
+
+                        if (statusChanged) {
+                            statusHistory =
+                                await tx.riwayatStatusMahasiswa.create(
+                                    {
+                                        data: {
+                                            mahasiswaId:
+                                                mahasiswa.id,
+
+                                            statusLama:
+                                                oldStatus,
+
+                                            statusBaru:
+                                                status,
+
+                                            alasan:
+                                                parsedStatusReason!,
+                                        },
+
+                                        select: {
+                                            id: true,
+                                            statusLama: true,
+                                            statusBaru: true,
+                                            alasan: true,
+                                            tanggal: true,
+                                        },
+                                    }
+                                );
+                        }
+
+                        return {
+                            updatedUser,
+                            statusHistory,
+                        };
+                    }
+                );
+
+            // ==========================================
+            // 12. DB berhasil.
+            //
+            // Jangan cleanup avatar baru lagi.
+            // Karena sekarang avatar tersebut
+            // sudah menjadi milik record database.
+            // ==========================================
+            newAvatarKeyForCleanup = null;
+
+            // ==========================================
+            // 13. Hapus avatar lama
+            // ==========================================
+            if (
+                avatarUpdate &&
+                oldAvatarKey &&
+                oldAvatarKey !==
                 avatarUpdate.avatarKey
-        ) {
-            try {
-                await S3Service.deleteUrl(
-                    oldAvatarKey
-                );
-            } catch (error) {
-                console.error(
-                    "Gagal menghapus avatar lama:",
-                    error
-                );
+            ) {
+                try {
+                    await S3Service.deleteUrl(
+                        oldAvatarKey
+                    );
+                } catch (error) {
+                    console.error(
+                        "Gagal menghapus avatar lama:",
+                        error
+                    );
+                }
             }
-        }
 
-        // ==========================================
-        // 11. Generate Presigned Read URL
-        // ==========================================
-        let avatarUrl: string | null = null;
+            // ==========================================
+            // 14. Generate Presigned URL
+            // ==========================================
+            let avatarUrl:
+                | string
+                | null = null;
 
-        if (userUpdate.avatarKey) {
-            avatarUrl =
-                await S3Service.createReadUrl(
-                    userUpdate.avatarKey
-                );
-        }
-
-        // ==========================================
-        // 12. Response
-        // ==========================================
-        return res.status(200).json({
-            message:
-                "Mahasiswa berhasil diperbarui",
-
-            data: {
-                id: userUpdate.id,
-
-                nama: userUpdate.name,
-                email: userUpdate.email,
-                username: userUpdate.username,
-
-                avatarUrl,
-
-                mahasiswa:
-                    userUpdate.mahasiswa,
-            },
-        });
-    } catch (error) {
-        // console.log(error, "<< ERROR UPDATE MAHASISWA");
-        // ==========================================
-        // Cleanup avatar baru jika DB gagal
-        // ==========================================
-        if (newAvatarKeyForCleanup) {
-            try {
-                await S3Service.deleteUrl(
-                    newAvatarKeyForCleanup
-                );
-            } catch (cleanupError) {
-                console.error(
-                    "Gagal cleanup avatar baru:",
-                    cleanupError
-                );
+            if (
+                userUpdate.updatedUser.avatarKey
+            ) {
+                avatarUrl =
+                    await S3Service.createReadUrl(
+                        userUpdate.updatedUser
+                            .avatarKey
+                    );
             }
-        }
 
-        next(error);
-    }
-}
+            // ==========================================
+            // 15. Response
+            // ==========================================
 
-    static async deleteUserById(req: Request, res: Response, next: NextFunction) {
-        try {
+            // console.log(status)
+            return res.status(200).json({
+                message:
+                    "Mahasiswa berhasil diperbarui",
+
+                data: {
+                    id: userUpdate.updatedUser.id,
+
+                    nama:
+                        userUpdate.updatedUser.name,
+
+                    email:
+                        userUpdate.updatedUser.email,
+
+                    username:
+                        userUpdate.updatedUser
+                            .username,
+
+                    avatarUrl,
+
+                    mahasiswa:
+                        userUpdate.updatedUser
+                            .mahasiswa,
+
+                    statusHistory:
+                        userUpdate.statusHistory,
+                },
+            });
 
         } catch (error) {
 
+            // ==========================================
+            // Cleanup avatar baru HANYA jika
+            // transaction/update database gagal
+            // ==========================================
+            if (newAvatarKeyForCleanup) {
+                try {
+                    await S3Service.deleteUrl(
+                        newAvatarKeyForCleanup
+                    );
+                } catch (cleanupError) {
+                    console.error(
+                        "Gagal cleanup avatar baru:",
+                        cleanupError
+                    );
+                }
+            }
+
+            next(error);
+        }
+    }
+
+    static async deleteUserById(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { id } = req.params;
+            if (typeof id !== "string" || !id.trim()) {
+                return res.status(400).json({
+                    code: "VALIDATION_ERROR",
+                    message: "ID user mahasiswa wajib diisi",
+                });
+            }
+
+            const student = await prisma.$transaction(async (tx) => {
+                const user = await tx.user.findUnique({
+                    where: { id, role: "Mahasiswa" },
+                    select: {
+                        id: true,
+                        name: true,
+                        avatarKey: true,
+                        mahasiswa: { select: { id: true } },
+                    },
+                });
+
+                if (!user || !user.mahasiswa) {
+                    throw { name: "NotFound", message: "Mahasiswa tidak ditemukan" };
+                }
+
+                const mahasiswaId = user.mahasiswa.id;
+
+                // Hapus relasi dari anak ke induk agar tidak melanggar foreign key.
+                await tx.transkrip.deleteMany({ where: { mahasiswaId } });
+                await tx.kRSDetail.deleteMany({
+                    where: { krs: { mahasiswaId } },
+                });
+                await tx.kRS.deleteMany({ where: { mahasiswaId } });
+
+                // Mahasiswa, riwayat status, dan refresh token mengikuti onDelete: Cascade.
+                await tx.user.delete({ where: { id: user.id } });
+                return user;
+            });
+
+            // Storage tidak ikut transaksi database; kegagalannya tidak membatalkan delete.
+            if (student.avatarKey) {
+                try {
+                    await S3Service.deleteUrl(student.avatarKey);
+                } catch (error) {
+                    console.error("Gagal menghapus avatar mahasiswa:", error);
+                }
+            }
+
+            return res.status(200).json({
+                message: `${student.name} berhasil dihapus`,
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    static async bulkDelete(req: Request, res: Response, next: NextFunction) {
+        try {
+            const ids: unknown = req.body?.ids;
+            if (
+                !Array.isArray(ids) || ids.length === 0 || ids.length > 100 ||
+                !ids.every((id): id is string => typeof id === "string" && id.trim().length > 0)
+            ) {
+                return res.status(400).json({
+                    code: "VALIDATION_ERROR",
+                    message: "ids wajib berupa array berisi 1 sampai 100 ID user mahasiswa yang valid",
+                });
+            }
+
+            const userIds = [...new Set(ids.map((id) => id.trim()))];
+            const students = await prisma.$transaction(async (tx) => {
+                const users = await tx.user.findMany({
+                    where: { id: { in: userIds }, role: "Mahasiswa" },
+                    select: {
+                        id: true,
+                        avatarKey: true,
+                        mahasiswa: { select: { id: true } },
+                    },
+                });
+
+                // Validasi seluruh target sebelum menghapus data apa pun.
+                if (users.length !== userIds.length || users.some((user) => !user.mahasiswa)) {
+                    throw { name: "NotFound", message: "Satu atau lebih mahasiswa tidak ditemukan" };
+                }
+
+                const mahasiswaIds = users.map((user) => user.mahasiswa!.id);
+                await tx.transkrip.deleteMany({ where: { mahasiswaId: { in: mahasiswaIds } } });
+                await tx.kRSDetail.deleteMany({
+                    where: { krs: { mahasiswaId: { in: mahasiswaIds } } },
+                });
+                await tx.kRS.deleteMany({ where: { mahasiswaId: { in: mahasiswaIds } } });
+
+                // Profil mahasiswa, riwayat status, dan refresh token dihapus melalui cascade.
+                const deleted = await tx.user.deleteMany({
+                    where: { id: { in: userIds }, role: "Mahasiswa" },
+                });
+                if (deleted.count !== userIds.length) {
+                    throw { name: "NotFound", message: "Data mahasiswa berubah, silakan ulangi penghapusan" };
+                }
+                return users;
+            });
+
+            // Cleanup hanya setelah commit, dengan concurrency terbatas.
+            const avatarKeys = [...new Set(students.flatMap((student) => student.avatarKey ? [student.avatarKey] : []))];
+            for (let index = 0; index < avatarKeys.length; index += 5) {
+                await Promise.all(avatarKeys.slice(index, index + 5).map(async (key) => {
+                    try {
+                        await S3Service.deleteUrl(key);
+                    } catch (error) {
+                        console.error("Gagal menghapus avatar mahasiswa:", error);
+                    }
+                }));
+            }
+
+            return res.status(200).json({
+                message: `${students.length} mahasiswa berhasil dihapus`,
+                data: { deletedCount: students.length, ids: userIds },
+            });
+        } catch (error) {
+            next(error);
         }
     }
 
@@ -691,7 +1003,7 @@ export class Controller {
         res: Response,
         next: NextFunction
     ) {
-        
+
         try {
             const { id } = req.params;
 
@@ -718,6 +1030,17 @@ export class Controller {
                             angkatan: true,
                             semester: true,
                             status: true,
+                            riwayatStatus: {
+                                orderBy: {
+                                    tanggal: "desc",
+                                },
+                                select: {
+                                    id: true,
+                                    statusBaru: true,
+                                    alasan: true,
+                                    tanggal: true,
+                                },
+                            },
                             prodi: {
                                 select: {
                                     id: true,
@@ -835,7 +1158,7 @@ export class Controller {
                 return Math.max(latest, currentSemester);
             }, mahasiswa.semester);
 
-            
+
             res.status(200).json({
                 student: {
                     id: student.id,
@@ -846,6 +1169,8 @@ export class Controller {
                     tempatLahir: student.birthPlace ?? null,
                     tanggalLahir,
                     jenisKelamin,
+                    status: student.mahasiswa.status,
+                    riwayatStatus: mahasiswa.riwayatStatus,
                     email: student.email,
                     noHp: student.phoneNumber ?? null,
                     alamat: student.address ?? null,
@@ -1322,6 +1647,7 @@ export class Controller {
             // ==========================================
             // 8. Response
             // ==========================================
+
             return res.status(200).json({
                 krs: {
                     id: krs.id,
@@ -1657,6 +1983,79 @@ export class Controller {
             });
         } catch (error) {
             next(error);
+        }
+    }
+
+    static async resetPassword(
+        req: Request,
+        res: Response,
+        next: NextFunction
+    ) {
+        try {
+            const userId = String(req.params.userId)
+            const { password } = req.body
+
+            if (!password || typeof password !== "string") {
+                throw {
+                    name: "BadRequest",
+                    message: "Password baru wajib diisi",
+                }
+            }
+
+            if (password.length < 8) {
+                throw {
+                    name: "BadRequest",
+                    message: "Password minimal 8 karakter",
+                }
+            }
+
+            const user = await prisma.user.findUnique({
+                where: {
+                    id: userId,
+                },
+                select: {
+                    id: true,
+                    name: true,
+                    role: true,
+                    mahasiswa: {
+                        select: {
+                            id: true,
+                            nim: true,
+                        },
+                    },
+                },
+            })
+
+            if (!user || !user.mahasiswa) {
+                throw {
+                    name: "NotFound",
+                    message: "Mahasiswa tidak ditemukan",
+                }
+            }
+
+            const hashedPassword = await hashPassword(password)
+
+            await prisma.user.update({
+                where: {
+                    id: userId,
+                },
+                data: {
+                    password: hashedPassword,
+                    mustChangePassword: true,
+                },
+            })
+
+            return res.status(200).json({
+                message: "Password mahasiswa berhasil direset",
+                data: {
+                    id: user.id,
+                    name: user.name,
+                    nim: user.mahasiswa.nim,
+                    mustChangePassword: true,
+                },
+            })
+        } catch (error) {
+            next(error)
         }
     }
 }

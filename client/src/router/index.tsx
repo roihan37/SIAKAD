@@ -1,8 +1,9 @@
+import DosenDetailPage from "@/pages/Dosen/DosenDetailPage";
 import BaseLayout from "@/layouts/BaseLayout";
 import LoginPage from "@/pages/LoginPage";
 import { createBrowserRouter } from "react-router";
 import MahasiswaPage from "@/pages/Mahasiswa/MahasiswaPage";
-import DosenPage from "@/pages/DosenPage";
+import DosenPage from "@/pages/Dosen/DosenPage";
 import FakultasPage from "@/pages/FakultasPage";
 import MatkulPage from "@/pages/MatkulPage";
 import PStudiPage from "@/pages/ProdiPage";
@@ -38,6 +39,10 @@ const router = createBrowserRouter([
           {
             path: "/dosen",
             element: <DosenPage />,
+          },
+          {
+            path: "/dosen/:id",
+            element: <DosenDetailPage />,
           },
           {
             path: "/fakultas",

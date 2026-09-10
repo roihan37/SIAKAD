@@ -1,10 +1,14 @@
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import { createLecturer, getAllLecturers } from "../action/dosenThunk";
+import { createLecturer, getAllLecturers, getLecturerById } from "../action/dosenThunk";
 import type { DosenState } from "@/types/state";
 
 const initialState: DosenState = {
     error: null,
+    lecturerDetail: null,
+    isLoadingLecturerDetail: false,
+    lecturerDetailError: null,
+    lecturerDetailRequestId: null,
     lecturers: [],
     search: "",
     page: 1,
@@ -39,6 +43,25 @@ const dosenSilce = createSlice({
     extraReducers(builder) {
         builder
 
+
+            .addCase(getLecturerById.pending, (state, action) => {
+                state.isLoadingLecturerDetail = true
+                state.lecturerDetailError = null
+                state.lecturerDetail = null
+                state.lecturerDetailRequestId = action.meta.requestId
+            })
+            .addCase(getLecturerById.fulfilled, (state, action) => {
+                if (state.lecturerDetailRequestId !== action.meta.requestId) return
+                state.lecturerDetail = action.payload.lecturer
+                state.isLoadingLecturerDetail = false
+                state.lecturerDetailRequestId = null
+            })
+            .addCase(getLecturerById.rejected, (state, action) => {
+                if (state.lecturerDetailRequestId !== action.meta.requestId) return
+                state.isLoadingLecturerDetail = false
+                state.lecturerDetailRequestId = null
+                if (!action.meta.aborted) state.lecturerDetailError = action.payload ?? "Gagal memuat detail dosen."
+            })
 
             // LECTURERS
             .addCase(getAllLecturers.pending, state => {

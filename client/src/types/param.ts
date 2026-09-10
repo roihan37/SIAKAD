@@ -19,20 +19,24 @@ export interface PaginationParams {
 }
 
   export interface UpdateStudentPayload {
-    name: string
-    email: string
+    name?: string
+    email?: string
+    username?: string
+    password?: string
     nik?: string
     birthPlace?: string
-    phoneNumber: string
-    address: string
+    phoneNumber?: string
+    address?: string
     birthDate?: string
-    gender: string
-    nim: string
-    angkatan: number
-    semester: number
-    status: string
-    prodiId: number
-    dosenId: string
+    gender?: string
+    nim?: string
+    angkatan?: number
+    semester?: number
+    status?: string
+    /** Required by the API when `status` changes. */
+    statusReason?: string
+    prodiId?: number
+    dosenId?: string
     avatarKey?: string
   }
 

@@ -33,6 +33,8 @@ const getLoadingMessage = (
 ) => {
   const type = action.type
 
+  if (type.startsWith("students/update/bulk/")) return "Memproses mahasiswa terpilih..."
+
   if (type.includes("/create/")) {
     return "Menambahkan data..."
   }
@@ -60,6 +62,7 @@ const getSuccessMessage = (
   action: UnknownAction
 ) => {
   const type = action.type
+  if (type === "students/update/bulk/fulfilled" && action.payload && typeof action.payload === "object" && "message" in action.payload && typeof action.payload.message === "string") return action.payload.message
 
   if (type.includes("/create/")) {
     return "Data berhasil ditambahkan."

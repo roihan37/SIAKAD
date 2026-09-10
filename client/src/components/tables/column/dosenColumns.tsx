@@ -1,4 +1,5 @@
-import { type ColumnDef } from "@tanstack/react-table";
+import { Link } from "react-router-dom";
+import { type ColumnDef, type HeaderContext } from "@tanstack/react-table";
 import { createActionColumn } from "../action-column";
 import { createSelectColumn } from "../select-column";
 import type { Dosen } from "@/types/campus";
@@ -7,7 +8,7 @@ import { ArrowUpDown } from "lucide-react";
 
 // helper reusable, biar tiap header sortable nggak copy-paste JSX yang sama
 function createSortableHeader(label: string) {
-  return function SortableHeader({ column }: { column: any }) {
+  return function SortableHeader({ column }: HeaderContext<Dosen, unknown>) {
     const isSorted = column.getIsSorted(); // false | "asc" | "desc"
     return (
       <Button
@@ -34,6 +35,7 @@ export const dosenColumns: ColumnDef<Dosen>[] = [
   {
     accessorKey: "name",
     header: "Nama",
+    cell: ({ row }) => <Link to={`/dosen/${row.original.id}`} className="font-medium hover:underline">{row.original.name}</Link>,
     meta: {
       label: "Name",
     },
@@ -59,7 +61,7 @@ export const dosenColumns: ColumnDef<Dosen>[] = [
       label: "Status",
     },
   },
-  createActionColumn(),
+  createActionColumn<Dosen>(undefined, undefined, undefined, (lecturer) => `/dosen/${lecturer.id}`),
 
 
 ];

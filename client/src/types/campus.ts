@@ -155,6 +155,12 @@ export type StudentDetail = {
     alamat: string | null;
     angkatan: number;
     status?: string;
+    riwayatStatus?: {
+      id: string;
+      statusBaru: string;
+      alasan: string;
+      tanggal: string;
+    }[];
     kurikulum?: Kurikulum | null;
     prodi: {
       id: string;

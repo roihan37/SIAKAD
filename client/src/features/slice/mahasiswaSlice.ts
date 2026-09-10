@@ -1,6 +1,6 @@
 import type { MahasiswaState } from "@/types/state";
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import { createStudent, getAllStudents, getStudentById, getStudentHistorySemester, getStudentKRS, getStudentNilai, updateStudent } from "../action/mahasiswaThunk";
+import { createStudent, getAllStudents, getStudentById, getStudentHistorySemester, getStudentKRS, getStudentNilai, updateStudent, resetStudentPassword, deleteStudent, bulkMutateStudents } from "../action/mahasiswaThunk";
 
 const initialState : MahasiswaState ={
     error: null,
@@ -17,6 +17,9 @@ const initialState : MahasiswaState ={
     nilaiMahasiswa: null,
 
     studentDetail: null,
+    isResettingPassword: false,
+    deletingStudentId: null,
+    isBulkMutating: false,
 
     isLoadingStudents: false,
     isLoadingStudentsDetail: false,
@@ -42,6 +45,45 @@ const mahasiswaSilce = createSlice({
       },
     extraReducers(builder) {
         builder
+
+        .addCase(resetStudentPassword.pending, (state) => {
+            state.isResettingPassword = true
+        })
+        .addCase(resetStudentPassword.fulfilled, (state) => {
+            state.isResettingPassword = false
+        })
+        .addCase(resetStudentPassword.rejected, (state) => {
+            state.isResettingPassword = false
+        })
+
+        .addCase(deleteStudent.pending, (state, action) => {
+            state.deletingStudentId = action.meta.arg
+        })
+        .addCase(deleteStudent.fulfilled, (state, action) => {
+            state.deletingStudentId = null
+            state.students = state.students.filter((student) => student.id !== action.payload)
+            if (state.totalRows !== undefined) state.totalRows = Math.max(0, state.totalRows - 1)
+            if (state.studentDetail?.student.id === action.payload) state.studentDetail = null
+        })
+        .addCase(deleteStudent.rejected, (state) => {
+            state.deletingStudentId = null
+        })
+
+        .addCase(bulkMutateStudents.pending, (state) => { state.isBulkMutating = true })
+        .addCase(bulkMutateStudents.rejected, (state) => { state.isBulkMutating = false })
+        .addCase(bulkMutateStudents.fulfilled, (state, action) => {
+            state.isBulkMutating = false
+            const input = action.meta.arg
+            if (input.kind === "delete") {
+                state.students = state.students.filter((student) => !input.ids.includes(student.id))
+                if (state.totalRows !== undefined) state.totalRows = Math.max(0, state.totalRows - input.ids.length)
+            } else {
+                state.students.forEach((student) => {
+                    if (input.ids.includes(student.id)) student.mahasiswa.status = input.status
+                })
+            }
+            if (state.studentDetail && input.ids.includes(state.studentDetail.student.id)) state.studentDetail = null
+        })
 
         // ADD STUDENTS
         .addCase(createStudent.pending, state => {

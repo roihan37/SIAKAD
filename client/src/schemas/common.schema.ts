@@ -77,7 +77,7 @@ export const lecturerStatus = z.enum(
 )
 
 export const studentStatus = z.enum(
-  ["Aktif", "Cuti", "Lulus", "DO"],
+  ["Aktif", "Cuti", "Lulus", "Nonaktif"],
   {
     error: "Status mahasiswa wajib dipilih.",
   },

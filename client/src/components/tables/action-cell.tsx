@@ -7,12 +7,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { EyeIcon, MoreHorizontal, PencilIcon, ShareIcon, TrashIcon } from "lucide-react";
+import { EyeIcon, MoreHorizontal, PencilIcon, TrashIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 type ActionCellProps<T> = {
   row: T;
-  onEdit?: (row: T) => void;
+  onEdit?: (row: T) => string | void;
   onDelete?: (row: T) => void;
   onDetail?: (row: T) => void;
   detailPath?: (row: T) => string;
@@ -30,13 +30,12 @@ export function ActionCell<T>({ row, onEdit, onDelete, onDetail, detailPath }: A
             <EyeIcon />
             Lihat Detail
           </DropdownMenuItem>}
-          <DropdownMenuItem onClick={() => onEdit?.(row)}>
+          <DropdownMenuItem onClick={() => {
+            const editPath = onEdit?.(row);
+            if (editPath) navigate(editPath);
+          }}>
             <PencilIcon />
             Edit
-          </DropdownMenuItem>
-          <DropdownMenuItem>
-            <ShareIcon />
-            Share
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />

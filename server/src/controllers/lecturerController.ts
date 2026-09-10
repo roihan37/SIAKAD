@@ -188,11 +188,79 @@ export class Controller {
         try {
             const lecturer = await prisma.user.findFirst({
                 where: { id: String(req.params.id), role: "Dosen" },
-                include: { dosen: { include: { prodi: true } } },
+                select: {
+                    id: true,
+                    name: true,
+                    gender: true,
+                    birthPlace: true,
+                    birthDate: true,
+                    email: true,
+                    phoneNumber: true,
+                    address: true,
+                    avatarKey: true,
+                    dosen: {
+                        select: {
+                            id: true,
+                            nidn: true,
+                            prodi: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    fakultas: { select: { id: true, name: true } },
+                                },
+                            },
+                            _count: { select: { mahasiswa: true } },
+                            kelasMataKuliahs: {
+                                where: { kelas: { tahunAkademik: { isActive: true } } },
+                                select: {
+                                    kelasId: true,
+                                    mataKuliahId: true,
+                                    _count: {
+                                        select: {
+                                            jadwal: { where: { tahunAkademik: { isActive: true } } },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
             });
             if (!lecturer) throw { name: "NotFound", message: "Dosen tidak ditemukan" };
 
-            res.status(200).json(lecturer);
+            const { dosen } = lecturer;
+            const prodi = dosen?.prodi;
+            const fakultas = prodi?.fakultas;
+            const assignments = dosen?.kelasMataKuliahs ?? [];
+            const avatarUrl = lecturer.avatarKey
+                ? await S3Service.createReadUrl(lecturer.avatarKey)
+                : null;
+
+            return res.status(200).json({
+                lecturer: {
+                    id: lecturer.id,
+                    dosenId: dosen?.id ?? null,
+                    nidn: dosen?.nidn ?? null,
+                    nama: lecturer.name,
+                    jenisKelamin: lecturer.gender === "Male"
+                        ? "Laki-laki"
+                        : lecturer.gender === "Female" ? "Perempuan" : null,
+                    tempatLahir: lecturer.birthPlace ?? null,
+                    tanggalLahir: lecturer.birthDate?.toISOString().slice(0, 10) ?? null,
+                    email: lecturer.email,
+                    noHp: lecturer.phoneNumber ?? null,
+                    alamat: lecturer.address ?? null,
+                    avatarUrl,
+                    prodi: prodi ? { id: prodi.id, nama: prodi.name } : null,
+                    fakultas: fakultas ? { id: fakultas.id, nama: fakultas.name } : null,
+                    summary: {
+                        mataKuliahDiampu: dosen ? new Set(assignments.map((item) => item.mataKuliahId)).size : null,
+                        kelasAktif: dosen ? new Set(assignments.map((item) => item.kelasId)).size : null,
+                        mahasiswaBimbingan: dosen?._count.mahasiswa ?? null,
+                        jadwalMingguan: dosen ? assignments.reduce((total, item) => total + item._count.jadwal, 0) : null,
+                    },
+                },
+            });
         } catch (error) {
             next(error);
         }

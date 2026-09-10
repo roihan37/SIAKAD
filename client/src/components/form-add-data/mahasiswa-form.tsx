@@ -91,8 +91,8 @@ const statusList = [
     value: "Lulus",
   },
   {
-    label: "DO",
-    value: "DO",
+    label: "Nonaktif",
+    value: "Nonaktif",
   },
 ]
 

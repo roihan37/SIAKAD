@@ -1,6 +1,8 @@
 "use client"
 
 import {
+  type RowSelectionState,
+  type OnChangeFn,
   type ColumnDef,
   type ColumnFiltersState,
   flexRender,
@@ -40,6 +42,11 @@ interface DataTableProps<TData, TValue> {
   // Table
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
+  rowSelection?: RowSelectionState
+  onRowSelectionChange?: OnChangeFn<RowSelectionState>
+  getRowId?: (row: TData) => string
+  selectionDisabled?: boolean
+  searchPlaceholder?: string
 
   // Search
   searchValue: string
@@ -79,6 +86,11 @@ interface DataTableProps<TData, TValue> {
 export function DataTable<TData, TValue>({
   columns,
   data,
+  rowSelection: controlledSelection,
+  onRowSelectionChange,
+  getRowId,
+  selectionDisabled = false,
+  searchPlaceholder = "Cari mata kuliah, dosen, kelas...",
 
   searchValue,
   onSearchChange,
@@ -99,11 +111,13 @@ export function DataTable<TData, TValue>({
   )
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({})
-  const [rowSelection, setRowSelection] = React.useState({})
+  const [localSelection, setRowSelection] = React.useState({})
 
   const table = useReactTable({
     data,
     columns,
+    getRowId,
+    enableRowSelection: !selectionDisabled,
     manualPagination: true,
     manualFiltering: true,
     manualSorting: true,
@@ -116,12 +130,12 @@ export function DataTable<TData, TValue>({
     getSortedRowModel: getSortedRowModel(),
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
+    onRowSelectionChange: onRowSelectionChange ?? setRowSelection,
     state: {
       sorting,
       columnFilters,
       columnVisibility,
-      rowSelection,
+      rowSelection: controlledSelection ?? localSelection,
       pagination: { pageIndex, pageSize: 10 },
     },
   })
@@ -136,7 +150,7 @@ export function DataTable<TData, TValue>({
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
 
           <Input
-            placeholder="Cari mata kuliah, dosen, kelas..."
+            placeholder={searchPlaceholder}
             value={searchValue}
             onChange={(e) =>
               onSearchChange(e.target.value)

@@ -1,0 +1,19 @@
+model RiwayatStatusMahasiswa {
+  id          String   @id @default(uuid())
+
+  mahasiswaId String
+
+  statusLama  Status?
+  statusBaru  Status
+  alasan      String
+
+  tanggal     DateTime @default(now())
+
+  mahasiswa   Mahasiswa @relation( fields: [mahasiswaId], references: [id], onDelete: Cascade )
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([mahasiswaId])
+  @@index([mahasiswaId, tanggal])
+}

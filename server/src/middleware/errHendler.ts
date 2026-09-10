@@ -97,6 +97,12 @@ export const errorHandler: ErrorRequestHandler = (
         message: error.message || "Invalid Email / Password",
       });
 
+    case "Forbidden":
+      return res.status(403).json({
+        code: "FORBIDDEN",
+        message: error.message || "Akses ditolak",
+      });
+
     case "TokenInvalid":
       return res.status(401).json({
         code: "TOKEN_INVALID",

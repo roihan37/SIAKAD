@@ -23,7 +23,10 @@ function createSortableHeader(label: string) {
   };
 }
 
-export const mhsColumns: ColumnDef<Mahasiswa>[] = [
+export function createMhsColumns(
+  onDelete: (student: Mahasiswa) => void,
+): ColumnDef<Mahasiswa>[] {
+  return [
   createSelectColumn(),
   {
     id: "nim",                          
@@ -71,5 +74,6 @@ export const mhsColumns: ColumnDef<Mahasiswa>[] = [
       label: "Status",
     },
   },
-  createActionColumn<Mahasiswa>(undefined, undefined, undefined, (student) => `/mahasiswa/${student.id}`),
+  createActionColumn<Mahasiswa>((student) => `/mahasiswa/${student.id}/edit`, onDelete, undefined, (student) => `/mahasiswa/${student.id}`),
 ];
+}
