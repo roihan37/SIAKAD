@@ -1,3 +1,5 @@
+import { uploadLecturerAvatar } from "@/api/lecturer-avatar";
+import type { UpdateLecturerPayload } from "@/schemas/dosen-edit.schema";
 import { isAxiosError } from "axios";
 import type { LecturerDetailResponse } from "@/types/lecturer-detail";
 import { api } from "@/api/axios";
@@ -20,7 +22,6 @@ export const getAllLecturers = createAsyncThunk(
           prodiId
         }
       })
-      console.log(response.data, "NN");
       return response.data;
 
     } catch (err: any) {
@@ -82,5 +83,19 @@ export const getLecturerById = createAsyncThunk<
     return rejectWithValue(isAxiosError<{ message?: string }>(error)
       ? error.response?.data?.message ?? "Gagal memuat detail dosen. Silakan coba lagi."
       : "Gagal memuat detail dosen. Silakan coba lagi.")
+  }
+})
+
+export const updateLecturer = createAsyncThunk<
+  { id: string }, { id: string; payload: UpdateLecturerPayload; photo?: string | null }, { rejectValue: string }
+>("lecturers/update", async ({ id, payload, photo }, { rejectWithValue }) => {
+  try {
+    const avatarKey = photo ? await uploadLecturerAvatar(id, photo) : undefined
+    await api.patch(`/lecturers/${encodeURIComponent(id)}`, { ...payload, ...(avatarKey ? { avatarKey } : {}) })
+    return { id }
+  } catch (error) {
+    return rejectWithValue(isAxiosError<{ message?: string }>(error)
+      ? error.response?.data?.message ?? "Gagal memperbarui dosen."
+      : error instanceof Error ? error.message : "Gagal memperbarui dosen.")
   }
 })

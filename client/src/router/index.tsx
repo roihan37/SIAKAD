@@ -1,3 +1,4 @@
+import DosenEditPage from "@/pages/Dosen/DosenEditPage";
 import DosenDetailPage from "@/pages/Dosen/DosenDetailPage";
 import BaseLayout from "@/layouts/BaseLayout";
 import LoginPage from "@/pages/LoginPage";
@@ -39,6 +40,10 @@ const router = createBrowserRouter([
           {
             path: "/dosen",
             element: <DosenPage />,
+          },
+          {
+            path: "/dosen/:id/edit",
+            element: <DosenEditPage />,
           },
           {
             path: "/dosen/:id",

@@ -1,9 +1,10 @@
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import { createLecturer, getAllLecturers, getLecturerById } from "../action/dosenThunk";
+import { createLecturer, getAllLecturers, getLecturerById, updateLecturer } from "../action/dosenThunk";
 import type { DosenState } from "@/types/state";
 
 const initialState: DosenState = {
+    isUpdatingLecturer: false,
     error: null,
     lecturerDetail: null,
     isLoadingLecturerDetail: false,
@@ -62,6 +63,10 @@ const dosenSilce = createSlice({
                 state.lecturerDetailRequestId = null
                 if (!action.meta.aborted) state.lecturerDetailError = action.payload ?? "Gagal memuat detail dosen."
             })
+
+            .addCase(updateLecturer.pending, (state) => { state.isUpdatingLecturer = true })
+            .addCase(updateLecturer.fulfilled, (state) => { state.isUpdatingLecturer = false })
+            .addCase(updateLecturer.rejected, (state) => { state.isUpdatingLecturer = false })
 
             // LECTURERS
             .addCase(getAllLecturers.pending, state => {

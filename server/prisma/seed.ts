@@ -1,14 +1,15 @@
 // import { JabatanDosen, Role, Status } from "";
 /// <reference types="node" />
-import { JabatanDosen, Role, Status, KRSStatus, Hari, Semester } from "@prisma/client";
+import { JabatanDosen, Role, Status, KRSStatus, Hari, Semester, Pendidikan } from "@prisma/client";
 import "dotenv/config";
 import { readFile } from "fs/promises";
 import path from "path";
 import { prisma } from "../src/lib/prisma";
 import { hashPassword } from "../src/lib/bycript";
 import { S3Service } from "../src/services/s3.service";
+import { seedFirstLecturer } from "./seed-lecturer";
 
-async function ensureStudentProfilePhoto(userId: string) {
+async function ensureProfilePhoto(userId: string, entity: "students" | "lecturers") {
     const user = await prisma.user.findUnique({
         where: {
             id: userId,
@@ -54,7 +55,7 @@ async function ensureStudentProfilePhoto(userId: string) {
     // 3. Generate key
     // ==========================================
     const key =
-        `students/${userId}/avatar-${Date.now()}.jpg`;
+        `${entity}/${userId}/avatar-${Date.now()}.jpg`;
 
     // ==========================================
     // 4. Generate presigned upload URL
@@ -100,7 +101,7 @@ async function ensureStudentProfilePhoto(userId: string) {
     });
 
     console.log(
-        `✅ Foto mahasiswa berhasil diupload: ${userId}`
+        `✅ Foto ${entity} berhasil diupload: ${userId}`
     );
 }
 
@@ -216,19 +217,24 @@ async function main() {
           }
         }
 
-        // create dosen record (nidn unique) or reuse existing
+        // Isi profil akademik untuk dosen baru maupun seed ulang.
         const nidnVal = String(100000000 + idx);
-        let dosenRecord;
-        try {
-          dosenRecord = await prisma.dosen.create({ data: { nidn: nidnVal, status: Status.Aktif, jabatan: JabatanDosen.Dosen, userId: userDosen.id, prodiId: prodi.id } });
-        } catch (err: any) {
-          if (err?.code === "P2002") {
-            dosenRecord = await prisma.dosen.findUnique({ where: { nidn: nidnVal } });
-            if (!dosenRecord) throw err;
-          } else {
-            throw err;
-          }
-        }
+        const profilAkademik = {
+          pendidikanTerakhir: d % 3 === 0 ? Pendidikan.S3 : Pendidikan.S2,
+          bidangKeahlian: prodiNamesPerFakultas[fIdx][pIdx],
+        };
+        const dosenRecord = await prisma.dosen.upsert({
+          where: { nidn: nidnVal },
+          update: profilAkademik,
+          create: {
+            nidn: nidnVal,
+            status: Status.Aktif,
+            jabatan: JabatanDosen.Dosen,
+            userId: userDosen.id,
+            prodiId: prodi.id,
+            ...profilAkademik,
+          },
+        });
 
         createdDosenInProdi.push(dosenRecord.id);
         dosenGlobalIndex++;
@@ -684,7 +690,7 @@ const jamSelesai =
       },
     });
 
-    await ensureStudentProfilePhoto(mahasiswaPertama.userId);
+    await ensureProfilePhoto(mahasiswaPertama.userId, "students");
 
     const krsLama = await prisma.kRS.findMany({
       where: {
@@ -853,6 +859,10 @@ const jamSelesai =
       }
     }
   }
+
+  const firstLecturer = await seedFirstLecturer();
+  await ensureProfilePhoto(firstLecturer.userId, "lecturers");
+  console.log(`✅ Demo dosen pertama: ${firstLecturer.userId}, tahunAkademikId=${firstLecturer.tahunAkademikId}, 4 mata kuliah, 2 kelas, 8 jadwal tambahan.`);
 
   console.log("✅ Full seed selesai: created mata kuliah, kurikulum, ruangan, tahun akademik, kelas, kelas-mata-kuliah, jadwal, dan KRS.");
 }

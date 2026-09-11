@@ -61,7 +61,7 @@ export const dosenColumns: ColumnDef<Dosen>[] = [
       label: "Status",
     },
   },
-  createActionColumn<Dosen>(undefined, undefined, undefined, (lecturer) => `/dosen/${lecturer.id}`),
+  createActionColumn<Dosen>((lecturer) => `/dosen/${lecturer.id}/edit`, undefined, undefined, (lecturer) => `/dosen/${lecturer.id}`),
 
 
 ];

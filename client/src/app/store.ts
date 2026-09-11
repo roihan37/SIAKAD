@@ -1,3 +1,4 @@
+import lecturerTabsReducer from "@/features/slice/lecturerTabsSlice"
 import { configureStore } from '@reduxjs/toolkit'
 import authReducer from '@/features/slice/authSlice'
 import dosenReducer from '@/features/slice/dosenSlice'
@@ -17,6 +18,7 @@ export const store = configureStore({
   reducer: {
     auth: authReducer,
     lecturers: dosenReducer,
+    lecturerTabs: lecturerTabsReducer,
     students: mahasiswaReducer,
     campus: campusReducer,
     matkul: matkulReducer,

@@ -1,6 +1,8 @@
+import { LecturerDataTabs } from "./lecturer-detail-tabs"
+import { AccountTab } from "./lecturer-account-tab"
 import { useEffect, useState, type ReactNode } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { Activity, Ban, EllipsisVertical, KeyRound, ArrowLeft, BookOpen, CalendarDays, GraduationCap, Info, Mail, Pencil, ShieldCheck, Users, UserRound, RefreshCw } from "lucide-react"
+import { Activity, Ban, EllipsisVertical, KeyRound, ArrowLeft, BookOpen, CalendarDays, GraduationCap, Mail, Pencil, Users, UserRound, RefreshCw } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -11,15 +13,11 @@ import { useAppDispatch, useAppSelector } from "@/hooks/redux"
 import { getLecturerById } from "@/features/action/dosenThunk"
 import type { LecturerDetailResponse } from "@/types/lecturer-detail"
 
-const sections = ["Informasi Pribadi", "Akademik", "Pengajaran", "Bimbingan", "Akun"] as const
+const sections = ["Informasi Pribadi", "Akademik", "Mengajar", "Mahasiswa PA", "Jadwal", "Akun"] as const
 type Section = (typeof sections)[number]
 
 function InfoRow({ label, children }: { label: string; children: ReactNode }) {
   return <div className="space-y-1 border-b border-border/60 pb-3 last:border-0"><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt><dd className="break-words text-sm font-medium">{children || "—"}</dd></div>
-}
-
-function EmptySection({ title, description }: { title: string; description: string }) {
-  return <div className="rounded-xl border border-dashed bg-muted/20 px-5 py-10 text-center"><Info className="mx-auto mb-3 size-6 text-muted-foreground" /><h3 className="text-sm font-semibold">{title}</h3><p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">{description}</p></div>
 }
 
 function formatBirthDate(value: string | null) {
@@ -58,6 +56,7 @@ export default function DosenDetailPage() {
 }
 
 function LecturerDetailContent({ lecturer, goBack }: { lecturer: LecturerDetailResponse["lecturer"]; goBack: () => void }) {
+  const navigate = useNavigate()
   const [activeSection, setActiveSection] = useState<Section>("Informasi Pribadi")
   const initials = lecturer.nama.trim().split(/\s+/).map((part) => part[0]).slice(0, 2).join("").toUpperCase() || "D"
   const summary = lecturer.summary
@@ -72,8 +71,8 @@ function LecturerDetailContent({ lecturer, goBack }: { lecturer: LecturerDetailR
           <div className="min-w-0"><p className="mb-1 text-xs font-medium uppercase tracking-widest text-primary-foreground/70">Profil Dosen</p><h1 className="break-words text-2xl font-semibold tracking-tight sm:text-3xl">{lecturer.nama}</h1><p className="mt-2 text-sm text-primary-foreground/80">NIDN {lecturer.nidn ?? "—"}</p><p className="mt-1 text-sm text-primary-foreground/80">{lecturer.prodi?.nama ?? "Program studi belum tersedia"} · {lecturer.fakultas?.nama ?? "Fakultas belum tersedia"}</p></div>
         </div>
         <div className="flex shrink-0 items-center gap-2 self-start sm:self-center">
-          <Button variant="secondary" size="sm" disabled title="Edit dosen belum tersedia"><Pencil /> Edit Dosen</Button>
-          <DropdownMenu><DropdownMenuTrigger render={<Button variant="ghost" size="icon" aria-label="Buka menu aksi dosen" className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"><EllipsisVertical /></Button>} /><DropdownMenuContent align="end" className="w-56"><p className="px-2 py-2 text-xs text-muted-foreground">Aksi akun belum tersedia.</p><DropdownMenuItem disabled><UserRound /> Ubah Status</DropdownMenuItem><DropdownMenuItem disabled><KeyRound /> Reset Password</DropdownMenuItem><DropdownMenuItem disabled><Activity /> Lihat Aktivitas</DropdownMenuItem><DropdownMenuSeparator /><DropdownMenuItem variant="destructive" disabled><Ban /> Nonaktifkan Akun</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
+          <Button variant="secondary" size="sm" onClick={() => navigate(`/dosen/${lecturer.id}/edit`)}><Pencil /> Edit Dosen</Button>
+          <DropdownMenu><DropdownMenuTrigger render={<Button variant="ghost" size="icon" aria-label="Buka menu aksi dosen" className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"><EllipsisVertical /></Button>} /><DropdownMenuContent align="end" className="w-56"><p className="px-2 py-2 text-xs text-muted-foreground">Aksi tersedia sebagai simulasi di tab Akun.</p><DropdownMenuItem disabled><UserRound /> Ubah Status</DropdownMenuItem><DropdownMenuItem onClick={() => setActiveSection("Akun")}><KeyRound /> Reset Password</DropdownMenuItem><DropdownMenuItem disabled><Activity /> Lihat Aktivitas</DropdownMenuItem><DropdownMenuSeparator /><DropdownMenuItem variant="destructive" onClick={() => setActiveSection("Akun")}><Ban /> Nonaktifkan Akun</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
         </div>
       </div>
       {lecturer.email && <div className="relative mt-6 flex items-center gap-2 break-all border-t border-primary-foreground/15 pt-4 text-xs text-primary-foreground/80"><Mail className="size-3.5 shrink-0" />{lecturer.email}</div>}
@@ -88,10 +87,9 @@ function LecturerDetailContent({ lecturer, goBack }: { lecturer: LecturerDetailR
       <nav className="flex overflow-x-auto border-b px-2 sm:px-4" aria-label="Bagian detail dosen">{sections.map((section) => <button type="button" key={section} onClick={() => setActiveSection(section)} aria-current={activeSection === section ? "page" : undefined} className={`relative shrink-0 px-3 py-4 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-ring sm:px-4 ${activeSection === section ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>{section}{activeSection === section && <span className="absolute inset-x-3 bottom-0 h-0.5 rounded-full bg-primary" />}</button>)}</nav>
       <div className="space-y-5 p-4 sm:p-6">
         {activeSection === "Informasi Pribadi" && <div className="grid items-start gap-5 lg:grid-cols-2"><Card><CardHeader><CardTitle className="flex items-center gap-2"><UserRound className="size-4 text-muted-foreground" /> Data Identitas</CardTitle></CardHeader><CardContent><dl className="grid gap-4 sm:grid-cols-2"><InfoRow label="Nama lengkap">{lecturer.nama}</InfoRow><InfoRow label="NIDN">{lecturer.nidn}</InfoRow><InfoRow label="Jenis kelamin">{lecturer.jenisKelamin}</InfoRow><InfoRow label="Tempat lahir">{lecturer.tempatLahir}</InfoRow><InfoRow label="Tanggal lahir">{formatBirthDate(lecturer.tanggalLahir)}</InfoRow></dl></CardContent></Card><Card><CardHeader><CardTitle>Informasi Kontak</CardTitle></CardHeader><CardContent><dl className="grid gap-4"><InfoRow label="Email">{lecturer.email}</InfoRow><InfoRow label="Nomor telepon">{lecturer.noHp}</InfoRow><InfoRow label="Alamat">{lecturer.alamat}</InfoRow></dl></CardContent></Card></div>}
-        {activeSection === "Akademik" && <div className="grid items-start gap-5 lg:grid-cols-2"><Card><CardHeader><CardTitle>Penempatan Akademik</CardTitle></CardHeader><CardContent><dl className="grid gap-4"><InfoRow label="Fakultas">{lecturer.fakultas?.nama}</InfoRow><InfoRow label="Program studi">{lecturer.prodi?.nama}</InfoRow><InfoRow label="NIDN">{lecturer.nidn}</InfoRow></dl></CardContent></Card><EmptySection title="Riwayat pendidikan belum tersedia" description="Riwayat pendidikan, jabatan, dan kepegawaian belum tersedia untuk ditampilkan." /></div>}
-        {activeSection === "Pengajaran" && <EmptySection title="Rincian pengajaran belum tersedia" description="Ringkasan mata kuliah, kelas, dan jadwal sudah tersedia di atas. Daftar mata kuliah dan rincian jadwal belum tersedia untuk ditampilkan." />}
-        {activeSection === "Bimbingan" && <EmptySection title="Daftar mahasiswa bimbingan belum tersedia" description={summary.mahasiswaBimbingan == null ? "Data mahasiswa bimbingan belum tersedia untuk ditampilkan." : `Tercatat ${summary.mahasiswaBimbingan} mahasiswa bimbingan. Rincian mahasiswa dan pengajuan KRS belum tersedia untuk ditampilkan.`} />}
-        {activeSection === "Akun" && <div className="grid items-start gap-5 lg:grid-cols-2"><Card><CardHeader><CardTitle className="flex items-center gap-2"><ShieldCheck className="size-4 text-muted-foreground" /> Informasi Akun</CardTitle></CardHeader><CardContent><dl className="grid gap-4"><InfoRow label="Email">{lecturer.email}</InfoRow><InfoRow label="Jenis akun">Dosen</InfoRow></dl></CardContent></Card><EmptySection title="Pengelolaan akun belum tersedia" description="Status akun dan riwayat aktivitas belum tersedia. Aksi pengelolaan akun belum diaktifkan." /></div>}
+        {activeSection === "Akademik" && <div><Card><CardHeader><CardTitle>Penempatan Akademik</CardTitle></CardHeader><CardContent><dl className="grid gap-4"><InfoRow label="Fakultas">{lecturer.fakultas?.nama}</InfoRow><InfoRow label="Program studi">{lecturer.prodi?.nama}</InfoRow><InfoRow label="NIDN">{lecturer.nidn}</InfoRow><InfoRow label="Pendidikan terakhir">{lecturer.pendidikanTerakhir}</InfoRow><InfoRow label="Bidang keahlian">{lecturer.bidangKeahlian}</InfoRow></dl></CardContent></Card></div>}
+        {(activeSection === "Mengajar" || activeSection === "Jadwal" || activeSection === "Mahasiswa PA") && <LecturerDataTabs id={lecturer.id} section={activeSection} />}
+        <div hidden={activeSection !== "Akun"}><AccountTab email={lecturer.email} name={lecturer.nama} /></div>
       </div>
     </section>
   </main>

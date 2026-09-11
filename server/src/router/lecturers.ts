@@ -13,4 +13,14 @@ router.route("/:id")
     .patch(Controller.updateLecturerById)
     .delete(Controller.deleteLecturerById);
 
+
+router.route("/:id/teach")
+    .get(Controller.getLecturerTeach)
+
+router.route("/:id/schedule")
+    .get(Controller.getLecturerSchedule)
+
+router.route("/:id/advisees")
+    .get(Controller.getAdvisees)
+
 export default router

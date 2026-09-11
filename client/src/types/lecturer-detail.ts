@@ -3,6 +3,8 @@ export interface LecturerDetailResponse {
     id: string
     dosenId: string | null
     nidn: string | null
+    pendidikanTerakhir?: string | null
+    bidangKeahlian?: string | null
     nama: string
     jenisKelamin: string | null
     tempatLahir: string | null
