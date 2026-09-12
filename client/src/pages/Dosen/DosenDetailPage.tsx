@@ -2,7 +2,7 @@ import { LecturerDataTabs } from "./lecturer-detail-tabs"
 import { AccountTab } from "./lecturer-account-tab"
 import { useEffect, useState, type ReactNode } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { Activity, Ban, EllipsisVertical, KeyRound, ArrowLeft, BookOpen, CalendarDays, GraduationCap, Mail, Pencil, Users, UserRound, RefreshCw } from "lucide-react"
+import { Activity, Ban, EllipsisVertical, KeyRound, ArrowLeft, BookOpen, CalendarDays, GraduationCap, Loader2, Mail, Pencil, Users, UserRound, RefreshCw } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -59,6 +59,8 @@ function LecturerDetailContent({ lecturer, goBack }: { lecturer: LecturerDetailR
   const navigate = useNavigate()
   const [activeSection, setActiveSection] = useState<Section>("Informasi Pribadi")
   const initials = lecturer.nama.trim().split(/\s+/).map((part) => part[0]).slice(0, 2).join("").toUpperCase() || "D"
+  const [settledAvatarUrl, setSettledAvatarUrl] = useState<string | null>(null)
+  const avatarLoading = Boolean(lecturer.avatarUrl && settledAvatarUrl !== lecturer.avatarUrl)
   const summary = lecturer.summary
 
   return <main className="mx-auto w-full max-w-6xl space-y-5 py-5 sm:py-7">
@@ -67,7 +69,11 @@ function LecturerDetailContent({ lecturer, goBack }: { lecturer: LecturerDetailR
       <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-20 size-56 rounded-full border-32 border-primary-foreground/10" />
       <div className="relative flex flex-col justify-between gap-6 sm:flex-row sm:items-center">
         <div className="flex min-w-0 items-start gap-4 sm:items-center sm:gap-5">
-          <Avatar className="size-16 shrink-0 border-2 border-primary-foreground/20 sm:size-20"><AvatarImage src={lecturer.avatarUrl ?? undefined} alt={`Foto ${lecturer.nama}`} /><AvatarFallback className="bg-primary-foreground/15 text-xl text-primary-foreground">{initials}</AvatarFallback></Avatar>
+          <Avatar aria-busy={avatarLoading} className="size-16 shrink-0 border-2 border-primary-foreground/20 sm:size-20">
+            <AvatarImage key={lecturer.avatarUrl} src={lecturer.avatarUrl ?? undefined} alt={`Foto ${lecturer.nama}`} onLoadingStatusChange={(status) => { if (status === "loaded" || status === "error") setSettledAvatarUrl(lecturer.avatarUrl) }} />
+            <AvatarFallback className="bg-primary-foreground/15 text-xl text-primary-foreground">{initials}</AvatarFallback>
+            {avatarLoading && <span role="status" className="absolute inset-0 flex items-center justify-center rounded-full bg-primary text-primary-foreground"><Loader2 aria-hidden="true" className="size-6 animate-spin" /><span className="sr-only">Memuat foto profil dosen...</span></span>}
+          </Avatar>
           <div className="min-w-0"><p className="mb-1 text-xs font-medium uppercase tracking-widest text-primary-foreground/70">Profil Dosen</p><h1 className="break-words text-2xl font-semibold tracking-tight sm:text-3xl">{lecturer.nama}</h1><p className="mt-2 text-sm text-primary-foreground/80">NIDN {lecturer.nidn ?? "—"}</p><p className="mt-1 text-sm text-primary-foreground/80">{lecturer.prodi?.nama ?? "Program studi belum tersedia"} · {lecturer.fakultas?.nama ?? "Fakultas belum tersedia"}</p></div>
         </div>
         <div className="flex shrink-0 items-center gap-2 self-start sm:self-center">

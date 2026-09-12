@@ -43,6 +43,9 @@ function DosenEditForm({ lecturer }: { lecturer: LecturerDetailResponse["lecture
   const allowLeave = useRef(false)
   const saveLock = useRef(false)
   const [photo, setPhoto] = useState<string | null>(null)
+  useEffect(() => () => {
+    if (photo?.startsWith("blob:")) URL.revokeObjectURL(photo)
+  }, [photo])
   const { register, control, setValue, handleSubmit, reset, formState: { errors, isDirty, dirtyFields } } = useForm<DosenEditValues>({
     resolver: zodResolver(dosenEditSchema),
     mode: "onBlur",

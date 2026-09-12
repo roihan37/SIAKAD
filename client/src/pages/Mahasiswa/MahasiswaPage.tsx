@@ -1,3 +1,4 @@
+import { BulkActionDialog, BulkActionsToolbar } from "@/components/tables/bulk-actions"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Loader2, TrashIcon } from "lucide-react"
@@ -132,12 +133,7 @@ export default function MahasiswaPage() {
                         onRowSelectionChange={setRowSelection}
                         getRowId={(student) => student.id}
                         selectionDisabled={isBulkMutating}
-                        toolbar={selectedStudents.length > 0 && <div className="flex flex-wrap items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 p-3 sm:p-4" role="region" aria-label="Aksi mahasiswa terpilih">
-                            <div className="mr-auto"><p className="text-sm font-semibold" aria-live="polite">{selectedStudents.length} mahasiswa dipilih</p><p className="text-xs text-muted-foreground">Pilihan hanya pada halaman ini.</p></div>
-                            <Button variant="outline" onClick={() => openBulk("status")} disabled={isBulkMutating}>Ubah status</Button>
-                            <Button variant="destructive" onClick={() => openBulk("delete")} disabled={isBulkMutating}><TrashIcon /> Hapus</Button>
-                            <Button variant="ghost" onClick={clearSelection} disabled={isBulkMutating}>Batal pilih</Button>
-                        </div>}
+                        toolbar={<BulkActionsToolbar count={selectedStudents.length} entity="mahasiswa" busy={isBulkMutating} onAction={openBulk} onClear={clearSelection} />}
                         pageIndex={page - 1}
                         pageCount={totalPages}
                         onPageChange={(newIndex) => { clearSelection(); dispatch(setPage(newIndex + 1)) }}
@@ -145,30 +141,7 @@ export default function MahasiswaPage() {
                         onSortingChange={(next) => { clearSelection(); handleSortingChange(next) }}
                     />
                 </div>
-                <Dialog open={bulkKind !== null} onOpenChange={(open) => { if (!open && !isBulkMutating) setBulkKind(null) }}>
-                    <DialogContent showCloseButton={!isBulkMutating} aria-busy={isBulkMutating}>
-                        <DialogHeader>
-                            <DialogTitle>{bulkKind === "delete" ? "Hapus mahasiswa terpilih?" : "Ubah status mahasiswa"}</DialogTitle>
-                            <DialogDescription>{bulkKind === "delete" ? `Akun dan data akademik terkait dari ${selectedStudents.length} mahasiswa akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.` : `Tentukan status baru untuk ${selectedStudents.length} mahasiswa. Alasan akan dicatat pada riwayat masing-masing mahasiswa.`}</DialogDescription>
-                        </DialogHeader>
-                        <ul className="max-h-36 space-y-2 overflow-y-auto rounded-lg border bg-muted/30 p-3 text-sm" aria-label="Mahasiswa yang dipilih">
-                            {selectedStudents.map((student) => <li key={student.id} className="flex flex-wrap justify-between gap-x-3"><span className="font-medium">{student.name}</span><span className="text-muted-foreground">{student.mahasiswa.nim} · {student.mahasiswa.status}</span></li>)}
-                        </ul>
-                        {bulkKind === "status" && <div className="space-y-4">
-                            <fieldset disabled={isBulkMutating}><legend className="mb-2 text-sm font-medium">Status baru</legend><div className="grid grid-cols-2 gap-2">
-                                {(["Aktif", "Cuti", "Lulus", "Nonaktif"] as const).map((status) => <label key={status} className={`flex cursor-pointer items-center gap-2 rounded-lg border p-3 text-sm ${bulkStatus === status ? "border-primary bg-primary/5 font-medium" : ""}`}><input type="radio" name="bulk-status" value={status} checked={bulkStatus === status} onChange={() => setBulkStatus(status)} className="accent-primary" />{status === "Nonaktif" ? "Nonaktif" : status}</label>)}
-                            </div></fieldset>
-                            <div className="space-y-2"><label htmlFor="bulk-status-reason" className="text-sm font-medium">Alasan perubahan <span className="text-destructive">*</span></label><textarea id="bulk-status-reason" required maxLength={1000} disabled={isBulkMutating} value={bulkReason} onChange={(event) => setBulkReason(event.target.value)} rows={3} placeholder="Tuliskan alasan perubahan status..." className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-ring" /></div>
-                            <p className="text-xs text-muted-foreground" role="status">{changedStudents.length} mahasiswa akan diperbarui. {selectedStudents.length - changedStudents.length} mahasiswa dengan status yang sama dilewati.</p>
-                        </div>}
-                        <DialogFooter>
-                            <Button variant="outline" disabled={isBulkMutating} onClick={() => setBulkKind(null)}>Batal</Button>
-                            <Button variant={bulkKind === "delete" ? "destructive" : "default"} disabled={isBulkMutating || !selectedStudents.length || (bulkKind === "status" && (!bulkReason.trim() || !changedStudents.length))} onClick={handleBulk}>
-                                {isBulkMutating && <Loader2 className="animate-spin" />}{isBulkMutating ? "Memproses..." : bulkKind === "delete" ? `Ya, hapus ${selectedStudents.length} mahasiswa` : "Simpan status"}
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                <BulkActionDialog kind={bulkKind} entity="mahasiswa" targets={selectedStudents.map((student) => ({ id: student.id, name: student.name, identifier: student.mahasiswa.nim, status: student.mahasiswa.status }))} busy={isBulkMutating} status={bulkStatus} statusOptions={["Aktif", "Cuti", "Lulus", "Nonaktif"]} onStatusChange={(status) => setBulkStatus(status as typeof bulkStatus)} reason={bulkReason} onReasonChange={setBulkReason} deleteDescription={`Akun dan data akademik terkait dari ${selectedStudents.length} mahasiswa akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.`} onClose={() => setBulkKind(null)} onConfirm={handleBulk} />
                 <Dialog open={studentToDelete !== null} onOpenChange={(open) => { if (!open && !isDeleting) setStudentToDelete(null) }}>
                     <DialogContent showCloseButton={!isDeleting} aria-busy={isDeleting}>
                         <DialogHeader>

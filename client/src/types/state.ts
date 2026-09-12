@@ -24,6 +24,9 @@ export interface MahasiswaState extends Pagination{
 }
 
 export interface DosenState extends Pagination{
+    isBulkMutating: boolean
+    lecturerListRequestId: string | null
+    lecturerListError: string | null
     isUpdatingLecturer: boolean
     lecturerDetail: LecturerDetailResponse["lecturer"] | null
     isLoadingLecturerDetail: boolean

@@ -57,6 +57,8 @@ export const errorHandler: ErrorRequestHandler = (
         return `${formattedNames[0]} sudah terdaftar`
       }
 
+      if (formattedNames.length === 0) return "Data sudah terdaftar";
+
       if (formattedNames.length === 2) {
         return `${formattedNames[0]} dan ${formattedNames[1]} sudah terdaftar`
       }
@@ -78,6 +80,26 @@ export const errorHandler: ErrorRequestHandler = (
     })
   }
 
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    switch (error.code) {
+      case "P2003":
+        return res.status(409).json({
+          code: "CONFLICT",
+          message: "Operasi tidak dapat dilakukan karena data memiliki relasi yang masih digunakan atau referensi tidak valid",
+        });
+      case "P2034":
+        return res.status(409).json({
+          code: "CONFLICT",
+          message: "Data sedang berubah, silakan ulangi operasi",
+        });
+      case "P2025":
+        return res.status(404).json({
+          code: "NOT_FOUND",
+          message: "Data yang akan diproses tidak ditemukan",
+        });
+    }
+  }
+
   switch (error.name) {
     case "TokenExpiredError":
       return res.status(401).json({
@@ -86,9 +108,23 @@ export const errorHandler: ErrorRequestHandler = (
       });
 
     case "badRequest":
+    case "BadRequest":
+    case "LecturerValidationError":
       return res.status(400).json({
         code: "VALIDATION_ERROR",
-        message: "Email / Password is required",
+        message: error.message || "Email / Password is required",
+      });
+
+    case "LecturerInUse":
+      return res.status(409).json({
+        code: "CONFLICT",
+        message: error.message || "Dosen masih memiliki mahasiswa bimbingan atau kelas mengajar. Pindahkan relasi tersebut sebelum menghapus dosen.",
+      });
+
+    case "LecturerStatusConflict":
+      return res.status(409).json({
+        code: "CONFLICT",
+        message: error.message || "Data dosen sedang berubah, silakan ulangi pembaruan status",
       });
 
     case "Unauthorized":
@@ -112,7 +148,7 @@ export const errorHandler: ErrorRequestHandler = (
     case "NotFound":
       return res.status(404).json({
         code: "NOT_FOUND",
-        message: "Data not found",
+        message: error.message || "Data not found",
       });
 
     default:

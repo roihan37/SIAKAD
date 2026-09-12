@@ -1,10 +1,13 @@
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import { createLecturer, getAllLecturers, getLecturerById, updateLecturer } from "../action/dosenThunk";
+import { createLecturer, getAllLecturers, getLecturerById, updateLecturer, bulkMutateLecturers } from "../action/dosenThunk";
 import type { DosenState } from "@/types/state";
 
 const initialState: DosenState = {
     isUpdatingLecturer: false,
+    isBulkMutating: false,
+    lecturerListRequestId: null,
+    lecturerListError: null,
     error: null,
     lecturerDetail: null,
     isLoadingLecturerDetail: false,
@@ -68,11 +71,30 @@ const dosenSilce = createSlice({
             .addCase(updateLecturer.fulfilled, (state) => { state.isUpdatingLecturer = false })
             .addCase(updateLecturer.rejected, (state) => { state.isUpdatingLecturer = false })
 
+            .addCase(bulkMutateLecturers.pending, (state) => { state.isBulkMutating = true })
+            .addCase(bulkMutateLecturers.rejected, (state) => { state.isBulkMutating = false })
+            .addCase(bulkMutateLecturers.fulfilled, (state, action) => {
+                state.isBulkMutating = false
+                const ids = action.payload.ids
+                const input = action.meta.arg
+                if (input.kind === "delete") {
+                    state.lecturers = state.lecturers.filter((lecturer) => !ids.includes(lecturer.id))
+                    if (state.totalRows !== undefined) state.totalRows = Math.max(0, state.totalRows - ids.length)
+                    state.totalPages = Math.max(1, Math.ceil((state.totalRows ?? state.lecturers.length) / state.limit))
+                } else {
+                    state.lecturers.forEach((lecturer) => { if (ids.includes(lecturer.id)) lecturer.dosen.status = input.status })
+                }
+                if (state.lecturerDetail && ids.includes(state.lecturerDetail.id)) state.lecturerDetail = null
+            })
+
             // LECTURERS
-            .addCase(getAllLecturers.pending, state => {
+            .addCase(getAllLecturers.pending, (state, action) => {
+                state.lecturerListRequestId = action.meta.requestId
+                state.lecturerListError = null
                 state.isLoadingLecturers = true
             })
             .addCase(getAllLecturers.fulfilled, (state, action) => {
+                if (state.lecturerListRequestId !== action.meta.requestId) return
                 state.isLoadingLecturers = false
                 state.lecturers = action.payload.lecturers
                 state.page = action.payload.pagination.page;
@@ -81,6 +103,8 @@ const dosenSilce = createSlice({
                 state.totalRows = action.payload.pagination.totalRows;
             })
             .addCase(getAllLecturers.rejected, (state, action) => {
+                if (state.lecturerListRequestId !== action.meta.requestId) return
+                if (!action.meta.aborted) state.lecturerListError = typeof action.payload === "string" ? action.payload : "Gagal memuat daftar dosen."
                 state.isLoadingLecturers = false
                 state.error = action.payload as string;
             })

@@ -40,9 +40,6 @@ export function createMhsColumns(
     cell: ({ row }) => {
     const student = row.original
 
-    console.log("STUDENT:", student)
-    console.log("ID:", student.id)
-
     return (
         <Link
             to={`/mahasiswa/${student.id}`}
@@ -74,6 +71,11 @@ export function createMhsColumns(
       label: "Status",
     },
   },
-  createActionColumn<Mahasiswa>((student) => `/mahasiswa/${student.id}/edit`, onDelete, undefined, (student) => `/mahasiswa/${student.id}`),
+  createActionColumn<Mahasiswa>(
+    (student) => `/mahasiswa/${student.id}/edit`,
+    onDelete,
+    undefined,
+    (student) => `/mahasiswa/${student.id}`,
+  ),
 ];
 }

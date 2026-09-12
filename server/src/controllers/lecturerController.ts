@@ -65,7 +65,7 @@ export class Controller {
         let newAvatarKeyForCleanup: string | null = null;
         try {
             const { id } = req.params;
-            const invalid = (message: string): never => { throw { name: "LecturerValidationError", message }; };
+            const invalid = (message: string): never => { throw { name: "BadRequest", message }; };
             if (typeof id !== "string" || !id.trim()) return invalid("ID user dosen wajib diisi");
             const body = req.body;
             if (!body || typeof body !== "object" || Array.isArray(body)) return invalid("Body harus berupa objek");
@@ -158,11 +158,13 @@ export class Controller {
                     id: true, name: true, email: true, username: true, gender: true,
                     phoneNumber: true, address: true, nik: true, birthPlace: true,
                     birthDate: true, avatarKey: true,
-                    dosen: { select: {
-                        id: true, nidn: true, status: true, jabatan: true,
-                        pendidikanTerakhir: true, bidangKeahlian: true,
-                        prodi: { select: { id: true, name: true } },
-                    } },
+                    dosen: {
+                        select: {
+                            id: true, nidn: true, status: true, jabatan: true,
+                            pendidikanTerakhir: true, bidangKeahlian: true,
+                            prodi: { select: { id: true, name: true } },
+                        }
+                    },
                 },
             });
             newAvatarKeyForCleanup = null;
@@ -178,23 +180,47 @@ export class Controller {
                 try { await S3Service.deleteUrl(newAvatarKeyForCleanup); }
                 catch (cleanupError) { console.error("Gagal cleanup avatar baru dosen:", cleanupError); }
             }
-            if ((error as { name?: string })?.name === "LecturerValidationError") {
-                return res.status(400).json({ code: "VALIDATION_ERROR", message: (error as { message: string }).message });
-            }
             next(error);
         }
     }
 
     static async deleteLecturerById(req: Request, res: Response, next: NextFunction) {
         try {
-            const id = String(req.params.id);
-            const lecturer = await prisma.user.findFirst({ where: { id, role: "Dosen" } });
-            if (!lecturer) throw { name: "NotFound", message: "Dosen tidak ditemukan" };
+            const { id } = req.params;
+            if (typeof id !== "string" || !id.trim()) {
+                throw { name: "BadRequest", message: "ID user dosen wajib diisi" };
+            }
 
-            await prisma.user.delete({ where: { id } });
-            if (lecturer.avatarKey) await S3Service.deleteUrl(lecturer.avatarKey);
+            const lecturer = await prisma.$transaction(async (tx) => {
+                const user = await tx.user.findUnique({
+                    where: { id, role: "Dosen" },
+                    select: {
+                        id: true, name: true, avatarKey: true,
+                        dosen: { select: {
+                            id: true,
+                            _count: { select: { mahasiswa: true, kelasMataKuliahs: true } },
+                        } },
+                    },
+                });
+                if (!user?.dosen) {
+                    throw { name: "NotFound", message: "Dosen tidak ditemukan" };
+                }
+                if (user.dosen._count.mahasiswa > 0 || user.dosen._count.kelasMataKuliahs > 0) {
+                    throw { name: "LecturerInUse" };
+                }
 
-            res.status(200).json({ message: `${lecturer.name} berhasil dihapus` });
+                // Profil dosen dan refresh token mengikuti onDelete: Cascade.
+                await tx.user.delete({ where: { id: user.id, role: "Dosen" } });
+                return user;
+            }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+
+            // Cleanup storage dilakukan setelah commit; kegagalannya cukup dicatat.
+            if (lecturer.avatarKey) {
+                try { await S3Service.deleteUrl(lecturer.avatarKey); }
+                catch (error) { console.error("Gagal menghapus avatar dosen:", error); }
+            }
+
+            return res.status(200).json({ message: `${lecturer.name} berhasil dihapus` });
         } catch (error) {
             next(error);
         }
@@ -497,7 +523,6 @@ export class Controller {
         }
     }
 
-
     static async getLecturerSchedule(req: Request, res: Response, next: NextFunction) {
         try {
             const { id } = req.params;
@@ -505,17 +530,11 @@ export class Controller {
             const tahunAkademikId = typeof rawYearId === "string" ? Number(rawYearId) : NaN;
 
             if (typeof id !== "string" || !id.trim()) {
-                return res.status(400).json({
-                    code: "VALIDATION_ERROR",
-                    message: "ID user dosen wajib diisi",
-                });
+                throw { name: "BadRequest", message: "ID user dosen wajib diisi" };
             }
             if (typeof rawYearId !== "string" || !/^\d+$/.test(rawYearId) ||
                 !Number.isSafeInteger(tahunAkademikId) || tahunAkademikId <= 0) {
-                return res.status(400).json({
-                    code: "VALIDATION_ERROR",
-                    message: "tahunAkademikId wajib berupa bilangan bulat positif",
-                });
+                throw { name: "BadRequest", message: "tahunAkademikId wajib berupa bilangan bulat positif" };
             }
 
             const user = await prisma.user.findUnique({
@@ -581,215 +600,305 @@ export class Controller {
     }
 
     static async getAdvisees(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
-  try {
-    const userId = String(req.params.id)
+        req: Request,
+        res: Response,
+        next: NextFunction
+    ) {
+        try {
+            const userId = String(req.params.id)
 
-    const search =
-      typeof req.query.search === "string"
-        ? req.query.search.trim()
-        : ""
+            const search =
+                typeof req.query.search === "string"
+                    ? req.query.search.trim()
+                    : ""
 
-    const page = Math.max(
-      Number(req.query.page) || 1,
-      1
-    )
+            const page = Math.max(
+                Number(req.query.page) || 1,
+                1
+            )
 
-    const limit = Math.min(
-      Math.max(Number(req.query.limit) || 10, 1),
-      100
-    )
+            const limit = Math.min(
+                Math.max(Number(req.query.limit) || 10, 1),
+                100
+            )
 
-    const skip = (page - 1) * limit
+            const skip = (page - 1) * limit
 
-    // Find lecturer by User ID
-    const user = await prisma.user.findUnique({
-      where: {
-        id: userId,
-      },
-      select: {
-        id: true,
-        dosen: {
-          select: {
-            id: true,
-          },
-        },
-      },
-    })
+            // Find lecturer by User ID
+            const user = await prisma.user.findUnique({
+                where: {
+                    id: userId,
+                },
+                select: {
+                    id: true,
+                    dosen: {
+                        select: {
+                            id: true,
+                        },
+                    },
+                },
+            })
 
-    if (!user || !user.dosen) {
-      throw {
-        name: "NotFound",
-        message: "Lecturer not found",
-      }
+            if (!user || !user.dosen) {
+                throw {
+                    name: "NotFound",
+                    message: "Lecturer not found",
+                }
+            }
+
+            const lecturerId = user.dosen.id
+
+            const requestedYear = req.query.tahunAkademikId
+            if (requestedYear !== undefined && (
+                typeof requestedYear !== "string" || !/^\d+$/.test(requestedYear) ||
+                !Number.isSafeInteger(Number(requestedYear)) || Number(requestedYear) <= 0
+            )) {
+                throw { name: "BadRequest", message: "tahunAkademikId wajib berupa bilangan bulat positif" };
+            }
+
+            const tahunAkademik = requestedYear !== undefined
+                ? await prisma.tahunAkademik.findUnique({
+                    where: { id: Number(requestedYear) }, select: { id: true },
+                })
+                : await prisma.tahunAkademik.findFirst({
+                    where: { isActive: true },
+                    orderBy: [{ tahun: "desc" }, { id: "desc" }],
+                    select: { id: true },
+                })
+            if (!tahunAkademik) {
+                throw { name: "NotFound", message: "Tahun akademik tidak ditemukan" }
+            }
+
+            const where: Prisma.MahasiswaWhereInput = {
+                dosenId: lecturerId,
+
+                ...(search && {
+                    OR: [
+                        {
+                            nim: {
+                                contains: search,
+                                mode: "insensitive",
+                            },
+                        },
+                        {
+                            user: {
+                                name: {
+                                    contains: search,
+                                    mode: "insensitive",
+                                },
+                            },
+                        },
+                    ],
+                }),
+            }
+
+            const [students, totalRows, total, krsCounts] =
+                await Promise.all([
+                    prisma.mahasiswa.findMany({
+                        where,
+
+                        skip,
+                        take: limit,
+
+                        select: {
+                            id: true,
+                            nim: true,
+                            angkatan: true,
+                            status: true,
+
+                            krs: {
+                                where: { tahunAkademikId: tahunAkademik.id },
+                                select: { status: true },
+                            },
+
+                            user: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                },
+                            },
+
+                            prodi: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                },
+                            },
+                        },
+
+                        orderBy: {
+                            nim: "asc",
+                        },
+                    }),
+
+                    prisma.mahasiswa.count({
+                        where,
+                    }),
+                    prisma.mahasiswa.count({ where: { dosenId: lecturerId } }),
+                    prisma.kRS.groupBy({
+                        by: ["status"],
+                        where: {
+                            tahunAkademikId: tahunAkademik.id,
+                            mahasiswa: { dosenId: lecturerId },
+                        },
+                        _count: { _all: true },
+                    }),
+                ])
+
+            const totalPages = Math.ceil(
+                totalRows / limit
+            )
+
+            const countStatus = (status: string) =>
+                krsCounts.find((item) => item.status === status)?._count._all ?? 0
+            const approved = countStatus("DISETUJUI")
+            const pending = countStatus("DIAJUKAN")
+            const rejected = countStatus("DITOLAK")
+            const summary = {
+                total,
+                approved,
+                pending,
+                notSubmitted: total - approved - pending - rejected,
+                rejected,
+            }
+            const krsStatusLabels = {
+                DRAFT: "BELUM_DIAJUKAN",
+                DIAJUKAN: "MENUNGGU",
+                DISETUJUI: "DISETUJUI",
+                DITOLAK: "DITOLAK",
+            }
+
+            const advisees = students.map(
+                (student) => ({
+                    id: student.user.id,
+                    studentId: student.id,
+                    nim: student.nim,
+                    name: student.user.name,
+
+                    studyProgram: {
+                        id: student.prodi.id,
+                        name: student.prodi.name,
+                    },
+
+                    cohort: student.angkatan,
+                    studentStatus: student.status.toUpperCase(),
+                    krsStatus: student.krs[0]
+                        ? krsStatusLabels[student.krs[0].status]
+                        : "BELUM_DIAJUKAN",
+                })
+            )
+
+            return res.status(200).json({
+                message: "Advisees retrieved successfully",
+
+                data: {
+                    summary,
+                    advisees,
+
+                    pagination: {
+                        page,
+                        limit,
+                        totalRows,
+                        totalPages,
+                    },
+                },
+            })
+        } catch (error) {
+            next(error)
+        }
     }
 
-    const lecturerId = user.dosen.id
+    static async bulkDelete(req: Request, res: Response, next: NextFunction) {
+        try {
+            const ids: unknown = req.body?.ids;
+            if (!Array.isArray(ids) || ids.length === 0 || ids.length > 100 ||
+                !ids.every((id): id is string => typeof id === "string" && id.trim().length > 0)) {
+                throw { name: "BadRequest", message: "ids wajib berupa array berisi 1 sampai 100 ID user dosen yang valid" };
+            }
+            const userIds = [...new Set(ids.map((id) => id.trim()))];
+            const lecturers = await prisma.$transaction(async (tx) => {
+                const users = await tx.user.findMany({
+                    where: { id: { in: userIds }, role: "Dosen" },
+                    select: {
+                        id: true, avatarKey: true,
+                        dosen: { select: {
+                            id: true,
+                            _count: { select: { mahasiswa: true, kelasMataKuliahs: true } },
+                        } },
+                    },
+                });
+                if (users.length !== userIds.length || users.some((user) => !user.dosen)) {
+                    throw { name: "NotFound", message: "Satu atau lebih dosen tidak ditemukan" };
+                }
+                if (users.some((user) => user.dosen!._count.mahasiswa > 0 || user.dosen!._count.kelasMataKuliahs > 0)) {
+                    throw { name: "LecturerInUse" };
+                }
+                // Profil dosen dan refresh token mengikuti onDelete: Cascade.
+                const deleted = await tx.user.deleteMany({
+                    where: { id: { in: userIds }, role: "Dosen" },
+                });
+                if (deleted.count !== userIds.length) {
+                    throw { name: "NotFound", message: "Data dosen berubah, silakan ulangi penghapusan" };
+                }
+                return users;
+            }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
-    const requestedYear = req.query.tahunAkademikId
-    if (requestedYear !== undefined && (
-      typeof requestedYear !== "string" || !/^\d+$/.test(requestedYear) ||
-      !Number.isSafeInteger(Number(requestedYear)) || Number(requestedYear) <= 0
-    )) {
-      return res.status(400).json({
-        code: "VALIDATION_ERROR",
-        message: "tahunAkademikId wajib berupa bilangan bulat positif",
-      })
+            const keys = [...new Set(lecturers.flatMap((user) => user.avatarKey ? [user.avatarKey] : []))];
+            for (let index = 0; index < keys.length; index += 5) {
+                await Promise.all(keys.slice(index, index + 5).map(async (key) => {
+                    try { await S3Service.deleteUrl(key); }
+                    catch (error) { console.error("Gagal menghapus avatar dosen:", error); }
+                }));
+            }
+            return res.status(200).json({
+                message: `${lecturers.length} dosen berhasil dihapus`,
+                data: { deletedCount: lecturers.length, ids: userIds },
+            });
+        } catch (error) {
+            next(error);
+        }
     }
 
-    const tahunAkademik = requestedYear !== undefined
-      ? await prisma.tahunAkademik.findUnique({
-          where: { id: Number(requestedYear) }, select: { id: true },
-        })
-      : await prisma.tahunAkademik.findFirst({
-          where: { isActive: true },
-          orderBy: [{ tahun: "desc" }, { id: "desc" }],
-          select: { id: true },
-        })
-    if (!tahunAkademik) {
-      throw { name: "NotFound", message: "Tahun akademik tidak ditemukan" }
+    static async bulkUpdateStatus(req: Request, res: Response, next: NextFunction) {
+        try {
+            const ids: unknown = req.body?.ids;
+            const status: unknown = req.body?.status;
+            if (!Array.isArray(ids) || ids.length === 0 || ids.length > 100 ||
+                !ids.every((id): id is string => typeof id === "string" && id.trim().length > 0)) {
+                throw { name: "BadRequest", message: "ids wajib berupa array berisi 1 sampai 100 ID user dosen yang valid" };
+            }
+            if (typeof status !== "string" || !Object.values(Status).includes(status as Status)) {
+                throw { name: "BadRequest", message: "Status dosen harus Aktif, Cuti, Lulus, atau Nonaktif" };
+            }
+            const newStatus = status as Status;
+            const userIds = [...new Set(ids.map((id) => id.trim()))];
+            const changedCount = await prisma.$transaction(async (tx) => {
+                const users = await tx.user.findMany({
+                    where: { id: { in: userIds }, role: "Dosen" },
+                    select: { dosen: { select: { id: true, status: true } } },
+                });
+                if (users.length !== userIds.length || users.some((user) => !user.dosen)) {
+                    throw { name: "NotFound", message: "Satu atau lebih dosen tidak ditemukan" };
+                }
+                const changedIds = users.flatMap((user) =>
+                    user.dosen && user.dosen.status !== newStatus ? [user.dosen.id] : []);
+                if (changedIds.length === 0) return 0;
+
+                const updated = await tx.dosen.updateMany({
+                    where: { id: { in: changedIds }, status: { not: newStatus } },
+                    data: { status: newStatus },
+                });
+                if (updated.count !== changedIds.length) throw { name: "LecturerStatusConflict" };
+                return updated.count;
+            }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+
+            return res.status(200).json({
+                message: `${changedCount} dosen berhasil diperbarui`,
+                data: { ids: userIds, changedCount, status: newStatus },
+            });
+        } catch (error) {
+            next(error);
+        }
     }
-
-    const where: Prisma.MahasiswaWhereInput = {
-      dosenId: lecturerId,
-
-      ...(search && {
-        OR: [
-          {
-            nim: {
-              contains: search,
-              mode: "insensitive",
-            },
-          },
-          {
-            user: {
-              name: {
-                contains: search,
-                mode: "insensitive",
-              },
-            },
-          },
-        ],
-      }),
-    }
-
-    const [students, totalRows, total, krsCounts] =
-      await Promise.all([
-        prisma.mahasiswa.findMany({
-          where,
-
-          skip,
-          take: limit,
-
-          select: {
-            id: true,
-            nim: true,
-            angkatan: true,
-            status: true,
-
-            krs: {
-              where: { tahunAkademikId: tahunAkademik.id },
-              select: { status: true },
-            },
-
-            user: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-
-            prodi: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-
-          orderBy: {
-            nim: "asc",
-          },
-        }),
-
-        prisma.mahasiswa.count({
-          where,
-        }),
-        prisma.mahasiswa.count({ where: { dosenId: lecturerId } }),
-        prisma.kRS.groupBy({
-          by: ["status"],
-          where: {
-            tahunAkademikId: tahunAkademik.id,
-            mahasiswa: { dosenId: lecturerId },
-          },
-          _count: { _all: true },
-        }),
-      ])
-
-    const totalPages = Math.ceil(
-      totalRows / limit
-    )
-
-    const countStatus = (status: string) =>
-      krsCounts.find((item) => item.status === status)?._count._all ?? 0
-    const approved = countStatus("DISETUJUI")
-    const pending = countStatus("DIAJUKAN")
-    const rejected = countStatus("DITOLAK")
-    const summary = {
-      total,
-      approved,
-      pending,
-      notSubmitted: total - approved - pending - rejected,
-      rejected,
-    }
-    const krsStatusLabels = {
-      DRAFT: "BELUM_DIAJUKAN",
-      DIAJUKAN: "MENUNGGU",
-      DISETUJUI: "DISETUJUI",
-      DITOLAK: "DITOLAK",
-    }
-
-    const advisees = students.map(
-      (student) => ({
-        id: student.user.id,
-        studentId: student.id,
-        nim: student.nim,
-        name: student.user.name,
-
-        studyProgram: {
-          id: student.prodi.id,
-          name: student.prodi.name,
-        },
-
-        cohort: student.angkatan,
-        studentStatus: student.status.toUpperCase(),
-        krsStatus: student.krs[0]
-          ? krsStatusLabels[student.krs[0].status]
-          : "BELUM_DIAJUKAN",
-      })
-    )
-
-    return res.status(200).json({
-      message: "Advisees retrieved successfully",
-
-      data: {
-        summary,
-        advisees,
-
-        pagination: {
-          page,
-          limit,
-          totalRows,
-          totalPages,
-        },
-      },
-    })
-  } catch (error) {
-    next(error)
-  }
-}
 
 }

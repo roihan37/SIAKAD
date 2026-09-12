@@ -20,15 +20,13 @@ export const getAllLecturers = createAsyncThunk(
           sortBy,
           sortOrder,
           prodiId
-        }
+        },
+        signal: thunkAPI.signal,
       })
       return response.data;
 
-    } catch (err: any) {
-
-      return thunkAPI.rejectWithValue(
-        err.response.data.message
-      );
+    } catch (err) {
+      return thunkAPI.rejectWithValue(isAxiosError<{ message?: string }>(err) ? err.response?.data?.message ?? "Gagal memuat daftar dosen." : "Gagal memuat daftar dosen.");
     }
   }
 
@@ -97,5 +95,23 @@ export const updateLecturer = createAsyncThunk<
     return rejectWithValue(isAxiosError<{ message?: string }>(error)
       ? error.response?.data?.message ?? "Gagal memperbarui dosen."
       : error instanceof Error ? error.message : "Gagal memperbarui dosen.")
+  }
+})
+
+export type BulkLecturerAction = { ids: string[] } & (
+  { kind: "delete" } | { kind: "status"; status: "Aktif" | "Cuti" | "Lulus" | "Nonaktif" }
+)
+export const bulkMutateLecturers = createAsyncThunk<
+  { ids: string[]; message: string }, BulkLecturerAction, { rejectValue: string }
+>("lecturers/update/bulk", async (input, { rejectWithValue }) => {
+  try {
+    const response = input.kind === "delete"
+      ? await api.delete<{ message: string; data: { ids: string[] } }>("/lecturers/bulk", { data: { ids: input.ids } })
+      : await api.patch<{ message: string; data: { ids: string[] } }>("/lecturers/bulk/status", { ids: input.ids, status: input.status })
+    return { ids: response.data.data.ids, message: response.data.message }
+  } catch (error) {
+    return rejectWithValue(isAxiosError<{ message?: string }>(error)
+      ? error.response?.data?.message ?? "Aksi massal dosen gagal. Silakan coba lagi."
+      : "Aksi massal dosen gagal. Silakan coba lagi.")
   }
 })

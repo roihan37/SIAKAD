@@ -1,3 +1,4 @@
+import { Skeleton } from "@/components/ui/skeleton"
 "use client"
 
 import {
@@ -90,6 +91,7 @@ export function DataTable<TData, TValue>({
   onRowSelectionChange,
   getRowId,
   selectionDisabled = false,
+  isLoading = false,
   searchPlaceholder = "Cari mata kuliah, dosen, kelas...",
 
   searchValue,
@@ -117,7 +119,7 @@ export function DataTable<TData, TValue>({
     data,
     columns,
     getRowId,
-    enableRowSelection: !selectionDisabled,
+    enableRowSelection: !selectionDisabled && !isLoading,
     manualPagination: true,
     manualFiltering: true,
     manualSorting: true,
@@ -238,8 +240,8 @@ export function DataTable<TData, TValue>({
               </TableRow>
             ))}
           </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
+          <TableBody aria-busy={isLoading}>
+            {isLoading ? Array.from({ length: 5 }, (_, index) => <TableRow key={`loading-${index}`}><TableCell colSpan={table.getVisibleLeafColumns().length}><Skeleton className="h-10 w-full" /><span className="sr-only">Memuat data...</span></TableCell></TableRow>) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
@@ -280,7 +282,7 @@ export function DataTable<TData, TValue>({
               variant="outline"
               size="sm"
               onClick={() => onPageChange(pageIndex - 1)}
-              disabled={pageIndex <= 0}
+              disabled={isLoading || pageIndex <= 0}
             >
               Sebelumnya
             </Button>
@@ -289,7 +291,7 @@ export function DataTable<TData, TValue>({
               variant="outline"
               size="sm"
               onClick={() => onPageChange(pageIndex + 1)}
-              disabled={pageIndex + 1 >= pageCount}
+              disabled={isLoading || pageIndex + 1 >= pageCount}
             >
               Berikutnya
             </Button>
