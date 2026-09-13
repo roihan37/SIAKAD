@@ -126,11 +126,12 @@ export class Controller {
         res: Response,
         next: NextFunction
     ) {
+        
         let newAvatarKeyForCleanup: string | null = null;
 
         try {
             const userId = String(req.params.id);
-
+            
             const {
                 name,
                 email,
@@ -776,6 +777,7 @@ export class Controller {
             });
 
         } catch (error) {
+             
 
             // ==========================================
             // Cleanup avatar baru HANYA jika
@@ -793,7 +795,8 @@ export class Controller {
                     );
                 }
             }
-
+           
+            
             next(error);
         }
     }

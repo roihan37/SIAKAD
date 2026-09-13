@@ -1,6 +1,5 @@
 import { type ColumnDef } from "@tanstack/react-table";
 import { createActionColumn } from "../action-column";
-import { createSelectColumn } from "../select-column";
 import { Button } from "../../ui/button";
 import { ArrowUpDown } from "lucide-react";
 import type { MataKuliah } from "@/types/campus";
@@ -21,7 +20,6 @@ function createSortableHeader(label: string) {
 }
 
 export const matkulColumns: ColumnDef<MataKuliah>[] = [
-  createSelectColumn(),
   {
     id : 'kode',
     accessorKey: "kode",

@@ -1,9 +1,14 @@
+import { JadwalEditDialog } from "./JadwalEditDialog"
+import { MasterDeleteDialog } from "@/components/master-data/MasterDeleteDialog"
+import { createActionColumn } from "@/components/tables/action-column"
+import type { Jadwal } from "@/types/campus"
+import { toast } from "sonner"
 import { DataTable } from "@/components/tables/data-table"
 import { getAllProdi } from "@/features/action/campusThunk"
 import { setPage, setProdiId, setSearch, setSorting, setTahunAkademikId } from "@/features/slice/jadwalSlice"
 import { useAppDispatch, useAppSelector } from "@/hooks/redux"
 import type { SortingState } from "@tanstack/react-table"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { getAllJadwal } from "@/features/action/jadwalThunk"
 import { jadwalColumns } from "@/components/tables/column/jadwalColumns"
 import { getAllTAkademik } from "@/features/action/tAkademikThunk"
@@ -14,6 +19,7 @@ import { filtersData } from "@/components/filters-data"
 
 
 export default function JadwalPage() {
+    const tableLoading = useAppSelector((state) => state.jadwal.isLoading)
   const dispatch = useAppDispatch()
 
   const {
@@ -31,6 +37,16 @@ export default function JadwalPage() {
 
   const { tAkademik } = useAppSelector((state) => state.tAkademik)
 
+  const [editing, setEditing] = useState<Jadwal | null>(null)
+  const [deleting, setDeleting] = useState<Jadwal | null>(null)
+  const columns = useMemo(() => {
+    const actions = createActionColumn<Jadwal>(setEditing, setDeleting)
+    return [...jadwalColumns.filter((column) => column.id !== "actions"), actions]
+  }, [])
+  const refreshTable = async () => {
+    try { await dispatch(getAllJadwal({ page, limit: 10, search, sortBy, sortOrder, prodiId, tahunAkademikId })).unwrap() }
+    catch { toast.error("Perubahan tersimpan, tetapi tabel gagal dimuat ulang. Silakan muat ulang halaman.") }
+  }
   const [searchInput, setSearchInput] = useState(search)
 
   const sorting: SortingState =
@@ -177,6 +193,7 @@ export default function JadwalPage() {
   ]
 
   return (
+    <>
     <div className="container mx-auto mt-4 ">
       <div >
 
@@ -192,7 +209,8 @@ export default function JadwalPage() {
 
 
       <DataTable
-        columns={jadwalColumns}
+                    isLoading={tableLoading}
+        columns={columns}
         data={jadwal}
 
         selectedProdiId={prodiId}
@@ -242,5 +260,17 @@ export default function JadwalPage() {
 
       />
     </div>
+      {editing && <JadwalEditDialog key={String(editing.id)} row={editing} onClose={() => setEditing(null)} onSaved={() => {
+        setEditing(null)
+        toast.success("Jadwal berhasil diperbarui")
+        void refreshTable()
+      }} />}
+      {deleting && deleting.id != null && <MasterDeleteDialog module="jadwal" name={`Jadwal ${deleting.mataKuliah} (${deleting.hari}, ${deleting.jam})`} id={deleting.id!} onClose={() => setDeleting(null)} onDeleted={() => {
+        setDeleting(null)
+        toast.success("Jadwal berhasil dihapus")
+        if (jadwal.length === 1 && page > 1) dispatch(setPage(page - 1))
+        else void refreshTable()
+      }} />}
+    </>
   )
 }

@@ -7,6 +7,7 @@ const router = express.Router()
 // STUDENTS — CRUD utama
 router.get("/",adminMiddleware,Controller.getAllStudents);
 router.post("/",adminMiddleware,Controller.createStudent);
+router.patch("/:id",adminMiddleware,Controller.updateStudentById);
 router.get("/:id",adminOrMahasiswaMiddleware,Controller.getStudentById);
 router.get("/:id/history-semester",adminOrMahasiswaMiddleware,Controller.getStudentSemesterHistory);
 router.get("/:id/krs",adminOrMahasiswaMiddleware,Controller.getStudentKRS);

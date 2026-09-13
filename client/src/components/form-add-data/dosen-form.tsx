@@ -67,7 +67,7 @@ export function DosenField({
         search,
         sortBy,
         sortOrder
-    } = useAppSelector((state) => state.users)
+    } = useAppSelector((state) => state.lecturers)
 
   const getDefaultBirthDate = () => {
     const date = new Date()

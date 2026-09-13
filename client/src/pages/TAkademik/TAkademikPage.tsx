@@ -1,13 +1,19 @@
+import { MasterDeleteDialog } from "@/components/master-data/MasterDeleteDialog"
+import { TAkademikEditDialog } from "./TAkademikEditDialog"
+import type { TahunAkademik } from "@/types/campus"
+import { createActionColumn } from "@/components/tables/action-column"
+import { toast } from "sonner"
 import { tAkademikColumns } from "@/components/tables/column/tAkademikColumns"
 import { DataTable } from "@/components/tables/data-table"
 import { getAllTAkademik } from "@/features/action/tAkademikThunk"
-import { setPage, setSearch, setSorting } from "@/features/slice/ruanganSlice"
+import { setPage, setSearch, setSorting } from "@/features/slice/tAkademikSlice"
 import { useAppDispatch, useAppSelector } from "@/hooks/redux"
 import type { SortingState } from "@tanstack/react-table"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 export default function TAkademik() {
-   const dispatch = useAppDispatch()
+     const tableLoading = useAppSelector((state) => state.tAkademik.isLoading)
+  const dispatch = useAppDispatch()
    const {
         tAkademik,
         page,
@@ -15,6 +21,12 @@ export default function TAkademik() {
         search,
         sortBy,
         sortOrder, } = useAppSelector((state) => state.tAkademik)
+    const [editing, setEditing] = useState<TahunAkademik | null>(null)
+    const [deleting, setDeleting] = useState<TahunAkademik | null>(null)
+    const columns = useMemo(() => [
+        ...tAkademikColumns.filter((column) => column.id !== "actions"),
+        createActionColumn<TahunAkademik>((row) => setEditing(row), (row) => setDeleting(row)),
+    ], [])
     const [searchInput, setSearchInput] = useState(search)
     const sorting: SortingState = sortBy ? [{ id: sortBy, desc: sortOrder === "desc" }] : []
 
@@ -48,7 +60,8 @@ export default function TAkademik() {
                     Tahun Akademik
                 </div>
                 <DataTable
-                    columns={tAkademikColumns}
+                    isLoading={tableLoading}
+                    columns={columns}
                     data={tAkademik}
                     searchValue={searchInput}
                     onSearchChange={setSearchInput}
@@ -59,6 +72,21 @@ export default function TAkademik() {
                     onSortingChange={handleSortingChange}
                 />
             </div>
+            {editing && <TAkademikEditDialog
+                row={editing}
+                onClose={() => setEditing(null)}
+                onSave={() => {
+                    setEditing(null)
+                    toast.success("Tahun Akademik berhasil diperbarui")
+                    void dispatch(getAllTAkademik({ page, limit: 10, search, sortBy, sortOrder })).unwrap().catch(() => toast.error("Data tersimpan, tetapi tabel gagal dimuat ulang. Silakan muat ulang halaman."))
+                }}
+            />}
+            {deleting?.id != null && <MasterDeleteDialog module="tahun-akademik" id={deleting.id} onClose={() => setDeleting(null)} onDeleted={() => {
+                setDeleting(null)
+                toast.success("Tahun Akademik berhasil dihapus")
+                if (tAkademik.length === 1 && page > 1) dispatch(setPage(page - 1))
+                else void dispatch(getAllTAkademik({ page, limit: 10, search, sortBy, sortOrder })).unwrap().catch(() => toast.error("Data terhapus, tetapi tabel gagal dimuat ulang. Silakan muat ulang halaman."))
+            }} />}
         </>
     )
 }

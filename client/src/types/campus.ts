@@ -95,7 +95,7 @@ export type Jadwal = {
 
 export type KRS = {
   id? : string
-  krsId: string
+  krsId: string | null
   nama: string
   nim: string
   prodi: string

@@ -14,6 +14,7 @@ import routerKurikulum from "./kurikulum";
 import routerKelasMataKuliah from "./kelas-mata-kuliah";
 import routerMataKuliah from "./mata-kuliah";
 import routerJadwal from "./jadwal";
+import routerAdmin from "./admin";
 import routerKRS from "./krs";
 
 const router = express.Router()
@@ -21,6 +22,8 @@ const router = express.Router()
 
 router.use('/api/v1/auth',routerAunth)
 router.use(authMiddleware)
+router.use('/api/v1/admin',routerAdmin)
+router.use('/api/admin',routerAdmin)
 router.use('/api/v1/users',routerUser)
 router.use('/api/v1/students',routerStudents)
 router.use('/api/v1/lecturers',routerLecturers)

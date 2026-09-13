@@ -16,6 +16,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 
 export default function MahasiswaPage() {
+    const tableLoading = useAppSelector((state) => state.students.isLoadingStudents)
     const dispatch = useAppDispatch()
     const { students,
         deletingStudentId,
@@ -124,6 +125,7 @@ export default function MahasiswaPage() {
                         Data Mahasiswa
                     </div>
                     <DataTable
+                    isLoading={tableLoading}
                         columns={columns}
                         data={students}
                         searchValue={searchInput}

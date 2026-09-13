@@ -7,7 +7,6 @@ import { useAppDispatch } from "@/hooks/redux"
 import { prodiSchema, type ProdiFormValues, type ProdiFromInput } from "@/schemas"
 import type { ProdiFieldProps } from "@/types/props"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useEffect, useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 
 export function ProdiField({

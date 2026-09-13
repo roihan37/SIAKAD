@@ -1,3 +1,5 @@
+import { patchBody } from "../validation/master-data";
+import { krsPatch, stringId } from "../validation/academic-data";
 import { NextFunction, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { Prisma } from "@prisma/client";
@@ -13,10 +15,21 @@ export class Controller {
 
   static async updateKRS(req: Request, res: Response, next: NextFunction) {
     try {
-      const id = String(req.params.id);
-      const { mahasiswaId, tahunAkademikId } = req.body;
-      const k = await prisma.kRS.update({ where: { id }, data: { mahasiswaId, tahunAkademikId: Number(tahunAkademikId) } });
-      res.status(200).json({ message: "KRS updated", k });
+      const id = stringId(req.params.id);
+      const data = patchBody(req.body, krsPatch);
+      const k = await prisma.$transaction(async (tx) => {
+        const existing = await tx.kRS.findUnique({ where: { id }, include: { _count: { select: { details: true } } } });
+        if (!existing) throw { name: "NotFound", message: "KRS tidak ditemukan." };
+        const moving = (data.mahasiswaId !== undefined && data.mahasiswaId !== existing.mahasiswaId) ||
+          (data.tahunAkademikId !== undefined && data.tahunAkademikId !== existing.tahunAkademikId);
+        if (moving && (existing._count.details > 0 || existing.status !== "DRAFT")) {
+          throw { name: "Conflict", message: "KRS yang sudah diajukan atau memiliki detail tidak dapat dipindahkan ke mahasiswa/tahun akademik lain." };
+        }
+        if (data.mahasiswaId !== undefined && !await tx.mahasiswa.findUnique({ where: { id: data.mahasiswaId } })) throw { name: "NotFound", message: "Mahasiswa tidak ditemukan." };
+        if (data.tahunAkademikId !== undefined && !await tx.tahunAkademik.findUnique({ where: { id: data.tahunAkademikId } })) throw { name: "NotFound", message: "Tahun akademik tidak ditemukan." };
+        return tx.kRS.update({ where: { id }, data });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      res.status(200).json({ message: "KRS berhasil diperbarui", data: k, k });
     } catch (error) { next(error); }
   }
 
@@ -359,11 +372,14 @@ export class Controller {
 
   static async deleteKRSById(req: Request, res: Response, next: NextFunction) {
     try {
-      const id = String(req.params.id);
-      const k = await prisma.kRS.findUnique({ where: { id } });
-      if (!k) throw { name: "NotFound" };
-      await prisma.kRS.delete({ where: { id } });
-      res.status(200).json({ message: `KRS ${k.id} deleted` });
+      const id = stringId(req.params.id);
+      await prisma.$transaction(async (tx) => {
+        const existing = await tx.kRS.findUnique({ where: { id }, include: { _count: { select: { details: true } } } });
+        if (!existing) throw { name: "NotFound", message: "KRS tidak ditemukan." };
+        if (existing._count.details > 0 || existing.status !== "DRAFT") throw { name: "Conflict", message: "Hanya KRS draft tanpa detail yang dapat dihapus." };
+        await tx.kRS.delete({ where: { id } });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      res.status(200).json({ message: "KRS berhasil dihapus", data: { id } });
     } catch (error) { next(error); }
   }
 }

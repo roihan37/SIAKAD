@@ -1,5 +1,6 @@
-import { Skeleton } from "@/components/ui/skeleton"
 "use client"
+
+import { Skeleton } from "@/components/ui/skeleton"
 
 import {
   type RowSelectionState,
@@ -146,6 +147,7 @@ export function DataTable<TData, TValue>({
 
   return (
     <div>
+      <span role="status" className="sr-only">{isLoading ? "Memuat data tabel..." : ""}</span>
       <div className="space-y-3 py-4">
 
         {/* Search + Action */}
@@ -241,7 +243,15 @@ export function DataTable<TData, TValue>({
             ))}
           </TableHeader>
           <TableBody aria-busy={isLoading}>
-            {isLoading ? Array.from({ length: 5 }, (_, index) => <TableRow key={`loading-${index}`}><TableCell colSpan={table.getVisibleLeafColumns().length}><Skeleton className="h-10 w-full" /><span className="sr-only">Memuat data...</span></TableCell></TableRow>) : table.getRowModel().rows?.length ? (
+            {isLoading ? Array.from({ length: 10 }, (_, index) => (
+              <TableRow key={`loading-${index}`} aria-hidden="true">
+                {table.getVisibleLeafColumns().map((column, columnIndex) => (
+                  <TableCell key={column.id} className="h-14">
+                    <Skeleton className={`h-4 motion-reduce:animate-none ${column.id === "select" || column.id === "actions" ? "w-5" : (index + columnIndex) % 3 === 0 ? "w-3/4 min-w-12" : "w-full min-w-16"}`} />
+                  </TableCell>
+                ))}
+              </TableRow>
+            )) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
@@ -258,7 +268,7 @@ export function DataTable<TData, TValue>({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+                <TableCell colSpan={Math.max(1, table.getVisibleLeafColumns().length)} className="h-24 text-center">
                   No results.
                 </TableCell>
               </TableRow>

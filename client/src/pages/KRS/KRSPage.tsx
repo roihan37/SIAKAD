@@ -1,8 +1,14 @@
+import { KRSEditDialog } from "./KRSEditDialog"
+import { MasterDeleteDialog } from "@/components/master-data/MasterDeleteDialog"
+import { ActionCell } from "@/components/tables/action-cell"
+import type { ColumnDef } from "@tanstack/react-table"
+import type { KRS } from "@/types/campus"
+import { toast } from "sonner"
 import { DataTable } from "@/components/tables/data-table"
 import { setAngkatan, setPage, setProdiId, setSearch, setSorting, setStatus, setTahunAkademikId } from "@/features/slice/KRSSlice"
 import { useAppDispatch, useAppSelector } from "@/hooks/redux"
 import type { SortingState } from "@tanstack/react-table"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { krsColumns } from "@/components/tables/column/krsColumns"
 import { getAllKRS } from "@/features/action/krsThunk"
 import { getAllTAkademik } from "@/features/action/tAkademikThunk"
@@ -13,6 +19,7 @@ import { filtersData } from "@/components/filters-data"
 import { KRSSummary } from "@/components/KRSSummary"
 
 export default function KRSPage() {
+    const tableLoading = useAppSelector((state) => state.krs.isLoading)
   const dispatch = useAppDispatch()
   const {
     krs,
@@ -32,6 +39,15 @@ export default function KRSPage() {
   } = useAppSelector((state) => state.krs)
   const { tAkademik } = useAppSelector((state) => state.tAkademik)
   const { prodi } = useAppSelector((state) => state.campus)
+  const [editing, setEditing] = useState<KRS | null>(null)
+  const [deleting, setDeleting] = useState<KRS | null>(null)
+  const columns = useMemo<ColumnDef<KRS>[]>(() => {
+    return [...krsColumns.filter((column) => column.id !== "actions"), { id: "actions", cell: ({ row }) => row.original.krsId ? <ActionCell row={row.original} onEdit={setEditing} onDelete={setDeleting} /> : <span className="text-xs text-muted-foreground">Belum ada KRS</span> }]
+  }, [])
+  const refreshTable = async () => {
+    try { await dispatch(getAllKRS({ page, limit: 10, search, sortBy, sortOrder, prodiId, tahunAkademikId, angkatan, status })).unwrap() }
+    catch { toast.error("Perubahan tersimpan, tetapi tabel gagal dimuat ulang. Silakan muat ulang halaman.") }
+  }
   const [searchInput, setSearchInput] = useState(search)
   const sorting: SortingState = sortBy ? [{ id: sortBy, desc: sortOrder === "desc" }] : []
 
@@ -231,7 +247,8 @@ export default function KRSPage() {
         {/* Summary */}
 
         <DataTable
-          columns={krsColumns}
+                    isLoading={tableLoading}
+          columns={columns}
           data={krs}
           searchValue={searchInput}
           onSearchChange={setSearchInput}
@@ -276,6 +293,16 @@ export default function KRSPage() {
           }
         />
       </div>
+      {editing && <KRSEditDialog key={String(editing.krsId)} row={editing} onClose={() => setEditing(null)} onSaved={() => {
+        setEditing(null)
+        toast.success("KRS berhasil diperbarui")
+        void refreshTable()
+      }} />}
+      {deleting && deleting.krsId && <MasterDeleteDialog module="krs" name={`KRS ${deleting.nama} (${deleting.nim})`} id={deleting.krsId} onClose={() => setDeleting(null)} onDeleted={() => {
+        setDeleting(null)
+        toast.success("KRS berhasil dihapus")
+        void refreshTable()
+      }} />}
     </>
   )
 }

@@ -1,3 +1,4 @@
+import { resourceId, patchBody, ensureUnused, kurikulumPatch } from "../validation/master-data";
 import { NextFunction, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { Prisma } from "@prisma/client";
@@ -40,14 +41,26 @@ export class Controller {
     }
   }
 
-  // static async updateKurikulum(req: Request, res: Response, next: NextFunction) {
-  //   try {
-  //     const { id } = req.params;
-  //     const { prodiId, mataKuliahId, semester, wajib } = req.body;
-  //     const k = await prisma.kurikulum.update({ where: { id: Number(id) }, data: { prodiId: Number(prodiId), mataKuliahId: Number(mataKuliahId), semester: Number(semester), wajib: Boolean(wajib) } });
-  //     res.status(200).json({ message: "Kurikulum updated", k });
-  //   } catch (error) { next(error); }
-  // }
+
+  static async updateKurikulum(req: Request, res: Response, next: NextFunction) {
+    try {
+      const id = resourceId(req.params.id);
+      const data = patchBody(req.body, kurikulumPatch);
+      const updated = await prisma.$transaction(async (tx) => {
+        const existing = await tx.kurikulum.findUnique({ where: { id } });
+        if (!existing) throw { name: "NotFound", message: "Kurikulum tidak ditemukan." };
+        if (data.prodiId !== undefined && !await tx.prodi.findUnique({ where: { id: data.prodiId }, select: { id: true } })) {
+          throw { name: "NotFound", message: "Prodi tidak ditemukan." };
+        }
+        if (data.prodiId !== undefined && data.prodiId !== existing.prodiId) {
+          const courses = await tx.kurikulumMataKuliah.count({ where: { kurikulumId: id } });
+          if (courses > 0) throw { name: "Conflict", message: "Kurikulum yang sudah memiliki mata kuliah tidak dapat dipindahkan ke prodi lain." };
+        }
+        return tx.kurikulum.update({ where: { id }, data });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      res.status(200).json({ message: "Kurikulum berhasil diperbarui", data: updated, k: updated });
+    } catch (error) { next(error); }
+  }
 
   static async getAllKurikulum(
     req: Request,
@@ -291,24 +304,31 @@ export class Controller {
     }
   }
 
-  // static async getKurikulumById(req: Request, res: Response, next: NextFunction) {
-  //   try {
-  //     const { id } = req.params;
-  //     const k = await prisma.kurikulum.findUnique({ where: { id: Number(id) } });
-  //     if (!k) throw { name: "NotFound" };
-  //     res.status(200).json(k);
-  //   } catch (error) { next(error); }
-  // }
 
-  // static async deleteKurikulumById(req: Request, res: Response, next: NextFunction) {
-  //   try {
-  //     const { id } = req.params;
-  //     const k = await prisma.kurikulum.findUnique({ where: { id: Number(id) } });
-  //     if (!k) throw { name: "NotFound" };
-  //     await prisma.kurikulum.delete({ where: { id: Number(id) } });
-  //     res.status(200).json({ message: `Kurikulum ${k.id} deleted` });
-  //   } catch (error) { next(error); }
-  // }
+  static async deleteKurikulumById(req: Request, res: Response, next: NextFunction) {
+    try {
+      const id = resourceId(req.params.id);
+      await prisma.$transaction(async (tx) => {
+        const existing = await tx.kurikulum.findUnique({
+          where: { id }, select: { id: true, _count: { select: { mataKuliah: true } } },
+        });
+        if (!existing) throw { name: "NotFound", message: "Kurikulum tidak ditemukan." };
+        ensureUnused(existing._count, "Kurikulum masih digunakan oleh data lain. Lepaskan relasinya sebelum menghapus.");
+        await tx.kurikulum.delete({ where: { id } });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      res.status(200).json({ message: "Kurikulum berhasil dihapus", data: { id } });
+    } catch (error) { next(error); }
+  }
+
+  static async getKurikulumById(req: Request, res: Response, next: NextFunction) {
+    try {
+      const id = resourceId(req.params.id);
+      const kurikulum = await prisma.kurikulum.findUnique({ where: { id }, include: { prodi: true, mataKuliah: { include: { mataKuliah: true } } } });
+      if (!kurikulum) throw { name: "NotFound", message: "Kurikulum tidak ditemukan." };
+      res.status(200).json(kurikulum);
+    } catch (error) { next(error); }
+  }
+
 }
 
 export default Controller;

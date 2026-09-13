@@ -75,13 +75,17 @@ export default function MahasiswaEditPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const savingRef = useRef(false)
+  const [detailError, setDetailError] = useState<string | null>(null)
+  const [detailAttempt, setDetailAttempt] = useState(0)
+  const [detailLoading, setDetailLoading] = useState(true)
   const initializedFaculty = useRef<number | null>(null)
 
   
   const form = useForm<MahasiswaEditFormInput, unknown, MahasiswaEditFormValues>({
     resolver: zodResolver(mahasiswaEditSchema),
     mode: "onChange",
-    defaultValues: { nim: "", name: "", email: "", username: "", password: "", gender: undefined, phoneNumber: "", address: "", birthDate: undefined, angkatan: 2000, semester: 1, status: "Aktif", fakultasId: 0, prodiId: 0, dosenId: "" },
+    defaultValues: { nim: "", name: "", email: "", gender: undefined, phoneNumber: "", address: "", birthDate: undefined, angkatan: 2000, status: "Aktif", fakultasId: 0, prodiId: 0, dosenId: "" },
   })
   const { register, reset, setValue, watch, handleSubmit, formState: { errors, isDirty } } = form
   const fakultasId = watch("fakultasId")
@@ -90,9 +94,18 @@ export default function MahasiswaEditPage() {
 
   
   useEffect(() => {
-    if (id) dispatch(getStudentById(id))
-    dispatch(getAllFakultas({ limit: 100 }))
-  }, [dispatch, id])
+    let active = true
+    setDetailLoading(true)
+    setDetailError(null)
+    if (!id) { setDetailError("ID mahasiswa tidak tersedia."); setDetailLoading(false); return }
+    const request = dispatch(getStudentById(id))
+    void request.unwrap().catch((error: unknown) => {
+      if (active) setDetailError(getErrorMessage(error))
+    }).finally(() => { if (active) setDetailLoading(false) })
+    return () => { active = false }
+  }, [dispatch, id, detailAttempt])
+
+  useEffect(() => { void dispatch(getAllFakultas({ limit: 100 })) }, [dispatch])
 
   useEffect(() => {
     if (!fakultasId) return
@@ -109,7 +122,7 @@ export default function MahasiswaEditPage() {
     const facultyId = Number(student.fakultas?.id ?? 0)
     initializedFaculty.current = facultyId || null
     const status = statusOptions.some((option) => option.value === student.status) ? student.status as MahasiswaStatus : "Aktif"
-    reset({ nim: student.nim, name: student.nama, email: student.email, username: student.nim, password: "", gender, nik: student.nik ?? "", birthPlace: student.tempatLahir ?? "", phoneNumber: student.noHp ?? "", address: student.alamat ?? "", birthDate, angkatan: student.angkatan, semester: student.summary.semester, status, fakultasId: facultyId, prodiId: Number(student.prodi?.id ?? 0), dosenId: student.dosenPembimbing?.id ?? "" })
+    reset({ nim: student.nim, name: student.nama, email: student.email, gender, nik: student.nik ?? "", birthPlace: student.tempatLahir ?? "", phoneNumber: student.noHp ?? "", address: student.alamat ?? "", birthDate, angkatan: student.angkatan, status, fakultasId: facultyId, prodiId: Number(student.prodi?.id ?? 0), dosenId: student.dosenPembimbing?.id ?? "" })
     setPhotoChanged(false)
     setAvatarKey(undefined)
     setPhotoPreview(null)
@@ -155,7 +168,7 @@ export default function MahasiswaEditPage() {
   const onSubmit = async (
   values: MahasiswaEditFormValues
 ) => {
-  if (!id) return
+  if (!id || savingRef.current) return
 
   if (selectedPhoto && !croppedPhoto) {
     toast.error(
@@ -164,8 +177,10 @@ export default function MahasiswaEditPage() {
     return
   }
 
+  savingRef.current = true
   setIsSaving(true)
 
+  let updateDispatched = false
   try {
     let uploadedAvatarKey = avatarKey
 
@@ -215,6 +230,7 @@ export default function MahasiswaEditPage() {
     // ==========================================
     // 2. Update data mahasiswa
     // ==========================================
+    updateDispatched = true
     await dispatch(
       updateStudent({
         id,
@@ -234,7 +250,6 @@ export default function MahasiswaEditPage() {
 
           nim: values.nim,
           angkatan: values.angkatan,
-          semester: values.semester,
           status: values.status,
           // Server mencatat riwayat status dan mewajibkan alasan saat status berubah.
           ...(values.status !== student.status
@@ -256,29 +271,26 @@ export default function MahasiswaEditPage() {
     // ==========================================
     // 3. Refresh detail mahasiswa
     // ==========================================
-    await dispatch(
-      getStudentById(id)
-    ).unwrap()
+    // The detail page fetches fresh data after navigation. A refresh failure must
+    // not turn a successful update into a failed-save message.
 
     // ==========================================
     // 4. Success
     // ==========================================
-    toast.success(
-      "Data mahasiswa berhasil diperbarui"
-    )
+    // Success/error notifications for updateStudent are owned by toastMiddleware.
 
     navigate(id ? `/mahasiswa/${id}` : "/mahasiswa")
   } catch (error) {
-    toast.error(
-      getErrorMessage(error)
-    )
+    if (!updateDispatched) toast.error(getErrorMessage(error))
   } finally {
+    savingRef.current = false
     setIsSaving(false)
     setUploadingPhoto(false)
   }
 }
 
-  if (!studentDetail || studentDetail.student.id !== id) return <main className="mx-auto max-w-4xl p-6">Memuat data mahasiswa...</main>
+  if (detailError) return <main className="mx-auto max-w-4xl space-y-4 p-6" role="alert"><h1 className="text-xl font-semibold">Data mahasiswa gagal dimuat</h1><p className="text-sm text-muted-foreground">{detailError}</p><div className="flex gap-3"><Button variant="outline" onClick={leavePage}>Kembali</Button><Button onClick={() => setDetailAttempt((value) => value + 1)}>Coba Lagi</Button></div></main>
+  if (detailLoading || !studentDetail || studentDetail.student.id !== id) return <main className="mx-auto max-w-4xl p-6">Memuat data mahasiswa...</main>
   const student = studentDetail.student
   const initials = student.nama.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase()
 

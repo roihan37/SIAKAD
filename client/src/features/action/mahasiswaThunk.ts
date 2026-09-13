@@ -27,7 +27,7 @@ export const getAllStudents = createAsyncThunk(
     } catch (err: any) {
 
       return thunkAPI.rejectWithValue(
-        err.response.data.message
+        err.response?.data?.message ?? "Gagal memuat data mahasiswa. Silakan coba lagi."
       );
     }
   }
@@ -40,7 +40,7 @@ export const getStudentById = createAsyncThunk(
       const response = await api.get(`/students/${id}`)
       return response.data
     } catch (err: any) {
-      return thunkAPI.rejectWithValue(err.response.data.message)
+      return thunkAPI.rejectWithValue(err.response?.data?.message ?? "Gagal memuat data mahasiswa. Silakan coba lagi.")
     }
   }
 )
@@ -53,6 +53,7 @@ export const updateStudent = createAsyncThunk(
       const response = await api.patch(`/students/${id}`, payload)
       return response.data
     } catch (err: any) {
+      console.log(err, "<<<<")
       return thunkAPI.rejectWithValue(err.response?.data?.message ?? "Gagal memperbarui mahasiswa")
     }
   }
@@ -66,7 +67,7 @@ export const getStudentHistorySemester = createAsyncThunk(
       const response = await api.get(`/students/${id}/history-semester`)
       return response.data
     } catch (err: any) {
-      return thunkAPI.rejectWithValue(err.response.data.message)
+      return thunkAPI.rejectWithValue(err.response?.data?.message ?? "Gagal memuat data mahasiswa. Silakan coba lagi.")
     }
   }
 )
@@ -81,7 +82,7 @@ export const getStudentKRS = createAsyncThunk(
       const response = await api.get(`/students/${id}/krs`, { params: { tahunAkademikId } })
       return response.data
     } catch (err: any) {
-      return thunkAPI.rejectWithValue(err.response.data.message)
+      return thunkAPI.rejectWithValue(err.response?.data?.message ?? "Gagal memuat data mahasiswa. Silakan coba lagi.")
     }
   }
 )
@@ -93,7 +94,7 @@ export const getStudentNilai = createAsyncThunk(
       const response = await api.get(`/students/${id}/nilai`, { params: { tahunAkademikId } })
       return response.data
     } catch (err: any) {
-      return thunkAPI.rejectWithValue(err.response.data.message)
+      return thunkAPI.rejectWithValue(err.response?.data?.message ?? "Gagal memuat data mahasiswa. Silakan coba lagi.")
     }
   }
 )

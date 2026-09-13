@@ -6,7 +6,6 @@ import { useAppDispatch } from "@/hooks/redux"
 import { fakultasSchema, type FakultasFormInput, type FakultasFormValues } from "@/schemas"
 import type { FakultasFieldProps } from "@/types/props"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useState } from "react"
 import { useForm } from "react-hook-form"
 
 export function FakultasField({ isConfirmed, setIsConfirmed, onSuccess, onError }: FakultasFieldProps) {
@@ -27,9 +26,6 @@ export function FakultasField({ isConfirmed, setIsConfirmed, onSuccess, onError 
 
   const {
     register,
-    control,
-    watch,
-    setValue,
     reset,
     formState: {
       errors,

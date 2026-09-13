@@ -1,3 +1,4 @@
+import { resourceId, patchBody, ensureUnused, ruanganPatch } from "../validation/master-data";
 import { NextFunction, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { Prisma } from "@prisma/client";
@@ -15,13 +16,15 @@ export class Controller {
 
   static async updateRuangan(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
-      const { kode, nama, kapasitas, gedung } = req.body;
-      const r = await prisma.ruangan.update({ where: { id: Number(id) }, data: { kode, nama, kapasitas: Number(kapasitas), gedung } });
-      res.status(200).json({ message: "Ruangan updated", r });
-    } catch (error) {
-      next(error);
-    }
+      const id = resourceId(req.params.id);
+      const data = patchBody(req.body, ruanganPatch);
+      const updated = await prisma.$transaction(async (tx) => {
+        const existing = await tx.ruangan.findUnique({ where: { id } });
+        if (!existing) throw { name: "NotFound", message: "Ruangan tidak ditemukan." };
+        return tx.ruangan.update({ where: { id }, data });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      res.status(200).json({ message: "Ruangan berhasil diperbarui", data: updated, r: updated });
+    } catch (error) { next(error); }
   }
 
   static async getAllRuangan(
@@ -107,14 +110,17 @@ export class Controller {
 
   static async deleteRuanganById(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
-      const r = await prisma.ruangan.findUnique({ where: { id: Number(id) } });
-      if (!r) throw { name: "NotFound" };
-      await prisma.ruangan.delete({ where: { id: Number(id) } });
-      res.status(200).json({ message: `${r.nama} deleted` });
-    } catch (error) {
-      next(error);
-    }
+      const id = resourceId(req.params.id);
+      await prisma.$transaction(async (tx) => {
+        const existing = await tx.ruangan.findUnique({
+          where: { id }, select: { id: true, _count: { select: { jadwal: true } } },
+        });
+        if (!existing) throw { name: "NotFound", message: "Ruangan tidak ditemukan." };
+        ensureUnused(existing._count, "Ruangan masih digunakan oleh data lain. Lepaskan relasinya sebelum menghapus.");
+        await tx.ruangan.delete({ where: { id } });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      res.status(200).json({ message: "Ruangan berhasil dihapus", data: { id } });
+    } catch (error) { next(error); }
   }
 }
 

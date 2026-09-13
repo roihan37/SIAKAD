@@ -1,3 +1,4 @@
+import { resourceId, patchBody, ensureUnused, tahunAkademikPatch } from "../validation/master-data";
 import { NextFunction, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { Prisma } from "@prisma/client";
@@ -22,13 +23,15 @@ export class Controller {
 
   static async updateTahunAkademik(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
-      const { tahun, semester } = req.body;
-      const ta = await prisma.tahunAkademik.update({ where: { id: Number(id) }, data: { tahun, semester } });
-      res.status(200).json({ message: "Tahun Akademik updated", ta });
-    } catch (error) {
-      next(error);
-    }
+      const id = resourceId(req.params.id);
+      const data = patchBody(req.body, tahunAkademikPatch);
+      const updated = await prisma.$transaction(async (tx) => {
+        const existing = await tx.tahunAkademik.findUnique({ where: { id } });
+        if (!existing) throw { name: "NotFound", message: "Tahun akademik tidak ditemukan." };
+        return tx.tahunAkademik.update({ where: { id }, data });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      res.status(200).json({ message: "Tahun akademik berhasil diperbarui", data: updated, ta: updated });
+    } catch (error) { next(error); }
   }
 
   static async getAllTahunAkademik(
@@ -114,14 +117,17 @@ export class Controller {
 
   static async deleteTahunAkademikById(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
-      const ta = await prisma.tahunAkademik.findUnique({ where: { id: Number(id) } });
-      if (!ta) throw { name: "NotFound" };
-      await prisma.tahunAkademik.delete({ where: { id: Number(id) } });
-      res.status(200).json({ message: `${ta.tahun} deleted` });
-    } catch (error) {
-      next(error);
-    }
+      const id = resourceId(req.params.id);
+      await prisma.$transaction(async (tx) => {
+        const existing = await tx.tahunAkademik.findUnique({
+          where: { id }, select: { id: true, _count: { select: { kelas: true, jadwal: true, krs: true, periode: true } } },
+        });
+        if (!existing) throw { name: "NotFound", message: "Tahun akademik tidak ditemukan." };
+        ensureUnused(existing._count, "Tahun akademik masih digunakan oleh data lain. Lepaskan relasinya sebelum menghapus.");
+        await tx.tahunAkademik.delete({ where: { id } });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      res.status(200).json({ message: "Tahun akademik berhasil dihapus", data: { id } });
+    } catch (error) { next(error); }
   }
 }
 

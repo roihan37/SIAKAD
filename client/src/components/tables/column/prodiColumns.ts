@@ -1,10 +1,8 @@
 import { type ColumnDef } from "@tanstack/react-table";
 import { createActionColumn } from "../action-column";
-import { createSelectColumn } from "../select-column";
 import type { ProgramStudi } from "@/types/campus";
 
 export const prodiColumns: ColumnDef<ProgramStudi>[] = [
-  createSelectColumn(),
   {
     accessorKey: "kode",
     header: "KODE",

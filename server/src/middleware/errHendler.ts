@@ -115,6 +115,9 @@ export const errorHandler: ErrorRequestHandler = (
         message: error.message || "Email / Password is required",
       });
 
+    case "Conflict":
+      return res.status(409).json({ code: "CONFLICT", message: error.message || "Data masih digunakan." });
+
     case "LecturerInUse":
       return res.status(409).json({
         code: "CONFLICT",

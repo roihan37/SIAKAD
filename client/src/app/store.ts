@@ -1,3 +1,4 @@
+import dashboardReducer from "@/features/slice/dashboardSlice"
 import lecturerTabsReducer from "@/features/slice/lecturerTabsSlice"
 import { configureStore } from '@reduxjs/toolkit'
 import authReducer from '@/features/slice/authSlice'
@@ -17,6 +18,7 @@ import { toastMiddleware } from './middleware/toast-middleware'
 export const store = configureStore({
   reducer: {
     auth: authReducer,
+    dashboard: dashboardReducer,
     lecturers: dosenReducer,
     lecturerTabs: lecturerTabsReducer,
     students: mahasiswaReducer,

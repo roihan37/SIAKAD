@@ -1,3 +1,4 @@
+import { resourceId, patchBody, ensureUnused, matkulPatch } from "../validation/master-data";
 import { NextFunction, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { Prisma } from "@prisma/client";
@@ -144,13 +145,15 @@ export class Controller {
 
   static async updateMataKuliah(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
-      const { kode, nama, sks } = req.body;
-      const mk = await prisma.mataKuliah.update({ where: { id: Number(id) }, data: { kode, nama, sks } });
-      res.status(200).json({ message: "Mata Kuliah updated", mk });
-    } catch (error) {
-      next(error);
-    }
+      const id = resourceId(req.params.id);
+      const data = patchBody(req.body, matkulPatch);
+      const updated = await prisma.$transaction(async (tx) => {
+        const existing = await tx.mataKuliah.findUnique({ where: { id } });
+        if (!existing) throw { name: "NotFound", message: "Mata kuliah tidak ditemukan." };
+        return tx.mataKuliah.update({ where: { id }, data });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      res.status(200).json({ message: "Mata kuliah berhasil diperbarui", data: updated, mk: updated });
+    } catch (error) { next(error); }
   }
 
   static async getAllMataKuliah(
@@ -299,14 +302,17 @@ export class Controller {
 
   static async deleteMataKuliahById(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
-      const mk = await prisma.mataKuliah.findUnique({ where: { id: Number(id) } });
-      if (!mk) throw { name: "NotFound" };
-      await prisma.mataKuliah.delete({ where: { id: Number(id) } });
-      res.status(200).json({ message: `${mk.nama} deleted` });
-    } catch (error) {
-      next(error);
-    }
+      const id = resourceId(req.params.id);
+      await prisma.$transaction(async (tx) => {
+        const existing = await tx.mataKuliah.findUnique({
+          where: { id }, select: { id: true, _count: { select: { kurikulum: true, kelasMK: true } } },
+        });
+        if (!existing) throw { name: "NotFound", message: "Mata kuliah tidak ditemukan." };
+        ensureUnused(existing._count, "Mata kuliah masih digunakan oleh data lain. Lepaskan relasinya sebelum menghapus.");
+        await tx.mataKuliah.delete({ where: { id } });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      res.status(200).json({ message: "Mata kuliah berhasil dihapus", data: { id } });
+    } catch (error) { next(error); }
   }
 }
 

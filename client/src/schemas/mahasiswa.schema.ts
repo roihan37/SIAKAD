@@ -38,10 +38,17 @@ export type MahasiswaFormInput =
 export type MahasiswaFormValues =
   z.output<typeof mahasiswaSchema>
 
-export const mahasiswaEditSchema = mahasiswaSchema.extend({
-  password: z.string().optional(),
-  nik: z.string().optional(),
-  birthPlace: z.string().optional(),
+// Edit validates only fields rendered by the form; nullable profile data may stay empty.
+export const mahasiswaEditSchema = mahasiswaSchema.omit({
+  username: true, password: true, semester: true,
+}).extend({
+  nik: mahasiswaSchema.shape.nik.or(z.literal("")).optional(),
+  birthPlace: mahasiswaSchema.shape.birthPlace.or(z.literal("")).optional(),
+  gender: personSchema.shape.gender.optional(),
+  birthDate: personSchema.shape.birthDate.optional(),
+  phoneNumber: personSchema.shape.phoneNumber.or(z.literal("")),
+  address: personSchema.shape.address.or(z.literal("")),
+  dosenId: z.string().max(100).optional(),
 })
 
 export type MahasiswaEditFormInput = z.input<typeof mahasiswaEditSchema>

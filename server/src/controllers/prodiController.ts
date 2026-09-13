@@ -1,3 +1,4 @@
+import { resourceId, patchBody, ensureUnused, prodiPatch } from "../validation/master-data";
 import { NextFunction, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { JabatanDosen, Prisma } from "@prisma/client";
@@ -26,31 +27,21 @@ export class Controller{
         }
     }
 
-    static async updateProdi(req: Request, res: Response, next: NextFunction){
-        try {
-            const {id} = req.params
-            const {
-                kode,
-                name,
-                fakultasId
-            } = req.body
-
-            const updateProdi = await prisma.prodi.update({
-                where : {id : Number(id)},
-                data : {
-                    kode,
-                    name,
-                    fakultasId
-                }
-            })
-            res.status(200).json({
-                message: "prodi berhasil diperbarui",
-                updateProdi
-            })
-        } catch (error) {
-            next(error)
+    static async updateProdi(req: Request, res: Response, next: NextFunction) {
+    try {
+      const id = resourceId(req.params.id);
+      const data = patchBody(req.body, prodiPatch);
+      const updated = await prisma.$transaction(async (tx) => {
+        const existing = await tx.prodi.findUnique({ where: { id } });
+        if (!existing) throw { name: "NotFound", message: "Prodi tidak ditemukan." };
+        if (data.fakultasId !== undefined && !await tx.fakultas.findUnique({ where: { id: data.fakultasId }, select: { id: true } })) {
+          throw { name: "NotFound", message: "Fakultas tidak ditemukan." };
         }
-    }
+        return tx.prodi.update({ where: { id }, data });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      res.status(200).json({ message: "Prodi berhasil diperbarui", data: updated, updateProdi: updated });
+    } catch (error) { next(error); }
+  }
 
     static async getAllProdi(req: Request, res: Response, next: NextFunction) {
         try {
@@ -137,17 +128,19 @@ export class Controller{
         }
     }
 
-    static async deleteProdiById(req: Request, res: Response, next: NextFunction){
-        try {
-            const {id} = req.params
-            const prodi = await prisma.prodi.findUnique({where:{id:Number(id)}})
-            if(!prodi){throw {name: "NotFound"}}
-            await prisma.prodi.delete({where:{id:Number(id)}})
-
-            res.status(200).json({message : `${prodi.name} sudah dihapus`})
-        } catch (error) {
-            next(error)
-        }
-    }
+    static async deleteProdiById(req: Request, res: Response, next: NextFunction) {
+    try {
+      const id = resourceId(req.params.id);
+      await prisma.$transaction(async (tx) => {
+        const existing = await tx.prodi.findUnique({
+          where: { id }, select: { id: true, _count: { select: { dosen: true, mahasiswa: true, kurikulum: true, kelas: true } } },
+        });
+        if (!existing) throw { name: "NotFound", message: "Prodi tidak ditemukan." };
+        ensureUnused(existing._count, "Prodi masih digunakan oleh data lain. Lepaskan relasinya sebelum menghapus.");
+        await tx.prodi.delete({ where: { id } });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      res.status(200).json({ message: "Prodi berhasil dihapus", data: { id } });
+    } catch (error) { next(error); }
+  }
 
 }

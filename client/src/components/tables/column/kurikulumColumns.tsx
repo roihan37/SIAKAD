@@ -1,11 +1,9 @@
 import { type ColumnDef } from "@tanstack/react-table";
 import { createActionColumn } from "../action-column";
-import { createSelectColumn } from "../select-column";
 import type { Kurikulum } from "@/types/campus";
 import { Badge } from "@/components/ui/badge";
 
 export const kurikulumColumns: ColumnDef<Kurikulum>[] = [
-  createSelectColumn(),
   {
     accessorKey: "kode",
     header: "Kode",

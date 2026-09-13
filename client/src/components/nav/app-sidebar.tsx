@@ -1,93 +1,71 @@
 "use client"
 
+import { upcomingPath } from "@/pages/ComingSoon/coming-soon-pages"
+
 import * as React from "react"
 
 import { NavMain } from "@/components/nav/nav-main"
 import { NavProjects } from "@/components/nav/nav-projects"
-import { NavUser } from "@/components/nav/nav-user"
-import { TeamSwitcher } from "@/components/team-switcher"
+import { SidebarBrand } from "./sidebar-brand"
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { GalleryVerticalEndIcon, AudioLinesIcon, TerminalIcon, TerminalSquareIcon, BotIcon, BookOpenIcon, Settings2Icon, FrameIcon, PieChartIcon, } from "lucide-react"
+import { LayoutDashboardIcon, LandmarkIcon, CalendarDaysIcon, WalletIcon, Settings2Icon, ChartNoAxesCombinedIcon, GraduationCapIcon, PresentationIcon, Building2Icon, NetworkIcon, BookOpenIcon, DoorOpenIcon, CalendarRangeIcon, LibraryBigIcon, ClipboardListIcon, UserCheckIcon, FileChartColumnIcon, ScrollTextIcon, ReceiptTextIcon, CreditCardIcon, AwardIcon, UsersRoundIcon, ShieldCheckIcon, HistoryIcon, DatabaseBackupIcon, UserRoundIcon, KeyRoundIcon, } from "lucide-react"
 
 // This is sample data.
 const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
-  teams: [
-    {
-      name: "Acme Inc",
-      logo: (
-        <GalleryVerticalEndIcon
-        />
-      ),
-      plan: "Enterprise",
-    },
-    {
-      name: "Acme Corp.",
-      logo: (
-        <AudioLinesIcon
-        />
-      ),
-      plan: "Startup",
-    },
-    {
-      name: "Evil Corp.",
-      logo: (
-        <TerminalIcon
-        />
-      ),
-      plan: "Free",
-    },
-  ],
   navMain: [
+    { title: "Dashboard", url: "/dashboard", icon: <LayoutDashboardIcon /> },
     {
       title: "MASTER AKADEMIK",
       url: "#",
       icon: (
-        <TerminalSquareIcon
+        <LandmarkIcon
         />
       ),
       isActive: true,
       items: [
         {
           title: "Mahasiswa",
+          icon: <GraduationCapIcon />,
           url: "/mahasiswa",
         },
         {
           title: "Dosen",
+          icon: <PresentationIcon />,
           url: "/dosen",
         },
         {
           title: "Fakultas",
+          icon: <Building2Icon />,
           url: "/fakultas",
         },
         {
           title: "Program Studi",
+          icon: <NetworkIcon />,
           url: "/program-studi",
         },
         {
           title: "Mata Kuliah",
+          icon: <BookOpenIcon />,
           url: "/mata-kuliah",
         },
         {
           title: "Ruangan",
+          icon: <DoorOpenIcon />,
           url: "/ruangan",
         },
         {
           title: "Tahun Akademik",
+          icon: <CalendarRangeIcon />,
           url: "/tahun-akademik",
         },
         {
           title: "Kurikulum",
+          icon: <LibraryBigIcon />,
           url: "/kurikulum",
         },
       ],
@@ -96,29 +74,34 @@ const data = {
       title: "PERKULIAHAN",
       url: "#",
       icon: (
-        <BotIcon
+        <CalendarDaysIcon
         />
       ),
       items: [
         {
           title: "Jadwal Kuliah",
+          icon: <CalendarDaysIcon />,
           url: "/jadwal-kuliah",
         },
         {
           title: "KRS",
+          icon: <ClipboardListIcon />,
           url: "/krs",
         },
         {
           title: "Presensi",
-          url: "#",
+          icon: <UserCheckIcon />,
+          url: "/presensi",
         },
         {
           title: "Nilai",
-          url: "#",
+          icon: <FileChartColumnIcon />,
+          url: "/nilai",
         },
         {
           title: "Skripsi",
-          url: "#",
+          icon: <ScrollTextIcon />,
+          url: upcomingPath("Skripsi"),
         },
       ],
     },
@@ -126,21 +109,24 @@ const data = {
       title: "KEUANGAN",
       url: "#",
       icon: (
-        <BookOpenIcon
+        <WalletIcon
         />
       ),
       items: [
         {
-          title: "Tagiahan UKT",
-          url: "#",
+          title: "Tagihan UKT",
+          icon: <ReceiptTextIcon />,
+          url: upcomingPath("Tagihan UKT"),
         },
         {
           title: "Pembayaran",
-          url: "#",
+          icon: <CreditCardIcon />,
+          url: upcomingPath("Pembayaran"),
         },
         {
           title: "Beasiswa",
-          url: "#",
+          icon: <AwardIcon />,
+          url: upcomingPath("Beasiswa"),
         },
       ],
     },
@@ -154,23 +140,28 @@ const data = {
       items: [
         {
           title: "Manajemen User",
-          url: "#",
+          icon: <UsersRoundIcon />,
+          url: upcomingPath("Manajemen User"),
         },
         {
           title: "Role & Permission",
-          url: "#",
+          icon: <ShieldCheckIcon />,
+          url: upcomingPath("Role & Permission"),
         },
         {
           title: "Log Aktivitas",
-          url: "#",
+          icon: <HistoryIcon />,
+          url: upcomingPath("Log Aktivitas"),
         },
         {
           title: "Backup Database",
-          url: "#",
+          icon: <DatabaseBackupIcon />,
+          url: upcomingPath("Backup Database"),
         },
         {
           title: "Pengaturan Sistem",
-          url: "#",
+          icon: <Settings2Icon />,
+          url: upcomingPath("Pengaturan Sistem"),
         },
       ],
     },
@@ -178,29 +169,34 @@ const data = {
       title: "LAPORAN",
       url: "#",
       icon: (
-        <Settings2Icon
+        <ChartNoAxesCombinedIcon
         />
       ),
       items: [
         {
           title: "Data Mahasiswa",
-          url: "#",
+          icon: <GraduationCapIcon />,
+          url: upcomingPath("Data Mahasiswa"),
         },
         {
           title: "Data Dosen",
-          url: "#",
+          icon: <PresentationIcon />,
+          url: upcomingPath("Data Dosen"),
         },
         {
           title: "Rekap Nilai",
-          url: "#",
+          icon: <FileChartColumnIcon />,
+          url: upcomingPath("Rekap Nilai"),
         },
         {
           title: "Rekap Presensi",
-          url: "#",
+          icon: <UserCheckIcon />,
+          url: upcomingPath("Rekap Presensi"),
         },
         {
           title: "Rekap Pembayaran",
-          url: "#",
+          icon: <ReceiptTextIcon />,
+          url: upcomingPath("Rekap Pembayaran"),
         },
       ],
     },
@@ -208,17 +204,17 @@ const data = {
   profile: [
     {
       name: "Profile",
-      url: "#",
+      url: upcomingPath("Profile"),
       icon: (
-        <FrameIcon
+        <UserRoundIcon
         />
       ),
     },
     {
       name: "Ubah Password",
-      url: "#",
+      url: upcomingPath("Ubah Password"),
       icon: (
-        <PieChartIcon
+        <KeyRoundIcon
         />
       ),
     },
@@ -228,16 +224,13 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+      <SidebarHeader className="border-b border-sidebar-border/70 pb-3">
+        <SidebarBrand />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
         <NavProjects profile={data.profile} />
       </SidebarContent>
-      <SidebarFooter>
-        <NavUser user={data.user} />
-      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   )
