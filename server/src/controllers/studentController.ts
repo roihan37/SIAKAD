@@ -1776,8 +1776,36 @@ export class Controller {
                     },
                 });
                 const current = records.find((record) => record.tahunAkademikId === year.id);
-                if (!current) return null;
-                const details = current.details.filter((detail) => detail.transkrip[0]?.bobot != null).map((detail) => ({
+                if (!current) {
+                    const pendingKrs = await tx.kRS.findUnique({
+                        where: { mahasiswaId_tahunAkademikId: { mahasiswaId: user.mahasiswa.id, tahunAkademikId } },
+                        select: { status: true },
+                    });
+                    return { nilai: null, reason: pendingKrs ? "KRS_NOT_APPROVED" : "KRS_NOT_FOUND" };
+                }
+                const normalized = new Map<number, typeof current.details>();
+                for (const record of records) {
+                    const unique = new Map<number, (typeof current.details)[number]>();
+                    for (const detail of record.details) {
+                        const grade = detail.transkrip[0];
+                        const course = detail.kelasMataKuliah.mataKuliah;
+                        if (!Number.isInteger(course.sks) || course.sks <= 0) throw { name: "Conflict", message: `SKS ${course.kode} tidak valid.` };
+                        if (grade?.bobot != null && (!Number.isFinite(Number(grade.bobot)) || Number(grade.bobot) < 0 || Number(grade.bobot) > 4)) {
+                            throw { name: "Conflict", message: `Bobot nilai ${course.kode} harus antara 0 dan 4.` };
+                        }
+                        if (grade?.nilaiAngka != null && (!Number.isFinite(Number(grade.nilaiAngka)) || Number(grade.nilaiAngka) < 0 || Number(grade.nilaiAngka) > 100)) {
+                            throw { name: "Conflict", message: `Nilai angka ${course.kode} harus antara 0 dan 100.` };
+                        }
+                        if (grade?.bobot == null || grade.nilaiAngka == null || !grade.nilaiHuruf?.trim()) continue;
+                        const previous = unique.get(course.id)?.transkrip[0];
+                        if (previous && (Number(previous.bobot) !== Number(grade.bobot) || Number(previous.nilaiAngka) !== Number(grade.nilaiAngka) || previous.nilaiHuruf?.trim() !== grade.nilaiHuruf.trim())) {
+                            throw { name: "Conflict", message: `Terdapat nilai berbeda untuk ${course.kode} pada semester yang sama. Perbaiki duplikasi KRS terlebih dahulu.` };
+                        }
+                        if (!unique.has(course.id)) unique.set(course.id, detail);
+                    }
+                    normalized.set(record.tahunAkademikId, [...unique.values()]);
+                }
+                const details = normalized.get(year.id)!.map((detail) => ({
                     id: detail.id,
                     mataKuliah: detail.kelasMataKuliah.mataKuliah,
                     nilai: detail.transkrip[0].nilaiAngka == null ? null : Number(detail.transkrip[0].nilaiAngka),
@@ -1790,7 +1818,7 @@ export class Controller {
                 const sorted = [...records].sort((a, b) => a.tahunAkademik.tahun.localeCompare(b.tahunAkademik.tahun) ||
                     (a.tahunAkademik.semester === "GANJIL" ? 0 : 1) - (b.tahunAkademik.semester === "GANJIL" ? 0 : 1));
                 for (const record of sorted) {
-                    for (const detail of record.details) {
+                    for (const detail of normalized.get(record.tahunAkademikId) ?? []) {
                         const grade = detail.transkrip[0];
                         if (grade?.bobot == null) continue;
                         const course = detail.kelasMataKuliah.mataKuliah;
@@ -1804,13 +1832,13 @@ export class Controller {
                 };
                 const semester = calculate(details.map((detail) => ({ sks: detail.mataKuliah.sks, bobot: detail.bobot })));
                 const cumulative = calculate([...latest.values()]);
-                return {
+                return { nilai: {
                     tahunAkademik: { ...year, label: `${year.tahun} ${year.semester === "GANJIL" ? "Ganjil" : "Genap"}` },
                     details,
                     summary: { totalSKS: semester.sks, ips: semester.ip, ipk: cumulative.ip },
-                };
+                }, reason: details.length ? null : "GRADES_NOT_AVAILABLE" };
             }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
-            return res.status(200).json({ nilai });
+            return res.status(200).json(nilai);
         } catch (error) { next(error); }
     }
 

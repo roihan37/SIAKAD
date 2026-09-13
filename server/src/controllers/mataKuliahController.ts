@@ -150,6 +150,10 @@ export class Controller {
       const updated = await prisma.$transaction(async (tx) => {
         const existing = await tx.mataKuliah.findUnique({ where: { id } });
         if (!existing) throw { name: "NotFound", message: "Mata kuliah tidak ditemukan." };
+        if (data.sks !== undefined && data.sks !== existing.sks) {
+          const recordedGrades = await tx.transkrip.count({ where: { krsDetail: { kelasMataKuliah: { mataKuliahId: id } } } });
+          if (recordedGrades > 0) throw { name: "Conflict", message: "SKS mata kuliah yang sudah memiliki transkrip tidak dapat diubah. Buat mata kuliah baru untuk perubahan kurikulum." };
+        }
         return tx.mataKuliah.update({ where: { id }, data });
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
       res.status(200).json({ message: "Mata kuliah berhasil diperbarui", data: updated, mk: updated });

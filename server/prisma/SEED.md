@@ -5,6 +5,7 @@ Snapshot akademik: September 2026. Data ini menggambarkan kampus kecil untuk pen
 ## Struktur
 
 - `seed.ts`: CLI dan foto opsional setelah transaksi database selesai.
+- `seed-data/grades.ts`: variasi nilai angka, huruf dan bobot untuk demo.
 - `seed-data/catalog.ts`: nama fakultas, prodi, dosen, mahasiswa, mata kuliah, periode dan skenario KRS.
 - `seed-data/campus.ts`: pengisian data dari induk ke anak dan pemeriksaan bentrok.
 - `seed-data/reset.ts`: penghapusan seluruh data sesuai urutan foreign key, hanya dengan `--reset`.
@@ -23,7 +24,7 @@ Snapshot akademik: September 2026. Data ini menggambarkan kampus kecil untuk pen
 | Ruangan / kelas | 2 / 4 | Ruangan berkapasitas 30; 1 kelas per prodi per periode |
 | Penugasan / jadwal | 24 / 24 | Senin–Rabu, 08:00–10:30 dan 10:45–13:15 |
 | KRS / detail | 28 / 168 | 16 historis dan 12 semester berjalan |
-| Transkrip | 96 | Hanya semester yang telah selesai |
+| Transkrip | 114 | 96 historis + 18 nilai simulasi semester aktif |
 | Riwayat status seed | 16 | Registrasi ulang atau permohonan cuti |
 
 Semester berjalan: 6 KRS disetujui, 2 diajukan, 2 ditolak, 2 draft; 2 mahasiswa aktif belum membuat KRS; 2 mahasiswa cuti tanpa KRS. Dashboard saat ini menghitung draft sebagai belum mengajukan: `submitted=10`, `notSubmitted=4`, `pendingApproval=2`, `percentage=71` (dari 14 mahasiswa aktif). Jadwal hari Minggu kosong karena enum Hari hanya Senin–Sabtu.
@@ -70,3 +71,9 @@ Peserta hanya berasal dari header KRS DISETUJUI dan detail DISETUJUI yang menunj
 Pertemuan unik per jadwal/nomor dan per jadwal/tanggal. Absensi unik per pertemuan/mahasiswa. Menghapus jadwal meng-cascade pertemuan dan absensi; relasi Absensi → Mahasiswa tidak cascade. Reset sekarang menghapus absensi dan pertemuan terlebih dahulu. Keikutsertaan pada KRS, kesesuaian hari/tanggal, dan larangan absensi pada pertemuan belum dimulai belum dijamin FK; seed menjaga aturan ini. Tidak ada perubahan schema atau migrasi.
 
 Verifikasi tanpa database langsung: `node -r ts-node/register/transpile-only tests/seed.cjs` memeriksa dua kali seed, jumlah tetap, relasi akademik, nilai, serta peserta absensi yang sah. Ini pengujian mock, bukan pengujian constraint PostgreSQL.
+
+## Nilai semester aktif
+
+Enam mahasiswa dengan KRS aktif DISETUJUI memperoleh tiga nilai lengkap per mahasiswa (18 transkrip tambahan). Tiga mata kuliah lainnya belum dinilai. KRS DIAJUKAN, DITOLAK, DRAFT, mahasiswa tanpa KRS, dan mahasiswa cuti tidak diberi nilai semester aktif. Nilai historis tetap lengkap untuk 16 mahasiswa (96 transkrip).
+
+Ini simulasi tampilan nilai: nilai semester aktif tersedia meskipun snapshot pertemuan September masih belum dimulai. Jangan menafsirkan dataset demo sebagai kronologi operasional sesungguhnya. Pilih tahun 2026/2027 GANJIL dan akun mahasiswa0–2 atau mahasiswa8–10 untuk melihat nilai aktif. Setiap akun tersebut memiliki totalSKS bernilai 9.

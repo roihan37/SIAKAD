@@ -1,3 +1,4 @@
+import { seedGrade } from "./grades";
 import { seedAttendance } from "./attendance";
 import { Gender, JabatanDosen, KRSStatus, Pendidikan, Role, Status, StatusKRS } from "@prisma/client";
 import { prisma } from "../../src/lib/prisma";
@@ -84,8 +85,9 @@ export async function seedCampus(reset = false) {
           for (const [courseIndex, assignment] of classesByPeriod[periodIndex].entries()) {
             const approved = status === StatusKRS.DISETUJUI;
             const detail = await tx.kRSDetail.create({ data: { krsId: krs.id, kelasMataKuliahId: assignment.id, status: approved ? KRSStatus.DISETUJUI : status === StatusKRS.DITOLAK ? KRSStatus.DITOLAK : KRSStatus.MENUNGGU, approvedBy: approved ? advisor.userId : null, approvedAt: approved ? new Date(`${periods[periodIndex].approval}T09:00:00+07:00`) : null } });
-            if (periodIndex === 0) {
-              const grade = [{ score: 87, letter: "A", weight: 4 }, { score: 78, letter: "B", weight: 3 }, { score: 83, letter: "A", weight: 4 }, { score: 72, letter: "B", weight: 3 }][(i + courseIndex) % 4];
+            // Semester aktif: tiga mata kuliah bernilai sebagai simulasi UI.
+            if (approved && (periodIndex === 0 || courseIndex < 3)) {
+              const grade = seedGrade(index, courseIndex, periodIndex);
               await tx.transkrip.create({ data: { mahasiswaId: student.id, krsDetailId: detail.id, nilaiAngka: grade.score, nilaiHuruf: grade.letter, bobot: grade.weight } });
             }
           }
