@@ -18,6 +18,8 @@ const initialState: KRSState = {
     angkatan: undefined,
     status: undefined,
     totalMahasiswaAktif: 0,
+    totalKRSDraft: 0,
+    totalKRSDitolak: 0,
     totalKRSDisetujui: 0,
     totalKRSMenunggu: 0,
     totalBelumKRS: 0,
@@ -94,10 +96,13 @@ const krsSilce = createSlice({
             })
 
             // STUDENTS
-            .addCase(getAllKRS.pending, state => {
+            .addCase(getAllKRS.pending, (state, action) => {
+                state.krsRequestId = action.meta.requestId
+                state.error = null
                 state.isLoading = true
             })
             .addCase(getAllKRS.fulfilled, (state, action) => {
+                if (state.krsRequestId !== action.meta.requestId) return
                 state.isLoading = false
                 state.krs = action.payload.krs
                 state.page = action.payload.pagination.page;
@@ -105,14 +110,17 @@ const krsSilce = createSlice({
                 state.totalPages = action.payload.pagination.totalPages;
                 state.totalRows = action.payload.pagination.totalRows;
                 state.totalMahasiswaAktif = action.payload.summary.totalMahasiswaAktif;
+                state.totalKRSDraft = action.payload.summary.totalKRSDraft;
+                state.totalKRSDitolak = action.payload.summary.totalKRSDitolak;
                 state.totalKRSDisetujui = action.payload.summary.totalKRSDisetujui;
                 state.totalKRSMenunggu = action.payload.summary.totalKRSMenunggu;
                 state.totalBelumKRS = action.payload.summary.totalBelumKRS;
                 // console.log("action.payload", action.payload);
             })
             .addCase(getAllKRS.rejected, (state, action) => {
+                if (state.krsRequestId !== action.meta.requestId) return
                 state.isLoading = false
-                state.error = action.payload as string;
+                state.error = action.meta.aborted ? null : action.payload as string;
             })
 
 

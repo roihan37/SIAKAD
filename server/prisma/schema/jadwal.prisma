@@ -16,6 +16,8 @@ model Jadwal {
 
   ruangan            Ruangan @relation(fields: [ruanganId],references: [id])
 
+  pertemuan Pertemuan[]
+
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 

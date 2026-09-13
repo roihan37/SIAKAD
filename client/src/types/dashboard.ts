@@ -7,7 +7,7 @@ export type DashboardData = {
     studyPrograms: { total: number; faculties: number }
     activeClasses: number
   }
-  krs: { percentage: number; submitted: number; notSubmitted: number; pendingApproval: number }
+  krs: { percentage: number; submitted: number; notSubmitted: number; pendingApproval: number; categories: Record<"BELUM_KRS" | "DRAFT" | "DIAJUKAN" | "DISETUJUI" | "DITOLAK", number> }
   attention: { studentsWithoutKrs: number; overdueTuition: number | null; classesWithoutLecturer: number; scheduleConflicts: number }
   todaySchedules: {
     id: number; startTime: string; endTime: string

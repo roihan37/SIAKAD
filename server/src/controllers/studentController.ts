@@ -4,8 +4,71 @@ import { hashPassword } from "../lib/bycript";
 import { Prisma } from "@prisma/client";
 import { AvatarService } from "../services/avatar.service";
 import { S3Service } from "../services/s3.service";
+import { resourceId, text } from "../validation/master-data";
+import { attendanceCounts, percentage } from "../services/attendance.service";
 
 export class Controller {
+
+    static async getStudentAttendance(req: Request, res: Response, next: NextFunction) {
+        try {
+            const userId = text("ID user mahasiswa", 100)(req.params.id);
+            const tahunAkademikId = resourceId(req.query.tahunAkademikId);
+            const data = await prisma.$transaction(async (tx) => {
+                const user = await tx.user.findUnique({
+                    where: { id: userId, role: "Mahasiswa" },
+                    select: { mahasiswa: { select: { id: true } } },
+                });
+                if (!user?.mahasiswa) throw { name: "NotFound", message: "Mahasiswa tidak ditemukan." };
+                const year = await tx.tahunAkademik.findUnique({
+                    where: { id: tahunAkademikId },
+                    select: { id: true, tahun: true, semester: true },
+                });
+                if (!year) throw { name: "NotFound", message: "Tahun akademik tidak ditemukan." };
+                const records = await tx.absensi.findMany({
+                    where: { mahasiswaId: user.mahasiswa.id, pertemuan: { jadwal: { tahunAkademikId } } },
+                    select: {
+                        status: true,
+                        pertemuan: { select: { jadwal: { select: { kelasMataKuliah: { select: {
+                            mataKuliah: { select: { id: true, kode: true, nama: true } },
+                        } } } } } },
+                    },
+                });
+                const totals = attendanceCounts(records);
+                const grouped = new Map<number, {
+                    course: { id: number; code: string; name: string };
+                    counts: ReturnType<typeof attendanceCounts>;
+                }>();
+                for (const record of records) {
+                    const course = record.pertemuan.jadwal.kelasMataKuliah.mataKuliah;
+                    const group = grouped.get(course.id) ?? {
+                        course: { id: course.id, code: course.kode, name: course.nama },
+                        counts: attendanceCounts([]),
+                    };
+                    const counts = attendanceCounts([record]);
+                    for (const key of ["present", "permission", "sick", "absent", "total"] as const) group.counts[key] += counts[key];
+                    grouped.set(course.id, group);
+                }
+                return {
+                    academicYear: { id: year.id, year: year.tahun, semester: year.semester },
+                    summary: {
+                        attendancePercentage: percentage(totals.present, totals.total),
+                        present: totals.present, permission: totals.permission, sick: totals.sick,
+                        absent: totals.absent, totalRecords: totals.total,
+                    },
+                    courses: [...grouped.values()].sort((a, b) => a.course.code.localeCompare(b.course.code) || a.course.id - b.course.id)
+                        .map(({ course, counts }) => ({
+                            course,
+                            meetings: counts.total,
+                            attendance: {
+                                present: counts.present, permission: counts.permission, sick: counts.sick,
+                                absent: counts.absent, percentage: percentage(counts.present, counts.total),
+                            },
+                        })),
+                };
+            }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
+            return res.status(200).json({ message: "Student attendance retrieved successfully", data });
+        } catch (error) { next(error); }
+    }
 
     static async bulkUpdateStatus(req: Request, res: Response, next: NextFunction) {
         try {
@@ -1674,319 +1737,81 @@ export class Controller {
         }
     }
 
-    static async getStudentNilai(
-        req: Request,
-        res: Response,
-        next: NextFunction
-    ) {
+    static async getStudentNilai(req: Request, res: Response, next: NextFunction) {
         try {
-            // ID dari FE adalah User.id
-            const userId = String(req.params.id);
-
-            // ==========================================
-            // 1. Cari User dan relasi Mahasiswa
-            // ==========================================
-            const user = await prisma.user.findUnique({
-                where: {
-                    id: userId,
-                },
-                select: {
-                    id: true,
-                    role: true,
-                    mahasiswa: {
-                        select: {
-                            id: true,
-                        },
-                    },
-                },
-            });
-
-            if (
-                !user ||
-                user.role !== "Mahasiswa" ||
-                !user.mahasiswa
-            ) {
-                throw {
-                    name: "NotFound",
-                    message: "Mahasiswa tidak ditemukan",
-                };
-            }
-
-            const mahasiswaId = user.mahasiswa.id;
-
-            // ==========================================
-            // 2. Validate tahunAkademikId
-            // ==========================================
-            const tahunAkademikIdParam =
-                req.query.tahunAkademikId;
-
-            if (tahunAkademikIdParam === undefined) {
-                throw {
-                    name: "BadRequest",
-                    message: "tahunAkademikId wajib diisi",
-                };
-            }
-
-            const tahunAkademikId =
-                Number(tahunAkademikIdParam);
-
-            if (
-                !Number.isInteger(tahunAkademikId) ||
-                tahunAkademikId <= 0
-            ) {
-                throw {
-                    name: "BadRequest",
-                    message:
-                        "tahunAkademikId harus berupa angka positif",
-                };
-            }
-
-            // ==========================================
-            // 3. Get KRS semester yang dipilih
-            //    + seluruh KRS untuk IPK
-            // ==========================================
-            const [krs, allKrs] = await Promise.all([
-                prisma.kRS.findUnique({
+            const userId = text("ID user mahasiswa", 100)(req.params.id);
+            const tahunAkademikId = resourceId(req.query.tahunAkademikId);
+            const nilai = await prisma.$transaction(async (tx) => {
+                const user = await tx.user.findUnique({
+                    where: { id: userId, role: "Mahasiswa" },
+                    select: { mahasiswa: { select: { id: true } } },
+                });
+                if (!user?.mahasiswa) throw { name: "NotFound", message: "Mahasiswa tidak ditemukan" };
+                const year = await tx.tahunAkademik.findUnique({
+                    where: { id: tahunAkademikId },
+                    select: { id: true, tahun: true, semester: true },
+                });
+                if (!year) throw { name: "NotFound", message: "Tahun akademik tidak ditemukan" };
+                const records = await tx.kRS.findMany({
                     where: {
-                        mahasiswaId_tahunAkademikId: {
-                            mahasiswaId,
-                            tahunAkademikId,
-                        },
+                        mahasiswaId: user.mahasiswa.id,
+                        status: "DISETUJUI",
+                        tahunAkademik: { OR: [
+                            { tahun: { lt: year.tahun } },
+                            { tahun: year.tahun, ...(year.semester === "GANJIL" ? { semester: "GANJIL" } : {}) },
+                        ] },
                     },
-
-                    select: {
-                        id: true,
-
-                        tahunAkademik: {
-                            select: {
-                                id: true,
-                                tahun: true,
-                                semester: true,
-                            },
-                        },
-
-                        details: {
-                            select: {
-                                id: true,
-
-                                kelasMataKuliah: {
-                                    select: {
-                                        mataKuliah: {
-                                            select: {
-                                                id: true,
-                                                kode: true,
-                                                nama: true,
-                                                sks: true,
-                                            },
-                                        },
-                                    },
-                                },
-
-                                transkrip: {
-                                    where: {
-                                        mahasiswaId,
-                                    },
-                                    select: {
-                                        nilaiAngka: true,
-                                        nilaiHuruf: true,
-                                        bobot: true,
-                                    },
-                                },
-                            },
-                        },
-                    },
-                }),
-
-                prisma.kRS.findMany({
-                    where: {
-                        mahasiswaId,
-                    },
-
                     select: {
                         tahunAkademikId: true,
-
+                        tahunAkademik: { select: { tahun: true, semester: true } },
                         details: {
+                            where: { status: "DISETUJUI" },
+                            orderBy: { id: "asc" },
                             select: {
-                                kelasMataKuliah: {
-                                    select: {
-                                        mataKuliah: {
-                                            select: {
-                                                sks: true,
-                                            },
-                                        },
-                                    },
-                                },
-
-                                transkrip: {
-                                    where: {
-                                        mahasiswaId,
-                                    },
-                                    select: {
-                                        bobot: true,
-                                    },
-                                },
+                                id: true,
+                                kelasMataKuliah: { select: { mataKuliah: { select: { id: true, kode: true, nama: true, sks: true } } } },
+                                transkrip: { where: { mahasiswaId: user.mahasiswa.id }, select: { nilaiAngka: true, nilaiHuruf: true, bobot: true } },
                             },
                         },
                     },
-                }),
-            ]);
-
-            // ==========================================
-            // 4. KRS belum tersedia
-            // ==========================================
-            if (!krs) {
-                return res.status(200).json({
-                    nilai: null,
                 });
-            }
-
-            // ==========================================
-            // 5. Hanya nilai yang sudah mempunyai bobot
-            // ==========================================
-            const gradedDetails = krs.details.filter(
-                (detail) =>
-                    detail.transkrip[0]?.bobot != null
-            );
-
-            // ==========================================
-            // 6. Mapping nilai
-            // ==========================================
-            const details = gradedDetails.map((detail) => {
-                const transkrip = detail.transkrip[0]!;
-
-                return {
+                const current = records.find((record) => record.tahunAkademikId === year.id);
+                if (!current) return null;
+                const details = current.details.filter((detail) => detail.transkrip[0]?.bobot != null).map((detail) => ({
                     id: detail.id,
-
-                    mataKuliah: {
-                        id: detail.kelasMataKuliah.mataKuliah.id,
-                        kode: detail.kelasMataKuliah.mataKuliah.kode,
-                        nama: detail.kelasMataKuliah.mataKuliah.nama,
-                        sks: detail.kelasMataKuliah.mataKuliah.sks,
-                    },
-
-                    nilai:
-                        transkrip.nilaiAngka != null
-                            ? Number(transkrip.nilaiAngka)
-                            : null,
-
-                    grade: transkrip.nilaiHuruf,
-
-                    bobot:
-                        transkrip.bobot != null
-                            ? Number(transkrip.bobot)
-                            : null,
-                };
-            });
-
-            // ==========================================
-            // 7. Calculate SKS + Grade Points
-            // ==========================================
-            const calculatePoints = (
-                rows: typeof allKrs
-            ) => {
-                return rows.reduce(
-                    (summary, row) => {
-                        row.details.forEach((detail) => {
-                            const transkrip =
-                                detail.transkrip[0];
-
-                            if (transkrip?.bobot == null) {
-                                return;
-                            }
-
-                            const sks =
-                                detail
-                                    .kelasMataKuliah
-                                    .mataKuliah
-                                    .sks;
-
-                            const bobot =
-                                Number(transkrip.bobot);
-
-                            summary.sks += sks;
-                            summary.points +=
-                                bobot * sks;
-                        });
-
-                        return summary;
-                    },
-                    {
-                        sks: 0,
-                        points: 0,
+                    mataKuliah: detail.kelasMataKuliah.mataKuliah,
+                    nilai: detail.transkrip[0].nilaiAngka == null ? null : Number(detail.transkrip[0].nilaiAngka),
+                    grade: detail.transkrip[0].nilaiHuruf,
+                    bobot: Number(detail.transkrip[0].bobot),
+                }));
+                // Nilai terakhir yang sudah tersedia menggantikan percobaan sebelumnya.
+                // Percobaan ulang yang belum bernilai tidak menghapus nilai terdahulu.
+                const latest = new Map<number, { sks: number; bobot: number }>();
+                const sorted = [...records].sort((a, b) => a.tahunAkademik.tahun.localeCompare(b.tahunAkademik.tahun) ||
+                    (a.tahunAkademik.semester === "GANJIL" ? 0 : 1) - (b.tahunAkademik.semester === "GANJIL" ? 0 : 1));
+                for (const record of sorted) {
+                    for (const detail of record.details) {
+                        const grade = detail.transkrip[0];
+                        if (grade?.bobot == null) continue;
+                        const course = detail.kelasMataKuliah.mataKuliah;
+                        latest.set(course.id, { sks: course.sks, bobot: Number(grade.bobot) });
                     }
-                );
-            };
-
-            // ==========================================
-            // 8. IPS semester yang dipilih
-            // ==========================================
-            const currentSummary =
-                calculatePoints(
-                    allKrs.filter(
-                        (row) =>
-                            row.tahunAkademikId ===
-                            tahunAkademikId
-                    )
-                );
-
-            // ==========================================
-            // 9. IPK kumulatif
-            // ==========================================
-            const cumulativeSummary =
-                calculatePoints(allKrs);
-
-            // ==========================================
-            // 10. Helper pembulatan
-            // ==========================================
-            const round = (value: number) =>
-                Math.round(value * 100) / 100;
-
-            // ==========================================
-            // 11. Label semester
-            // ==========================================
-            const labelSemester =
-                krs.tahunAkademik.semester === "GANJIL"
-                    ? "Ganjil"
-                    : "Genap";
-
-            // ==========================================
-            // 12. Response
-            // ==========================================
-            return res.status(200).json({
-                nilai: {
-                    tahunAkademik: {
-                        id: krs.tahunAkademik.id,
-                        tahun: krs.tahunAkademik.tahun,
-                        semester: krs.tahunAkademik.semester,
-                        label: `${krs.tahunAkademik.tahun} ${labelSemester}`,
-                    },
-
+                }
+                const calculate = (grades: { sks: number; bobot: number }[]) => {
+                    const sks = grades.reduce((sum, grade) => sum + grade.sks, 0);
+                    const points = grades.reduce((sum, grade) => sum + grade.sks * grade.bobot, 0);
+                    return { sks, ip: sks ? Math.round(points / sks * 100) / 100 : 0 };
+                };
+                const semester = calculate(details.map((detail) => ({ sks: detail.mataKuliah.sks, bobot: detail.bobot })));
+                const cumulative = calculate([...latest.values()]);
+                return {
+                    tahunAkademik: { ...year, label: `${year.tahun} ${year.semester === "GANJIL" ? "Ganjil" : "Genap"}` },
                     details,
-
-                    summary: {
-                        totalSKS: currentSummary.sks,
-
-                        ips:
-                            currentSummary.sks > 0
-                                ? round(
-                                    currentSummary.points /
-                                    currentSummary.sks
-                                )
-                                : 0,
-
-                        ipk:
-                            cumulativeSummary.sks > 0
-                                ? round(
-                                    cumulativeSummary.points /
-                                    cumulativeSummary.sks
-                                )
-                                : 0,
-                    },
-                },
-            });
-        } catch (error) {
-            next(error);
-        }
+                    summary: { totalSKS: semester.sks, ips: semester.ip, ipk: cumulative.ip },
+                };
+            }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
+            return res.status(200).json({ nilai });
+        } catch (error) { next(error); }
     }
 
     static async resetPassword(

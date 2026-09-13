@@ -1,8 +1,8 @@
-import { patchBody } from "../validation/master-data";
+import { patchBody, resourceId } from "../validation/master-data";
 import { krsPatch, stringId } from "../validation/academic-data";
 import { NextFunction, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
-import { Prisma } from "@prisma/client";
+import { Prisma, StatusKRS } from "@prisma/client";
 
 export class Controller {
   static async createKRS(req: Request, res: Response, next: NextFunction) {
@@ -70,21 +70,26 @@ export class Controller {
           ? Number(req.query.prodiId)
           : undefined
 
-      const tahunAkademikId =
-        req.query.tahunAkademikId
-          ? Number(req.query.tahunAkademikId)
-          : undefined
+      const selectedYear = req.query.tahunAkademikId === undefined
+        ? await prisma.tahunAkademik.findFirst({ where: { isActive: true }, orderBy: [{ tahun: "desc" }, { id: "desc" }] })
+        : await prisma.tahunAkademik.findUnique({ where: { id: resourceId(req.query.tahunAkademikId) } });
+      if (!selectedYear) throw { name: "NotFound", message: "Tahun akademik tidak ditemukan." };
+      const tahunAkademikId = selectedYear.id;
 
       const angkatan =
         req.query.angkatan
           ? Number(req.query.angkatan)
           : undefined
 
-      const status =
+      const requestedStatus =
         req.query.status
           ? String(req.query.status)
           : undefined
 
+      const status = requestedStatus === "MENUNGGU" ? "DIAJUKAN" : requestedStatus
+      if (status && status !== "BELUM_KRS" && !Object.values(StatusKRS).includes(status as StatusKRS)) {
+        throw { name: "BadRequest", message: "Status KRS tidak valid." }
+      }
       const krsWhere: Prisma.KRSWhereInput =
         tahunAkademikId !== undefined
           ? { tahunAkademikId }
@@ -110,6 +115,9 @@ export class Controller {
 
       const where: Prisma.MahasiswaWhereInput = {
         status: "Aktif",
+        ...(status ? { krs: status === "BELUM_KRS"
+          ? { none: krsWhere }
+          : { some: { ...krsWhere, status: status as StatusKRS } } } : {}),
 
         ...(prodiId !== undefined && {
           prodiId,
@@ -155,7 +163,7 @@ export class Controller {
       // QUERY
       // ==========================================
 
-      const [rows, total, totalMahasiswaAktif, totalKRSDisetujui, totalKRSMenunggu, totalBelumKRS] =
+      const [rows, total, totalMahasiswaAktif, totalKRSDisetujui, totalKRSMenunggu, totalBelumKRS, totalKRSDraft, totalKRSDitolak] =
         await Promise.all([
           prisma.mahasiswa.findMany({
             where,
@@ -168,12 +176,9 @@ export class Controller {
               prodi: true,
 
               krs: {
-                where:
-                  tahunAkademikId !== undefined
-                    ? {
-                      tahunAkademikId,
-                    }
-                    : undefined,
+                where: { ...krsWhere, ...(status && status !== "BELUM_KRS" ? { status: status as StatusKRS } : {}) },
+                orderBy: [{ tahunAkademik: { tahun: "desc" } }, { createdAt: "desc" }, { id: "desc" }],
+                take: 1,
 
                 include: {
                   details: {
@@ -211,53 +216,19 @@ export class Controller {
             where,
           }),
 
-          prisma.mahasiswa.count({
-            where: {
-              status: "Aktif",
-            },
-          }),
-
-          prisma.mahasiswa.count({
-            where: {
-              status: "Aktif",
-              krs: {
-                some: {
-                  ...krsWhere,
-                  status: "DISETUJUI",
-                },
-              },
-            },
-          }),
-
-          prisma.mahasiswa.count({
-            where: {
-              status: "Aktif",
-              krs: {
-                some: {
-                  ...krsWhere,
-                  status: {
-                    not: "DISETUJUI",
-                  },
-                },
-              },
-            },
-          }),
-
-          prisma.mahasiswa.count({
-            where: {
-              status: "Aktif",
-              krs: {
-                none: krsWhere,
-              },
-            },
-          }),
+          prisma.mahasiswa.count({ where }),
+          ...(["DISETUJUI", "DIAJUKAN", "BELUM_KRS", "DRAFT", "DITOLAK"] as const).map((category) => prisma.mahasiswa.count({
+            where: { AND: [where, { krs: category === "BELUM_KRS"
+              ? { none: krsWhere }
+              : { some: { ...krsWhere, status: category } } }] },
+          })),
         ])
 
       // ==========================================
       // MAPPING
       // ==========================================
 
-      let krs = rows.map((mahasiswa) => {
+      const krs = rows.map((mahasiswa) => {
         const currentKRS =
           mahasiswa.krs[0]
 
@@ -270,15 +241,7 @@ export class Controller {
             0
           ) ?? 0
 
-        let currentStatus =
-          currentKRS
-            ? "MENUNGGU"
-            : "BELUM_KRS"
-
-        // Jika nanti KRS punya field status,
-        // gunakan status dari database.
-        //
-        // currentStatus = currentKRS?.status ?? "MENUNGGU"
+        const currentStatus = currentKRS?.status ?? "BELUM_KRS"
 
         return {
           id: mahasiswa.id,
@@ -318,28 +281,20 @@ export class Controller {
       })
 
       // ==========================================
-      // FILTER STATUS
-      // ==========================================
-
-      if (status) {
-        krs = krs.filter(
-          (item) =>
-            item.status === status
-        )
-      }
-
-      // ==========================================
       // RESPONSE
       // ==========================================
       
       res.status(200).json({
         krs,
 
+        academicYear: selectedYear,
         summary: {
           totalMahasiswaAktif,
           totalKRSDisetujui,
           totalKRSMenunggu,
           totalBelumKRS,
+          totalKRSDraft,
+          totalKRSDitolak,
         },
 
         pagination: {

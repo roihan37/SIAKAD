@@ -1,3 +1,4 @@
+import { useSearchParams } from "react-router"
 import { KRSEditDialog } from "./KRSEditDialog"
 import { MasterDeleteDialog } from "@/components/master-data/MasterDeleteDialog"
 import { ActionCell } from "@/components/tables/action-cell"
@@ -5,7 +6,7 @@ import type { ColumnDef } from "@tanstack/react-table"
 import type { KRS } from "@/types/campus"
 import { toast } from "sonner"
 import { DataTable } from "@/components/tables/data-table"
-import { setAngkatan, setPage, setProdiId, setSearch, setSorting, setStatus, setTahunAkademikId } from "@/features/slice/KRSSlice"
+import { setAngkatan, setPage, setProdiId, setSearch, setSorting, setStatus } from "@/features/slice/KRSSlice"
 import { useAppDispatch, useAppSelector } from "@/hooks/redux"
 import type { SortingState } from "@tanstack/react-table"
 import { useEffect, useMemo, useState } from "react"
@@ -21,6 +22,13 @@ import { KRSSummary } from "@/components/KRSSummary"
 export default function KRSPage() {
     const tableLoading = useAppSelector((state) => state.krs.isLoading)
   const dispatch = useAppDispatch()
+  const [params, setParams] = useSearchParams()
+  const yearParam = params.get("tahunAkademikId")
+  const tahunAkademikId = yearParam && /^\d+$/.test(yearParam) && Number(yearParam) > 0 ? Number(yearParam) : undefined
+  const changeYear = (id?: number) => {
+    setParams((previous) => { const next = new URLSearchParams(previous); if (id) next.set("tahunAkademikId", String(id)); else next.delete("tahunAkademikId"); return next })
+    dispatch(setPage(1))
+  }
   const {
     krs,
     page,
@@ -29,10 +37,11 @@ export default function KRSPage() {
     sortBy,
     sortOrder,
     angkatan,
-    tahunAkademikId,
     prodiId,
     status,
     totalMahasiswaAktif,
+    totalKRSDraft,
+    totalKRSDitolak,
     totalKRSDisetujui,
     totalKRSMenunggu,
     totalBelumKRS
@@ -68,7 +77,8 @@ export default function KRSPage() {
   }, [searchInput, dispatch])
 
   useEffect(() => {
-    dispatch(
+    let active = true
+    const request = dispatch(
       getAllKRS({
         page,
         search,
@@ -80,8 +90,17 @@ export default function KRSPage() {
         status,
       })
     )
+    void request.unwrap().then((response) => {
+      if (active && !tahunAkademikId) setParams((previous) => {
+        const next = new URLSearchParams(previous)
+        next.set("tahunAkademikId", String(response.academicYear.id))
+        return next
+      }, { replace: true })
+    }).catch(() => {})
+    return () => { active = false; request.abort() }
   }, [
     dispatch,
+    setParams,
     page,
     search,
     sortBy,
@@ -123,7 +142,7 @@ export default function KRSPage() {
   const krsFilters = [
     {
       key: "tahunAkademik",
-      items: tahunAkademikItems,
+      items: tahunAkademikItems.filter((item) => item.id !== 0),
 
       value:
         tahunAkademikItems.find(
@@ -138,13 +157,7 @@ export default function KRSPage() {
       onChange: (
         item: ComboboxOption
       ) => {
-        dispatch(
-          setTahunAkademikId(
-            item.id === 0
-              ? undefined
-              : item.id
-          )
-        )
+        changeYear(item.id || undefined)
       },
     },
 
@@ -240,7 +253,7 @@ export default function KRSPage() {
           </h1>
 
           <p className="text-sm text-muted-foreground">
-            Kelola dan monitor KRS mahasiswa
+            Kelola dan monitor KRS mahasiswa. Ringkasan mengikuti seluruh filter tabel.
           </p>
         </div>
 
@@ -262,9 +275,7 @@ export default function KRSPage() {
             <PageFilters
               filters={krsFilters}
               onReset={() => {
-                dispatch(
-                  setTahunAkademikId(undefined)
-                )
+                changeYear(undefined)
 
                 dispatch(
                   setProdiId(undefined)
@@ -285,6 +296,8 @@ export default function KRSPage() {
             <KRSSummary
               data={{
                 totalMahasiswa: totalMahasiswaAktif,
+                draft: totalKRSDraft,
+                ditolak: totalKRSDitolak,
                 krsSelesai: totalKRSDisetujui,
                 menunggu: totalKRSMenunggu,
                 belumKRS: totalBelumKRS,

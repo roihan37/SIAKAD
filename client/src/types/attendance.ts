@@ -1,0 +1,11 @@
+export type AttendanceQuery = { tahunAkademikId?: number; prodiId?: number; kelasId?: number; mataKuliahId?: number; dosenId?: string; search?: string; page?: number; limit?: number }
+export type AttendanceCounts = { present: number; permission: number; sick: number; absent: number; total: number; percentage?: number }
+export type AttendanceSummary = { averageAttendance: number; present: number; permission: number; sick: number; absent: number; totalAttendanceRecords: number }
+export type AttendanceStudent = { id: string; studentId: string; nim: string; name: string; studyProgram: { id: number; name: string }; class: { id: number; name: string }; attendance: AttendanceCounts }
+export type AttendanceMeeting = { id: string; meetingNumber: number; date: string; course: { id: number; code: string; name: string }; class: { id: number; name: string }; lecturer: { id: string; name: string }; attendance: AttendanceCounts }
+export type Pagination = { page: number; limit: number; totalRows: number; totalPages: number }
+export type StudentAttendancePage = { students: AttendanceStudent[]; pagination: Pagination }
+export type MeetingAttendancePage = { meetings: AttendanceMeeting[]; pagination: Pagination }
+export type MeetingAttendanceDetail = { meeting: Omit<AttendanceMeeting, "attendance"> & { topic: string | null }; students: { id: string; nim: string; name: string; status: string; note: string | null }[] }
+export type AttendanceOption = { id: string | number; name?: string; year?: string; semester?: string; code?: string }
+export type AttendanceOptions = Record<"academicYears" | "studyPrograms" | "classes" | "courses" | "lecturers", AttendanceOption[]>

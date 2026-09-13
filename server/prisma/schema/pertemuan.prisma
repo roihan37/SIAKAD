@@ -1,0 +1,21 @@
+model Pertemuan {
+  id        String   @id @default(uuid())
+
+  jadwalId  Int
+  tanggal   DateTime
+  pertemuan Int
+  topik     String?
+
+  status    StatusPertemuan @default(BELUM_DIMULAI)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  jadwal    Jadwal @relation(fields: [jadwalId], references: [id], onDelete: Cascade )
+
+  absensi   Absensi[]
+
+  @@unique([jadwalId, pertemuan])
+  @@unique([jadwalId, tanggal])
+  @@index([jadwalId])
+}

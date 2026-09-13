@@ -19,7 +19,7 @@ export const getAllKRS = createAsyncThunk(
 
     try {
       const response = await api.get("/krs", {
-        params});
+        params, signal: thunkAPI.signal });
       return response.data;
 
     } catch (err: any) {

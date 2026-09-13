@@ -1,0 +1,20 @@
+model Absensi {
+  id           String @id @default(uuid())
+
+  pertemuanId  String
+  mahasiswaId  String
+
+  status       StatusKehadiran
+
+  keterangan   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  pertemuan Pertemuan @relation(fields: [pertemuanId], references: [id], onDelete: Cascade )
+
+  mahasiswa Mahasiswa @relation( fields: [mahasiswaId], references: [id] )
+
+  @@unique([pertemuanId, mahasiswaId])
+  @@index([mahasiswaId])
+}

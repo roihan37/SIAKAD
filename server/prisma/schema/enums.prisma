@@ -58,3 +58,16 @@ enum StatusKRS {
   DITOLAK
 }
 
+enum StatusKehadiran {
+  HADIR
+  IZIN
+  SAKIT
+  ALPHA
+}
+
+enum StatusPertemuan {
+  BELUM_DIMULAI
+  BERLANGSUNG
+  SELESAI
+}
+

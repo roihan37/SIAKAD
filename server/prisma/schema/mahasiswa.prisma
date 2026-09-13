@@ -13,6 +13,8 @@ model Mahasiswa {
   krs             KRS[]
   transkrip       Transkrip[]
 
+  absensi Absensi[]
+
   dosen     Dosen?   @relation(fields: [dosenId], references: [id])
   prodi     Prodi    @relation(fields: [prodiId], references: [id])
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)

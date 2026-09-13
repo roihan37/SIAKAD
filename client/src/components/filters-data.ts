@@ -48,31 +48,12 @@ export function filtersData({
     ]
 
     const statusKRSItems: ComboboxOption[] = [
-        {
-            id: 0,
-            label: "Semua Status",
-            value: "ALL",
-        },
-        {
-            id: 1,
-            label: "Belum KRS",
-            value: "BELUM_KRS",
-        },
-        {
-            id: 2,
-            label: "Menunggu",
-            value: "MENUNGGU",
-        },
-        {
-            id: 3,
-            label: "Disetujui",
-            value: "DISETUJUI",
-        },
-        {
-            id: 4,
-            label: "Ditolak",
-            value: "DITOLAK",
-        },
+        { id: 0, label: "Semua Status", value: "ALL" },
+        { id: 1, label: "Belum KRS", value: "BELUM_KRS" },
+        { id: 2, label: "Draft", value: "DRAFT" },
+        { id: 3, label: "Diajukan", value: "DIAJUKAN" },
+        { id: 4, label: "Disetujui", value: "DISETUJUI" },
+        { id: 5, label: "Ditolak", value: "DITOLAK" },
     ]
     const angkatanItems: ComboboxOption[] = [
         {

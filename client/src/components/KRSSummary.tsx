@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/card"
 
 export interface KRSSummaryData {
+  draft: number
+  ditolak: number
   totalMahasiswa: number
   krsSelesai: number
   menunggu: number
@@ -27,18 +29,20 @@ export function KRSSummary({
   data,
 }: KRSSummaryProps) {
   const summaryItems = [
+    { label: "Draft", value: data.draft, icon: ClipboardCheck },
+    { label: "Ditolak", value: data.ditolak, icon: ClipboardX },
     {
       label: "Total Mahasiswa",
       value: data.totalMahasiswa,
       icon: Users,
     },
     {
-      label: "KRS Selesai",
+      label: "Disetujui",
       value: data.krsSelesai,
       icon: ClipboardCheck,
     },
     {
-      label: "Menunggu",
+      label: "Diajukan",
       value: data.menunggu,
       icon: Clock3,
     },
@@ -50,7 +54,7 @@ export function KRSSummary({
   ]
 
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
       {summaryItems.map((item) => {
         const Icon = item.icon
 

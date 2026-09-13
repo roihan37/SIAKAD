@@ -52,7 +52,9 @@ export class Controller {
             studyPrograms: { total: programs, faculties },
             activeClasses: classes,
           },
-          krs: { percentage: activeStudents ? Math.round(submitted / activeStudents * 100) : 0, submitted, notSubmitted, pendingApproval },
+          krs: { percentage: activeStudents ? Math.round(submitted / activeStudents * 100) : 0, submitted, notSubmitted, pendingApproval,
+            categories: { BELUM_KRS: activeStudents - krsGroups.reduce((sum, group) => sum + group._count._all, 0),
+              ...Object.fromEntries(["DRAFT", "DIAJUKAN", "DISETUJUI", "DITOLAK"].map((status) => [status, krsGroups.find((group) => group.status === status)?._count._all ?? 0])) } },
           attention: { studentsWithoutKrs: notSubmitted, overdueTuition: null, classesWithoutLecturer: unassigned, scheduleConflicts: countScheduleConflicts(schedules) },
           todaySchedules: schedules.filter((schedule) => schedule.hari === today).map((schedule) => ({
             id: schedule.id, startTime: schedule.jamMulai, endTime: schedule.jamSelesai,

@@ -88,6 +88,9 @@ export interface KRSState extends Pagination{
     krs: KRS[]
     isCreatingKRS : boolean
     totalMahasiswaAktif: number
+    krsRequestId?: string
+    totalKRSDraft: number
+    totalKRSDitolak: number
     totalKRSDisetujui: number
     totalKRSMenunggu: number
     totalBelumKRS: number
