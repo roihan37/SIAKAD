@@ -1,3 +1,4 @@
+import TagihanUKTPage from "@/pages/TagihanUKT/TagihanUKTPage";
 import ComingSoonPage from "@/pages/ComingSoon/ComingSoonPage";
 import { comingSoonPages } from "@/pages/ComingSoon/coming-soon-pages";
 import NilaiPage from "@/pages/Nilai/NilaiPage";
@@ -30,6 +31,7 @@ const router = createBrowserRouter([
       {
         element: <BaseLayout />,
         children: [
+          { path: "/tagihan-ukt", element: <TagihanUKTPage /> },
           ...comingSoonPages.map(({ path, title }) => ({ path, element: <ComingSoonPage title={title} /> })),
           {
             path: "/nilai",

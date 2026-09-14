@@ -3,7 +3,6 @@ import * as z from "zod"
 import {
   requiredText,
   positiveId,
-  numericValue,
   lecturerStatus,
   jabatan,
 } from "./common.schema"

@@ -1,0 +1,25 @@
+model Nilai {
+  id            String      @id @default(uuid())
+  krsDetailId   String      @unique
+
+  tugas         Decimal?    @db.Decimal(5, 2)
+  uts           Decimal?    @db.Decimal(5, 2)
+  uas           Decimal?    @db.Decimal(5, 2)
+
+  nilaiAkhir    Decimal?    @db.Decimal(5, 2)
+  grade         String?
+  bobot         Decimal?    @db.Decimal(3, 2)
+
+  status        StatusNilai @default(BELUM_LENGKAP)
+
+  krsDetail     KRSDetail   @relation( fields: [krsDetailId], references: [id], onDelete: Cascade)
+
+  koreksi       RiwayatKoreksiNilai[]
+
+  finalizedAt   DateTime?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([status])
+}

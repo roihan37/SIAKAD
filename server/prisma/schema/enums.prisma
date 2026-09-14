@@ -71,3 +71,28 @@ enum StatusPertemuan {
   SELESAI
 }
 
+enum StatusTagihan {
+  BELUM_DIBAYAR
+  SEBAGIAN
+  LUNAS
+  JATUH_TEMPO
+}
+
+enum MetodePembayaran {
+  TRANSFER_BANK
+  VIRTUAL_ACCOUNT
+  CASH
+}
+
+enum StatusPembayaran {
+  PENDING
+  SUCCESS
+  FAILED
+  EXPIRED
+  CANCELLED
+}
+
+enum StatusNilai {
+  BELUM_LENGKAP
+  FINAL
+}

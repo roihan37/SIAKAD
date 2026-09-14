@@ -41,6 +41,7 @@ import { DialogForm } from "../form-add-data/dialog-form"
 
 
 interface DataTableProps<TData, TValue> {
+  embedded?: boolean
   // Table
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
@@ -87,6 +88,7 @@ interface DataTableProps<TData, TValue> {
 
 export function DataTable<TData, TValue>({
   columns,
+  embedded = false,
   data,
   rowSelection: controlledSelection,
   onRowSelectionChange,
@@ -148,7 +150,7 @@ export function DataTable<TData, TValue>({
   return (
     <div>
       <span role="status" className="sr-only">{isLoading ? "Memuat data tabel..." : ""}</span>
-      <div className="space-y-3 py-4">
+      {!embedded && <div className="space-y-3 py-4">
 
         {/* Search + Action */}
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -204,7 +206,7 @@ export function DataTable<TData, TValue>({
                         )
                       }
                     >
-                      {(column.columnDef.meta as any)
+                      {(column.columnDef.meta as { label?: string; align?: string })
                         ?.label ?? column.id}
                     </DropdownMenuCheckboxItem>
                   ))}
@@ -218,8 +220,8 @@ export function DataTable<TData, TValue>({
         {toolbar2}
         {toolbar}
 
-      </div>
-      <div className="overflow-hidden rounded-md border">
+      </div>}
+      <div className={embedded ? "[&_th]:px-4 [&_td]:px-4 [&_thead]:bg-muted/40" : "overflow-hidden rounded-md border"}>
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -227,7 +229,7 @@ export function DataTable<TData, TValue>({
                 {headerGroup.headers.map((header) => {
                   return (
                     <TableHead key={header.id}
-                      className={(header.column.columnDef.meta as any)?.align === "center" ? "text-center" : ""}
+                      className={(header.column.columnDef.meta as { label?: string; align?: string })?.align === "center" ? "text-center" : ""}
                     >
 
                       {header.isPlaceholder
@@ -259,7 +261,7 @@ export function DataTable<TData, TValue>({
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}
-                      className={(cell.column.columnDef.meta as any)?.align === "center" ? "text-center" : ""}
+                      className={(cell.column.columnDef.meta as { label?: string; align?: string })?.align === "center" ? "text-center" : ""}
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
@@ -276,7 +278,7 @@ export function DataTable<TData, TValue>({
           </TableBody>
         </Table>
       </div>
-      <div className="flex flex-col gap-3 border-t py-4 sm:flex-row sm:items-center sm:justify-between">
+      {!embedded && <div className="flex flex-col gap-3 border-t py-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-sm text-muted-foreground">
           {table.getFilteredSelectedRowModel().rows.length} dari{" "}
           {table.getFilteredRowModel().rows.length} data dipilih
@@ -307,7 +309,7 @@ export function DataTable<TData, TValue>({
             </Button>
           </div>
         </div>
-      </div>
+      </div>}
     </div>
   )
 }

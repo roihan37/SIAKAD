@@ -1,6 +1,6 @@
 # Dataset demo SIAKAD
 
-Snapshot akademik: September 2026. Data ini menggambarkan kampus kecil untuk pengembangan, bukan laporan produksi. Seed tidak mengisi UKT atau log aktivitas karena kedua model belum tersedia.
+Snapshot akademik: September 2026. Data ini menggambarkan kampus kecil untuk pengembangan, bukan laporan produksi. Seed mengisi tagihan UKT dan pembayaran; log aktivitas belum diisi.
 
 ## Struktur
 
@@ -77,3 +77,19 @@ Verifikasi tanpa database langsung: `node -r ts-node/register/transpile-only tes
 Enam mahasiswa dengan KRS aktif DISETUJUI memperoleh tiga nilai lengkap per mahasiswa (18 transkrip tambahan). Tiga mata kuliah lainnya belum dinilai. KRS DIAJUKAN, DITOLAK, DRAFT, mahasiswa tanpa KRS, dan mahasiswa cuti tidak diberi nilai semester aktif. Nilai historis tetap lengkap untuk 16 mahasiswa (96 transkrip).
 
 Ini simulasi tampilan nilai: nilai semester aktif tersedia meskipun snapshot pertemuan September masih belum dimulai. Jangan menafsirkan dataset demo sebagai kronologi operasional sesungguhnya. Pilih tahun 2026/2027 GANJIL dan akun mahasiswa0–2 atau mahasiswa8–10 untuk melihat nilai aktif. Setiap akun tersebut memiliki totalSKS bernilai 9.
+
+## Keuangan UKT
+
+`seed-data/finance.ts` mengisi 30 tagihan dan 34 transaksi pembayaran pada database kosong. Nominal per semester TI Rp5.000.000, Manajemen Rp4.000.000. Total nominal Rp135.000.000, pembayaran berhasil Rp108.000.000, sisa Rp27.000.000.
+
+- Semester sebelumnya: 16 tagihan lunas, termasuk mahasiswa yang sekarang cuti.
+- Semester aktif: 14 tagihan; 6 lunas, 2 cicilan, 4 belum dibayar, 2 jatuh tempo (snapshot 14 September 2026).
+- `mahasiswa0`/`mahasiswa8`: lunas; `mahasiswa1`/`mahasiswa9`: lunas dengan dua pembayaran.
+- `mahasiswa3`/`mahasiswa11`: cicilan berhasil dan pembayaran berikutnya PENDING.
+- `mahasiswa4`/`mahasiswa12`: pembayaran FAILED, saldo belum berkurang.
+- `mahasiswa5`/`mahasiswa13`: cicilan dengan sisa melewati jatuh tempo 10 September.
+- `mahasiswa6`/`mahasiswa14`: pembayaran PENDING; mahasiswa7/15 cuti tanpa tagihan aktif.
+
+Ringkasan API hanya menghitung pembayaran SUCCESS; riwayat tetap menampilkan PENDING dan FAILED. Tanggal demo tetap pada September 2026, sehingga status efektif API dapat berubah menjadi jatuh tempo setelah tanggal tersebut. Pilih ID tahun akademik aktual dari database, bukan mengasumsikan ID 3.
+
+Nomor tagihan `UKT-SEED-...` dan pembayaran `PAY-SEED-...` deterministik dan di-upsert. Seed melewati tagihan yang bukan milik seed atau tagihan seed yang sudah memiliki pembayaran dari aplikasi. Karena itu data keuangan tambahan tetap terjaga dan jumlah bisa berbeda. `--reset` menghapus pembayaran sebelum tagihan dan mahasiswa untuk memenuhi foreign key.

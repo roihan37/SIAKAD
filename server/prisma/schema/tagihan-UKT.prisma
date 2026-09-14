@@ -1,0 +1,23 @@
+model TagihanUKT {
+  id               String        @id @default(uuid())
+  mahasiswaId      String
+  tahunAkademikId  Int
+
+  nomorTagihan     String        @unique
+  nominal          Decimal       @db.Decimal(15, 2)
+  jatuhTempo       DateTime
+
+  status           StatusTagihan @default(BELUM_DIBAYAR)
+
+  mahasiswa        Mahasiswa     @relation(fields: [mahasiswaId], references: [id])
+  tahunAkademik    TahunAkademik @relation(fields: [tahunAkademikId], references: [id])
+
+  pembayaran       PembayaranUKT[]
+
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@unique([mahasiswaId, tahunAkademikId])
+  @@index([tahunAkademikId])
+  @@index([status])
+}

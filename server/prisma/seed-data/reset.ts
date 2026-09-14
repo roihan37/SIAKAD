@@ -2,6 +2,8 @@ import { Prisma } from "@prisma/client";
 
 // Menghapus seluruh data aplikasi. Hanya untuk database demo dengan --reset.
 export async function resetDatabase(tx: Prisma.TransactionClient) {
+  await tx.pembayaranUKT.deleteMany();
+  await tx.tagihanUKT.deleteMany();
   await tx.absensi.deleteMany();
   await tx.pertemuan.deleteMany();
   await tx.transkrip.deleteMany();
@@ -24,4 +26,3 @@ export async function resetDatabase(tx: Prisma.TransactionClient) {
   await tx.tahunAkademik.deleteMany();
   await tx.ruangan.deleteMany();
 }
-

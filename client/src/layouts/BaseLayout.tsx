@@ -17,6 +17,7 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/s
 const pageLabels: Record<string, string> = {
   ...Object.fromEntries(comingSoonPages.map(({ path, title }) => [path.slice(1), title])),
   dashboard: "Dashboard",
+  "tagihan-ukt": "Tagihan UKT",
   presensi: "Presensi",
   nilai: "Nilai",
   mahasiswa: "Mahasiswa",

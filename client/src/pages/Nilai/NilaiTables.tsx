@@ -1,28 +1,36 @@
 import { Eye, MoreHorizontal, Pencil } from "lucide-react"
+import type { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { DataTable } from "@/components/tables/data-table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import type { CourseGradeItem, StudentGradeItem } from "@/types/grades"
 import { GradeStatusBadge } from "./GradeStatusBadge"
-import { courseStatus, grade, score, summarizeGrades, type CourseRecap, type GradeRecord } from "./nilai-data"
-
-function EmptyRow() { return <TableRow><TableCell colSpan={8} className="h-40 text-center"><p className="font-medium">Tidak ada nilai ditemukan</p><p className="mt-1 text-sm text-muted-foreground">Ubah pencarian atau reset filter untuk melihat data.</p></TableCell></TableRow> }
-function Headers({ labels }: { labels: string[] }) { return <TableHeader><TableRow className="bg-muted/40">{labels.map((label) => <TableHead key={label} className="px-4 py-3">{label}</TableHead>)}</TableRow></TableHeader> }
-export function StudentTable({ rows, onDetail, onCorrect }: { rows: GradeRecord[]; onDetail: (row: GradeRecord) => void; onCorrect: (row: GradeRecord) => void }) {
-  return <Table><Headers labels={["NIM", "Mahasiswa", "Kelas", "Mata Kuliah", "Nilai Akhir", "Grade", "Status", "Aksi"]} /><TableBody>
-    {!rows.length && <EmptyRow />}
-    {rows.map((row) => <TableRow key={row.id}><TableCell className="px-4 font-mono text-xs">{row.nim}</TableCell><TableCell className="px-4"><p className="font-medium">{row.name}</p><p className="text-xs text-muted-foreground">{row.prodi}</p></TableCell><TableCell className="px-4">{row.kelas}</TableCell><TableCell className="px-4"><p>{row.course}</p><p className="text-xs text-muted-foreground">{row.code}</p></TableCell><TableCell className="px-4 font-medium tabular-nums">{score(row.final)}</TableCell><TableCell className="px-4">{grade(row.final)}</TableCell><TableCell className="px-4"><GradeStatusBadge status={row.status} /></TableCell><TableCell className="px-4"><DropdownMenu><DropdownMenuTrigger render={<Button variant="ghost" size="icon" aria-label={`Aksi nilai ${row.name}, ${row.course}`}><MoreHorizontal /></Button>} /><DropdownMenuContent align="end" className="w-44"><DropdownMenuGroup><DropdownMenuItem onClick={() => onDetail(row)}><Eye />Lihat Detail</DropdownMenuItem><DropdownMenuItem onClick={() => onCorrect(row)}><Pencil />Koreksi Nilai</DropdownMenuItem></DropdownMenuGroup></DropdownMenuContent></DropdownMenu></TableCell></TableRow>)}
-  </TableBody></Table>
+import { score } from "./grade-format"
+const tableProps = { embedded: true, searchValue: "", onSearchChange: () => {}, sorting: [], onSortingChange: () => {}, pageIndex: 0, pageCount: 1, onPageChange: () => {} }
+export function StudentTable({ rows, loading, onDetail }: { rows: StudentGradeItem[]; loading: boolean; onDetail: (row: StudentGradeItem) => void }) {
+  const columns: ColumnDef<StudentGradeItem>[] = [
+    { id: "nim", header: "NIM", accessorFn: (row) => row.student.nim },
+    { id: "student", header: "Mahasiswa", cell: ({ row: { original: row } }) => <><p className="font-medium">{row.student.name}</p><p className="text-xs text-muted-foreground">{row.student.studyProgram.name}</p></> },
+    { id: "class", header: "Kelas", accessorFn: (row) => row.class.name },
+    { id: "course", header: "Mata Kuliah", cell: ({ row: { original: row } }) => <><p>{row.course.name}</p><p className="text-xs text-muted-foreground">{row.course.code}</p></> },
+    { id: "finalScore", header: "Nilai Akhir", cell: ({ row }) => score(row.original.finalScore) },
+    { id: "grade", header: "Grade", cell: ({ row }) => row.original.grade ?? "—" },
+    { id: "status", header: "Status", cell: ({ row }) => <GradeStatusBadge status={row.original.status} /> },
+    { id: "actions", header: "Aksi", cell: ({ row: { original: row } }) => <DropdownMenu><DropdownMenuTrigger render={<Button variant="ghost" size="icon" aria-label={`Aksi nilai ${row.student.name}, ${row.course.name}`}><MoreHorizontal /></Button>} /><DropdownMenuContent align="end" className="w-64"><DropdownMenuGroup><DropdownMenuItem disabled={!row.kelasMataKuliahId} onClick={() => onDetail(row)}><Eye />Lihat Detail</DropdownMenuItem>{!row.kelasMataKuliahId && <p className="px-2 py-1 text-xs text-muted-foreground">Detail belum tersedia dari rekap mahasiswa.</p>}<DropdownMenuItem disabled><Pencil />Koreksi Nilai</DropdownMenuItem><p className="px-2 py-1 text-xs text-muted-foreground">Layanan koreksi belum tersedia.</p></DropdownMenuGroup></DropdownMenuContent></DropdownMenu> },
+  ]
+  return <DataTable {...tableProps} columns={columns} data={rows} isLoading={loading} getRowId={(row) => row.krsDetailId} />
 }
-export function CourseTable({ rows, onDetail }: { rows: CourseRecap[]; onDetail: (row: CourseRecap) => void }) {
-  return <Table><Headers labels={["Kode", "Mata Kuliah", "Kelas", "Dosen", "Jumlah Mahasiswa", "Nilai Terisi", "Rata-rata", "Status", "Aksi"]} /><TableBody>
-    {!rows.length && <TableRow><TableCell colSpan={9} className="h-40 text-center text-muted-foreground">Tidak ada mata kuliah sesuai filter. Coba reset filter.</TableCell></TableRow>}
-    {rows.map((group) => { const row = group.records[0], summary = summarizeGrades(group.records)
-      return <TableRow key={group.id}><TableCell className="px-4 font-mono text-xs">{row.code}</TableCell><TableCell className="px-4 font-medium">{row.course}</TableCell><TableCell className="px-4">{row.kelas}</TableCell><TableCell className="px-4">{row.lecturer}</TableCell><TableCell className="px-4">{summary.students}</TableCell><TableCell className="px-4">{summary.filled}/{group.records.length}</TableCell><TableCell className="px-4 tabular-nums">{score(summary.average)}</TableCell><TableCell className="px-4"><GradeStatusBadge status={courseStatus(group.records)} /></TableCell><TableCell className="px-4"><Button variant="ghost" size="sm" onClick={() => onDetail(group)} aria-label={`Detail ${row.course} ${row.kelas}`}><Eye />Detail</Button></TableCell></TableRow>
-    })}
-  </TableBody></Table>
-}
-export function CourseDetailDialog({ group, onClose }: { group: CourseRecap; onClose: () => void }) {
-  const row = group.records[0], summary = summarizeGrades(group.records)
-  return <Dialog open onOpenChange={(open) => { if (!open) onClose() }}><DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl"><DialogHeader><DialogTitle>{row.code} · {row.course}</DialogTitle><DialogDescription>{row.kelas} · {row.lecturer} · {row.period}</DialogDescription></DialogHeader><p className="text-sm text-muted-foreground">Sesuai filter aktif: {summary.students} mahasiswa · {summary.filled} nilai terisi · Rata-rata {score(summary.average)}</p><Table><Headers labels={["Mahasiswa", "Nilai Akhir", "Grade", "Status"]} /><TableBody>{group.records.map((student) => <TableRow key={student.id}><TableCell className="px-4"><p className="font-medium">{student.name}</p><p className="text-xs text-muted-foreground">{student.nim}</p></TableCell><TableCell className="px-4">{score(student.final)}</TableCell><TableCell className="px-4">{grade(student.final)}</TableCell><TableCell className="px-4"><GradeStatusBadge status={student.status} /></TableCell></TableRow>)}</TableBody></Table><DialogFooter><Button variant="outline" onClick={onClose}>Tutup</Button></DialogFooter></DialogContent></Dialog>
+export function CourseTable({ rows, loading, onDetail }: { rows: CourseGradeItem[]; loading: boolean; onDetail: (row: CourseGradeItem) => void }) {
+  const columns: ColumnDef<CourseGradeItem>[] = [
+    { id: "code", header: "Kode", accessorFn: (row) => row.course.code },
+    { id: "course", header: "Mata Kuliah", accessorFn: (row) => row.course.name },
+    { id: "class", header: "Kelas", accessorFn: (row) => row.class.name },
+    { id: "lecturer", header: "Dosen", accessorFn: (row) => row.lecturer.name },
+    { accessorKey: "studentCount", header: "Jumlah Mahasiswa" },
+    { id: "filled", header: "Nilai Terisi", cell: ({ row }) => `${row.original.gradedCount}/${row.original.studentCount}` },
+    { id: "average", header: "Rata-rata", cell: ({ row }) => score(row.original.averageFinalScore) },
+    { id: "status", header: "Status", cell: ({ row }) => <GradeStatusBadge status={row.original.status} /> },
+    { id: "actions", header: "Aksi", cell: ({ row }) => <Button variant="ghost" size="sm" onClick={() => onDetail(row.original)}><Eye />Detail</Button> },
+  ]
+  return <DataTable {...tableProps} columns={columns} data={rows} isLoading={loading} getRowId={(row) => String(row.kelasMataKuliahId)} />
 }

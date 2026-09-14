@@ -27,9 +27,27 @@ prisma.$transaction=async fn=>fn(tx);
 (async()=>{
 for(let run=0;run<2;run++){
  const targets=await seedCampus();assert.equal(targets.length,2);
- for(const [model,count] of Object.entries({user:23,fakultas:2,prodi:2,dosen:6,mahasiswa:16,kelas:4,jadwal:24,kRS:28,kRSDetail:168,transkrip:114,periodeKRS:2,riwayatStatusMahasiswa:16,pertemuan:16,absensi:64}))assert.equal(db[model].length,count,model);
+ for(const [model,count] of Object.entries({user:23,fakultas:2,prodi:2,dosen:6,mahasiswa:16,kelas:4,jadwal:24,kRS:28,kRSDetail:168,transkrip:114,periodeKRS:2,riwayatStatusMahasiswa:16,pertemuan:16,absensi:64,tagihanUKT:30,pembayaranUKT:34}))assert.equal(db[model].length,count,model);
  for(const mark of db.absensi){const session=db.pertemuan.find(x=>x.id===mark.pertemuanId);assert.equal(session.status,'SELESAI');const schedule=db.jadwal.find(x=>x.id===session.jadwalId);assert.ok(db.kRS.some(k=>k.mahasiswaId===mark.mahasiswaId&&k.tahunAkademikId===schedule.tahunAkademikId&&k.status==='DISETUJUI'&&db.kRSDetail.some(d=>d.krsId===k.id&&d.kelasMataKuliahId===schedule.kelasMataKuliahId&&d.status==='DISETUJUI')));}
  assert.equal(db.tahunAkademik.filter(x=>x.isActive).length,1);
+ const activeYear=db.tahunAkademik.find(x=>x.isActive);
+ const activeBills=db.tagihanUKT.filter(x=>x.tahunAkademikId===activeYear.id);
+ assert.equal(activeBills.length,14);
+ assert.equal(activeBills.filter(x=>x.status==='LUNAS').length,6);
+ assert.equal(activeBills.filter(x=>x.status==='SEBAGIAN').length,2);
+ assert.equal(activeBills.filter(x=>x.status==='JATUH_TEMPO').length,2);
+ assert.equal(activeBills.filter(x=>x.status==='BELUM_DIBAYAR').length,4);
+ for(const bill of db.tagihanUKT){
+  const student=db.mahasiswa.find(x=>x.id===bill.mahasiswaId);assert.ok(student);
+  if(bill.tahunAkademikId===activeYear.id)assert.equal(student.status,'Aktif');
+  const payments=db.pembayaranUKT.filter(x=>x.tagihanId===bill.id);
+  const paid=payments.filter(x=>x.status==='SUCCESS').reduce((sum,x)=>sum+Number(x.nominal),0);
+  assert.ok(paid<=Number(bill.nominal));
+  assert.equal(paid===Number(bill.nominal),bill.status==='LUNAS');
+  for(const payment of payments)assert.equal(payment.paidAt!==null,payment.status==='SUCCESS');
+ }
+ assert.equal(new Set(db.tagihanUKT.map(x=>x.nomorTagihan)).size,30);
+ assert.equal(new Set(db.pembayaranUKT.map(x=>x.nomorPembayaran)).size,34);
  for(const detail of db.kRSDetail){const krs=db.kRS.find(x=>x.id===detail.krsId),assignment=db.kelasMataKuliah.find(x=>x.id===detail.kelasMataKuliahId),kelas=db.kelas.find(x=>x.id===assignment.kelasId),student=db.mahasiswa.find(x=>x.id===krs.mahasiswaId);assert.equal(kelas.tahunAkademikId,krs.tahunAkademikId);assert.equal(kelas.prodiId,student.prodiId);}
  for(const grade of db.transkrip){const detail=db.kRSDetail.find(x=>x.id===grade.krsDetailId),krs=db.kRS.find(x=>x.id===detail.krsId);assert.equal(grade.mahasiswaId,krs.mahasiswaId);assert.equal(detail.status,'DISETUJUI');assert.equal(krs.status,'DISETUJUI');assert.ok(grade.nilaiAngka>=0&&grade.nilaiAngka<=100);assert.ok(grade.bobot>=0&&grade.bobot<=4);assert.ok(grade.nilaiHuruf);}
 }

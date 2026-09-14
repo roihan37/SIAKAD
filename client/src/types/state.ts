@@ -1,5 +1,5 @@
 import type { LecturerDetailResponse } from "./lecturer-detail"
-import type { Dosen, Fakultas, Jadwal, KRS, Kurikulum, Mahasiswa, MataKuliah, Nilai, ProgramStudi, riwayatSemester, Ruangan, StudentDetail, StudentKRS, StudentNilai, TahunAkademik } from "./campus"
+import type { Dosen, Fakultas, Jadwal, KRS, Kurikulum, Mahasiswa, MataKuliah, ProgramStudi, riwayatSemester, Ruangan, StudentDetail, StudentKRS, StudentNilai, TahunAkademik } from "./campus"
 
 export interface AuthState {
     isLoading : boolean

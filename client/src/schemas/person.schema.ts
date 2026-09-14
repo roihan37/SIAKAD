@@ -4,9 +4,6 @@ import {
   email,
   phoneNumber,
   gender,
-  lecturerStatus,
-  jabatan,
-  numericValue,
 } from "./common.schema"
 
 export const personSchema = z.object({

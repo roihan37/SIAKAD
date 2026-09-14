@@ -6,8 +6,51 @@ import { AvatarService } from "../services/avatar.service";
 import { S3Service } from "../services/s3.service";
 import { resourceId, text } from "../validation/master-data";
 import { attendanceCounts, percentage } from "../services/attendance.service";
+import { getStudentFinance, listStudentTuitionBills } from "../services/tuition.service";
 
 export class Controller {
+
+    static async getFinanceyId(req: Request, res: Response, next: NextFunction) {
+        try {
+            const userId = text("ID user mahasiswa", 100)(req.params.id);
+            const tahunAkademikId = req.query.tahunAkademikId === undefined ? undefined : resourceId(req.query.tahunAkademikId);
+            const now = new Date();
+            const data = await prisma.$transaction(tx => getStudentFinance(tx, userId, tahunAkademikId, now), {
+                isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
+            });
+            return res.status(200).json({ message: "Student financial data retrieved successfully", data });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    static async getUKTById(req: Request, res: Response, next: NextFunction) {
+        try {
+            const userId = text("ID user mahasiswa", 100)(req.params.id);
+            const now = new Date();
+            const data = await prisma.$transaction(tx => listStudentTuitionBills(tx, userId, now), {
+                isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
+            });
+            return res.status(200).json({ message: "Tuition bills retrieved successfully", data });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    static async getMyUKT(req: Request, res: Response, next: NextFunction) {
+        try {
+            if (!req.userLogin) throw { name: "TokenInvalid" };
+            if (req.userLogin.role !== "Mahasiswa") throw { name: "Forbidden", message: "Akses hanya untuk mahasiswa." };
+            const userId = req.userLogin.id;
+            const now = new Date();
+            const data = await prisma.$transaction(tx => listStudentTuitionBills(tx, userId, now), {
+                isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
+            });
+            return res.status(200).json({ message: "Tuition bills retrieved successfully", data });
+        } catch (error) {
+            next(error);
+        }
+    }
 
     static async getStudentAttendance(req: Request, res: Response, next: NextFunction) {
         try {

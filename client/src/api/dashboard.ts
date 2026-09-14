@@ -2,8 +2,7 @@ import { api } from "@/api/axios"
 import type { AcademicYearOption, DashboardData } from "@/types/dashboard"
 
 export async function getDashboard(tahunAkademikId: number | undefined, signal: AbortSignal) {
-  const url = new URL("/api/admin/dashboard", api.defaults.baseURL).toString()
-  const response = await api.get<{ data: DashboardData }>(url, { params: { tahunAkademikId }, signal })
+  const response = await api.get<{ data: DashboardData }>("/admin/dashboard", { params: { tahunAkademikId }, signal })
   return response.data.data
 }
 

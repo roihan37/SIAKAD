@@ -1,0 +1,17 @@
+export type GradeStatus = "BELUM_DIINPUT" | "BELUM_LENGKAP" | "FINAL"
+export type Pagination = { page: number; limit: number; totalRows: number; totalPages: number }
+export type GradeFilters = { academicYearId?: number; studyProgramId?: number; classId?: number; courseId?: number; lecturerId?: string; status?: GradeStatus; search?: string }
+export type GradeQuery = GradeFilters & { page?: number; limit?: number }
+export type GradeSummary = { totalStudents: number; totalGradeRecords: number; completedGrades: number; incompleteGrades: number; averageFinalScore: number | null }
+type Named = { id: number; name: string }
+type Course = Named & { code: string }
+type Student = { id: string; studentId: string; nim: string; name: string }
+type Score = { finalScore: number | null; grade: string | null; status: GradeStatus }
+export type StudentGradeItem = Score & { krsDetailId: string; kelasMataKuliahId?: number; student: Student & { studyProgram: Named }; class: Named; course: Course }
+export type CourseGradeItem = { kelasMataKuliahId: number; course: Course; class: Named; lecturer: { id: string; lecturerId: string; name: string }; studentCount: number; gradedCount: number; averageFinalScore: number | null; status: GradeStatus }
+export type StudentGradeDetail = Score & { student: Student & { class: Named; studyProgram: Named }; course: Course & { kelasMataKuliahId: number; lecturer: { id: string; name: string } }; components: { assignment: number | null; midterm: number | null; finalExam: number | null }; corrections: { id: string; changedById: string; previousFinalScore: number | null; newFinalScore: number | null; reason: string; createdAt: string }[] }
+export type CourseGradeDetail = { course: { kelasMataKuliahId: number; code: string; name: string; class: string; lecturer: string; academicYear: { id: number; year: string; semester: string } }; summary: { studentCount: number; gradedCount: number; averageFinalScore: number | null }; students: (Student & Score)[] }
+export type StudentGradesResponse = { grades: StudentGradeItem[]; pagination: Pagination }
+export type CourseGradesResponse = { courses: CourseGradeItem[]; pagination: Pagination }
+export type GradeOption = { id: string; label: string; active?: boolean; academicYearId?: number; studyProgramId?: number }
+export type GradeOptions = { years: GradeOption[]; programs: GradeOption[]; classes: GradeOption[]; courses: GradeOption[]; lecturers: GradeOption[] }

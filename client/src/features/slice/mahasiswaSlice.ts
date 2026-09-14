@@ -142,7 +142,7 @@ const mahasiswaSilce = createSlice({
             state.studentDetail = action.payload
             
         })
-        .addCase(getStudentById.rejected, (state, action) =>{
+        .addCase(getStudentById.rejected, (state) =>{
             state.isLoadingStudentsDetail = false
             state.studentDetail = null
         })
@@ -156,7 +156,7 @@ const mahasiswaSilce = createSlice({
             state.riwayatSemester = action.payload.riwayatSemester
             
         })
-        .addCase(getStudentHistorySemester.rejected, (state, action) =>{
+        .addCase(getStudentHistorySemester.rejected, (state) =>{
             state.isLoadingStudentsDetail = false
             state.riwayatSemester = []
         })
@@ -170,7 +170,7 @@ const mahasiswaSilce = createSlice({
             state.krsMahasiswa = action.payload.krs
             
         })
-        .addCase(getStudentKRS.rejected, (state, action) =>{
+        .addCase(getStudentKRS.rejected, (state) =>{
             state.isLoadingStudentsDetail = false
             state.krsMahasiswa = null
         })
@@ -184,7 +184,7 @@ const mahasiswaSilce = createSlice({
             state.nilaiMahasiswa = action.payload.nilai
             
         })
-        .addCase(getStudentNilai.rejected, (state, action) =>{
+        .addCase(getStudentNilai.rejected, (state) =>{
             state.isLoadingStudentsDetail = false
             state.nilaiMahasiswa = null
         })

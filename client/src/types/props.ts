@@ -1,6 +1,4 @@
-import type { DosenFormInput, DosenFormValues, FakultasFormInput, FakultasFormValues, MahasiswaFormInput, MahasiswaFormValues, ProdiFormValues, ProdiFromInput } from "@/schemas";
 import type { Dosen, Fakultas, ProgramStudi } from "./campus";
-import type { UseFormReturn } from "react-hook-form";
 
 export type FormErrors = Record<string, string>
 

@@ -1,3 +1,7 @@
+import { gradeFilters, gradeId, gradeUserId } from "../validation/grades";
+import { gradeSummary, studentGradeRecap, courseGradeRecap, courseGradeDetail, studentGradeDetail } from "../services/grades.service";
+import { listTuitionBills } from "../services/tuition.service";
+import { billGenerationBody, billListQuery } from "../validation/tuition";
 import { NextFunction, Request, Response } from "express";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
@@ -5,6 +9,89 @@ import { resourceId } from "../validation/master-data";
 import { countScheduleConflicts, jakartaWeekday } from "../services/dashboard.service";
 
 export class Controller {
+  static async getGradeSummary(req: Request, res: Response, next: NextFunction) {
+    try {
+      const filters = gradeFilters(req.query);
+      const data = await prisma.$transaction(tx => gradeSummary(tx, filters), { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
+      return res.status(200).json({ message: "Grade summary retrieved successfully", data });
+    } catch (error) { next(error); }
+  }
+
+  static async getStudentGradeRecap(req: Request, res: Response, next: NextFunction) {
+    try {
+      const filters = gradeFilters(req.query);
+      const data = await prisma.$transaction(tx => studentGradeRecap(tx, filters), { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
+      return res.status(200).json({ message: "Student grade recap retrieved successfully", data });
+    } catch (error) { next(error); }
+  }
+
+  static async getCourseGradeRecap(req: Request, res: Response, next: NextFunction) {
+    try {
+      const filters = gradeFilters(req.query);
+      const data = await prisma.$transaction(tx => courseGradeRecap(tx, filters), { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
+      return res.status(200).json({ message: "Course grade recap retrieved successfully", data });
+    } catch (error) { next(error); }
+  }
+
+  static async getCourseGradeDetail(req: Request, res: Response, next: NextFunction) {
+    try {
+      const filters = gradeFilters(req.query);
+      const assignmentId = gradeId(req.params.kelasMataKuliahId, "kelasMataKuliahId");
+      const data = await prisma.$transaction(tx => courseGradeDetail(tx, filters, assignmentId), { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
+      return res.status(200).json({ message: "Course grade detail retrieved successfully", data });
+    } catch (error) { next(error); }
+  }
+
+  static async getStudentGradeDetail(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = gradeUserId(req.params.studentId);
+      const assignmentId = gradeId(req.params.kelasMataKuliahId, "kelasMataKuliahId");
+      const data = await prisma.$transaction(tx => studentGradeDetail(tx, userId, assignmentId), { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
+      return res.status(200).json({ message: "Student grade detail retrieved successfully", data });
+    } catch (error) { next(error); }
+  }
+
+  static async getUKTBills(req: Request, res: Response, next: NextFunction) {
+    try {
+      const filters = billListQuery(req.query);
+      const now = new Date();
+      const data = await prisma.$transaction((tx) => listTuitionBills(tx, filters, now), {
+        isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
+      });
+      return res.status(200).json({ message: "Tuition bills retrieved successfully", data });
+    } catch (error) { next(error); }
+  }
+
+  static async generateBillsUKT(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { tahunAkademikId, prodiId, angkatan, nominal, jatuhTempo } = billGenerationBody(req.body);
+      const data = await prisma.$transaction(async (tx) => {
+        const year = await tx.tahunAkademik.findUnique({ where: { id: tahunAkademikId }, select: { id: true } });
+        if (!year) throw { name: "NotFound", message: "Tahun akademik tidak ditemukan." };
+        const prodi = await tx.prodi.findUnique({ where: { id: prodiId }, select: { id: true } });
+        if (!prodi) throw { name: "NotFound", message: "Program studi tidak ditemukan." };
+        const students = await tx.mahasiswa.findMany({
+          where: { prodiId, angkatan, status: "Aktif" }, select: { id: true }, orderBy: { id: "asc" },
+        });
+        let generated = 0;
+        for (let index = 0; index < students.length; index += 1000) {
+          const result = await tx.tagihanUKT.createMany({
+            data: students.slice(index, index + 1000).map((student) => ({
+              mahasiswaId: student.id, tahunAkademikId,
+              nomorTagihan: `UKT-${tahunAkademikId}-${student.id}`,
+              nominal, jatuhTempo, status: "BELUM_DIBAYAR",
+            })),
+            // Unique mahasiswaId/tahunAkademikId juga melindungi request bersamaan.
+            skipDuplicates: true,
+          });
+          generated += result.count;
+        }
+        return { generated, skipped: students.length - generated };
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted, timeout: 30000 });
+      return res.status(200).json({ message: "Tuition bills generated successfully", data });
+    } catch (error) { next(error); }
+  }
+
   static async getDashboard(req: Request, res: Response, next: NextFunction) {
     try {
       const yearId = req.query.tahunAkademikId === undefined ? undefined : resourceId(req.query.tahunAkademikId);

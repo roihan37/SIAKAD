@@ -1,0 +1,17 @@
+model RiwayatKoreksiNilai {
+  id            String   @id @default(uuid())
+
+  nilaiId       String
+  changedById   String
+
+  nilaiAkhirLama Decimal? @db.Decimal(5, 2)
+  nilaiAkhirBaru Decimal? @db.Decimal(5, 2)
+
+  alasan        String
+
+  nilai         Nilai @relation(fields: [nilaiId], references: [id], onDelete: Cascade )
+
+  createdAt     DateTime @default(now())
+
+  @@index([nilaiId])
+}

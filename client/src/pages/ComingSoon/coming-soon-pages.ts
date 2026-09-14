@@ -1,7 +1,6 @@
 // Shared by route registration, navigation, and breadcrumb labels.
 export const comingSoonPages = [
   { path: "/skripsi", title: "Skripsi" },
-  { path: "/tagihan-ukt", title: "Tagihan UKT" },
   { path: "/pembayaran", title: "Pembayaran" },
   { path: "/beasiswa", title: "Beasiswa" },
   { path: "/manajemen-user", title: "Manajemen User" },

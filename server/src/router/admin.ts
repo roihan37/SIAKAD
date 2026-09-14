@@ -10,4 +10,13 @@ router.get("/presensi/students", adminMiddleware, AttendanceController.students)
 router.get("/presensi/meetings", adminMiddleware, AttendanceController.meetings);
 router.get("/presensi/meetings/:meetingId", adminMiddleware, AttendanceController.meetingDetail);
 router.get("/presensi/filters", adminMiddleware, AttendanceController.filters);
+
+router.post("/ukt/bills/generate", adminMiddleware, Controller.generateBillsUKT);
+router.get("/ukt/bills", adminMiddleware, Controller.getUKTBills);
+
+router.get("/grades/summary", adminMiddleware, Controller.getGradeSummary);
+router.get("/grades/students", adminMiddleware, Controller.getStudentGradeRecap);
+router.get("/grades/courses", adminMiddleware, Controller.getCourseGradeRecap);
+router.get("/grades/courses/:kelasMataKuliahId/students", adminMiddleware, Controller.getCourseGradeDetail);
+router.get("/grades/students/:studentId/courses/:kelasMataKuliahId", adminMiddleware, Controller.getStudentGradeDetail);
 export default router;

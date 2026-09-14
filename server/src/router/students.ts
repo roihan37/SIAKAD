@@ -18,4 +18,9 @@ router.patch("/bulk/status",adminMiddleware,Controller.bulkUpdateStatus);
 router.delete("/bulk",adminMiddleware,Controller.bulkDelete);
 router.delete("/:id",adminMiddleware,Controller.deleteUserById);
 
+router.get("/me/ukt",Controller.getMyUKT);
+router.get("/:id/ukt",adminMiddleware,Controller.getUKTById);
+router.get("/:id/keuangan",adminMiddleware,Controller.getFinanceyId);
+
+
 export default router

@@ -116,7 +116,7 @@ const data = {
         {
           title: "Tagihan UKT",
           icon: <ReceiptTextIcon />,
-          url: upcomingPath("Tagihan UKT"),
+          url: "/tagihan-ukt",
         },
         {
           title: "Pembayaran",

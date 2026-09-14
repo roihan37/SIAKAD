@@ -1,4 +1,5 @@
 import { seedGrade } from "./grades";
+import { seedStudentFinance } from "./finance";
 import { seedAttendance } from "./attendance";
 import { Gender, JabatanDosen, KRSStatus, Pendidikan, Role, Status, StatusKRS } from "@prisma/client";
 import { prisma } from "../../src/lib/prisma";
@@ -69,6 +70,7 @@ export async function seedCampus(reset = false) {
         const advisor = lecturers[i % 3];
         const studentData = { nim, angkatan: 2025, semester: 3, status: i === 7 ? Status.Cuti : Status.Aktif, prodiId: prodi.id, dosenId: advisor.id };
         const student = await tx.mahasiswa.upsert({ where: { userId: user.id }, update: studentData, create: { userId: user.id, ...studentData } });
+        await seedStudentFinance(tx, student, years, p, i);
         if (index === 0) photoTargets.push({ userId: user.id, entity: "students" });
         await tx.riwayatStatusMahasiswa.deleteMany({ where: { mahasiswaId: student.id, alasan: { startsWith: "[Seed]" } } });
         await tx.riwayatStatusMahasiswa.create({ data: { mahasiswaId: student.id, statusLama: i === 7 ? Status.Aktif : null, statusBaru: student.status, alasan: i === 7 ? "[Seed] Cuti satu semester atas permohonan mahasiswa." : "[Seed] Registrasi ulang semester ganjil 2026/2027.", tanggal: new Date("2026-09-01T08:00:00+07:00") } });
@@ -100,4 +102,3 @@ export async function seedCampus(reset = false) {
     return photoTargets;
   }, { timeout: 120000, maxWait: 10000 });
 }
-

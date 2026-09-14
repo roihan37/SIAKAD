@@ -1,0 +1,22 @@
+model PembayaranUKT {
+  id                String           @id @default(uuid())
+  tagihanId          String
+
+  nomorPembayaran    String           @unique
+  nominal            Decimal          @db.Decimal(15, 2)
+
+  metode             MetodePembayaran
+  status             StatusPembayaran @default(PENDING)
+
+  paidAt             DateTime?
+  reference          String?
+  buktiPembayaranKey String?
+
+  tagihan             TagihanUKT       @relation(fields: [tagihanId], references: [id])
+
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  @@index([tagihanId])
+  @@index([status])
+}
