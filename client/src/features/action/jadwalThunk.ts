@@ -1,5 +1,6 @@
 import { api } from "@/api/axios";
-import type { Jadwal } from "@/types/campus";
+import { isAxiosError } from "axios";
+export type CreateJadwalPayload = { kelasMataKuliahId: number; tahunAkademikId: number; ruanganId: number; hari: string; jamMulai: string; jamSelesai: string };
 import type { PaginationParams } from "@/types/param";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
@@ -35,9 +36,9 @@ export const getAllJadwal = createAsyncThunk(
       // console.log("response.data", response.data);
       return response.data;
 
-    } catch (err: any) {
+    } catch (err) {
       return thunkAPI.rejectWithValue(
-        err.response?.data?.message ?? "Terjadi kesalahan"
+        isAxiosError<{ message?: string }>(err) ? err.response?.data?.message ?? "Gagal memuat jadwal" : "Gagal memuat jadwal"
       );
     }
   }
@@ -45,12 +46,12 @@ export const getAllJadwal = createAsyncThunk(
 
 export const createJadwal = createAsyncThunk(
   "jadwal/create",
-  async (payload: Jadwal, thunkAPI) => {
+  async (payload: CreateJadwalPayload, thunkAPI) => {
     try {
-      const response = await api.post("/ruangan", payload);
+      const response = await api.post("/jadwal", payload);
       return response.data;
-    } catch (err: any) {
-      return thunkAPI.rejectWithValue(err.response?.data?.message ?? "Gagal membuat Jadwal");
+    } catch (err) {
+      return thunkAPI.rejectWithValue(isAxiosError<{ message?: string }>(err) ? err.response?.data?.message ?? "Gagal membuat jadwal" : "Gagal membuat jadwal");
     }
   }
 );

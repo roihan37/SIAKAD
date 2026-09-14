@@ -1,3 +1,5 @@
+import tuitionReducer from "@/features/slice/tuitionSlice"
+import studentAttendanceReducer from "@/features/slice/studentAttendanceSlice"
 import gradeReducer from "@/features/slice/gradeSlice"
 import attendanceReducer from "@/features/slice/attendanceSlice"
 import dashboardReducer from "@/features/slice/dashboardSlice"
@@ -19,6 +21,8 @@ import { toastMiddleware } from './middleware/toast-middleware'
 
 export const store = configureStore({
   reducer: {
+    tuition: tuitionReducer,
+    studentAttendance: studentAttendanceReducer,
     grades: gradeReducer,
     auth: authReducer,
     dashboard: dashboardReducer,

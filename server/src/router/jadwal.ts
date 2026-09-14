@@ -4,7 +4,7 @@ import { Controller } from "../controllers/jadwalController";
 
 const router = express.Router();
 
-router.post("/", Controller.createJadwal);
+router.post("/", adminMiddleware, Controller.createJadwal);
 router.put("/:id", adminMiddleware, Controller.updateJadwal);
 router.patch("/:id", adminMiddleware, Controller.updateJadwal);
 router.get("/", Controller.getAllJadwal);

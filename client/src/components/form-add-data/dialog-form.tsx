@@ -1,3 +1,4 @@
+import { JadwalFormDialog } from "./jadwal-form"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -115,6 +116,11 @@ const entityConfig = {
 
 
 export function DialogForm() {
+  const { pathname } = useLocation()
+  return pathname === "/jadwal-kuliah" ? <JadwalFormDialog /> : <EntityDialogForm />
+}
+
+function EntityDialogForm() {
   const { pathname } = useLocation()
 
   const dispatch = useAppDispatch()

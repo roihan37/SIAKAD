@@ -1,4 +1,4 @@
-import { seedGrade } from "./grades";
+import { seedAssessment, seedGrade } from "./grades";
 import { seedStudentFinance } from "./finance";
 import { seedAttendance } from "./attendance";
 import { Gender, JabatanDosen, KRSStatus, Pendidikan, Role, Status, StatusKRS } from "@prisma/client";
@@ -87,6 +87,7 @@ export async function seedCampus(reset = false) {
           for (const [courseIndex, assignment] of classesByPeriod[periodIndex].entries()) {
             const approved = status === StatusKRS.DISETUJUI;
             const detail = await tx.kRSDetail.create({ data: { krsId: krs.id, kelasMataKuliahId: assignment.id, status: approved ? KRSStatus.DISETUJUI : status === StatusKRS.DITOLAK ? KRSStatus.DITOLAK : KRSStatus.MENUNGGU, approvedBy: approved ? advisor.userId : null, approvedAt: approved ? new Date(`${periods[periodIndex].approval}T09:00:00+07:00`) : null } });
+            if (approved && (periodIndex === 0 || courseIndex < 4)) await seedAssessment(tx, detail.id, index, courseIndex, periodIndex);
             // Semester aktif: tiga mata kuliah bernilai sebagai simulasi UI.
             if (approved && (periodIndex === 0 || courseIndex < 3)) {
               const grade = seedGrade(index, courseIndex, periodIndex);

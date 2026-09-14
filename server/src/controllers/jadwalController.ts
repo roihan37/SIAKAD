@@ -1,5 +1,6 @@
+import { validateSchedule } from "../services/schedule.service";
 import { resourceId, patchBody } from "../validation/master-data";
-import { jadwalPatch } from "../validation/academic-data";
+import { jadwalCreate, jadwalPatch } from "../validation/academic-data";
 import { NextFunction, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { Prisma } from "@prisma/client";
@@ -16,9 +17,12 @@ const HARI_URUTAN: Record<string, number> = {
 export class Controller {
   static async createJadwal(req: Request, res: Response, next: NextFunction) {
     try {
-      const { kelasMataKuliahId, tahunAkademikId, ruanganId, hari, jamMulai, jamSelesai } = req.body;
-      const j = await prisma.jadwal.create({ data: { hariUrutan: HARI_URUTAN[hari], kelasMataKuliahId: Number(kelasMataKuliahId), tahunAkademikId: Number(tahunAkademikId), ruanganId: Number(ruanganId), hari, jamMulai, jamSelesai } });
-      res.status(200).json({ message: "Jadwal created", j });
+      const data = jadwalCreate(req.body);
+      const j = await prisma.$transaction(async (tx) => {
+        await validateSchedule(tx, data);
+        return tx.jadwal.create({ data: { ...data, hariUrutan: HARI_URUTAN[data.hari] } });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      res.status(201).json({ message: "Jadwal created", data: j, j });
     } catch (error) { next(error); }
   }
 
@@ -30,24 +34,7 @@ export class Controller {
         const existing = await tx.jadwal.findUnique({ where: { id } });
         if (!existing) throw { name: "NotFound", message: "Jadwal tidak ditemukan." };
         const data = { ...existing, ...patch };
-        if (data.jamMulai >= data.jamSelesai) throw { name: "BadRequest", message: "Jam selesai harus setelah jam mulai." };
-        const assignment = await tx.kelasMataKuliah.findUnique({
-          where: { id: data.kelasMataKuliahId }, include: { kelas: true },
-        });
-        if (!assignment) throw { name: "NotFound", message: "Kelas mata kuliah tidak ditemukan." };
-        if (!await tx.tahunAkademik.findUnique({ where: { id: data.tahunAkademikId } })) throw { name: "NotFound", message: "Tahun akademik tidak ditemukan." };
-        if (assignment.kelas.tahunAkademikId !== data.tahunAkademikId) throw { name: "BadRequest", message: "Tahun akademik jadwal harus sesuai dengan kelas." };
-        if (!await tx.ruangan.findUnique({ where: { id: data.ruanganId } })) throw { name: "NotFound", message: "Ruangan tidak ditemukan." };
-        const conflict = await tx.jadwal.findFirst({ where: {
-          id: { not: id }, tahunAkademikId: data.tahunAkademikId, hari: data.hari,
-          jamMulai: { lt: data.jamSelesai }, jamSelesai: { gt: data.jamMulai },
-          OR: [
-            { ruanganId: data.ruanganId },
-            { kelasMataKuliah: { dosenId: assignment.dosenId } },
-            { kelasMataKuliah: { kelasId: assignment.kelasId } },
-          ],
-        }, select: { id: true } });
-        if (conflict) throw { name: "Conflict", message: "Jadwal bentrok dengan ruangan, dosen, atau kelas pada waktu yang sama." };
+        await validateSchedule(tx, data, id);
         return tx.jadwal.update({ where: { id }, data: { ...patch, hariUrutan: HARI_URUTAN[data.hari] } });
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
       res.status(200).json({ message: "Jadwal berhasil diperbarui", data: j, j });

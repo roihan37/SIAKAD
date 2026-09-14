@@ -18,7 +18,7 @@ const tx=new Proxy({}, {get(_,model){db[model]??=[];return {
  upsert:async({where,update,create})=>{let row=db[model].find(x=>match(x,where));if(row)Object.assign(row,update);else{row={id:sequence++,...create};db[model].push(row);}return {...row};},
  create:async({data})=>{const row={id:sequence++,...data};db[model].push(row);return {...row};},
  findUnique:async({where})=>db[model].find(x=>match(x,where))??null,
- deleteMany:async({where}={})=>{if(model==='jadwal'){const ids=db[model].filter(x=>match(x,where)).map(x=>x.id);const sessions=(db.pertemuan??[]).filter(x=>ids.includes(x.jadwalId)).map(x=>x.id);db.absensi=(db.absensi??[]).filter(x=>!sessions.includes(x.pertemuanId));db.pertemuan=(db.pertemuan??[]).filter(x=>!ids.includes(x.jadwalId));}db[model]=db[model].filter(x=>!match(x,where));},
+ deleteMany:async({where}={})=>{if(model==='kRSDetail'){const ids=db[model].filter(x=>match(x,where)).map(x=>x.id);db.nilai=(db.nilai??[]).filter(x=>!ids.includes(x.krsDetailId));}if(model==='jadwal'){const ids=db[model].filter(x=>match(x,where)).map(x=>x.id);const sessions=(db.pertemuan??[]).filter(x=>ids.includes(x.jadwalId)).map(x=>x.id);db.absensi=(db.absensi??[]).filter(x=>!sessions.includes(x.pertemuanId));db.pertemuan=(db.pertemuan??[]).filter(x=>!ids.includes(x.jadwalId));}db[model]=db[model].filter(x=>!match(x,where));},
  delete:async({where})=>{db[model]=db[model].filter(x=>!match(x,where));},
  updateMany:async({where,data})=>{db[model].filter(x=>match(x,where)).forEach(x=>Object.assign(x,data));},
  findMany:async({where,include}={})=>db[model].filter(x=>match(x,where)).map(x=>include?.kelasMataKuliah?{...x,tahunAkademik:db.tahunAkademik.find(a=>a.id===x.tahunAkademikId),kelasMataKuliah:{...db.kelasMataKuliah.find(a=>a.id===x.kelasMataKuliahId),mataKuliah:db.mataKuliah.find(c=>c.id===db.kelasMataKuliah.find(a=>a.id===x.kelasMataKuliahId).mataKuliahId)}}:{...x})
@@ -27,7 +27,7 @@ prisma.$transaction=async fn=>fn(tx);
 (async()=>{
 for(let run=0;run<2;run++){
  const targets=await seedCampus();assert.equal(targets.length,2);
- for(const [model,count] of Object.entries({user:23,fakultas:2,prodi:2,dosen:6,mahasiswa:16,kelas:4,jadwal:24,kRS:28,kRSDetail:168,transkrip:114,periodeKRS:2,riwayatStatusMahasiswa:16,pertemuan:16,absensi:64,tagihanUKT:30,pembayaranUKT:34}))assert.equal(db[model].length,count,model);
+ for(const [model,count] of Object.entries({user:23,fakultas:2,prodi:2,dosen:6,mahasiswa:16,kelas:4,jadwal:24,kRS:28,kRSDetail:168,transkrip:114,periodeKRS:2,riwayatStatusMahasiswa:16,pertemuan:16,absensi:64,tagihanUKT:30,pembayaranUKT:34,nilai:120}))assert.equal(db[model].length,count,model);
  for(const mark of db.absensi){const session=db.pertemuan.find(x=>x.id===mark.pertemuanId);assert.equal(session.status,'SELESAI');const schedule=db.jadwal.find(x=>x.id===session.jadwalId);assert.ok(db.kRS.some(k=>k.mahasiswaId===mark.mahasiswaId&&k.tahunAkademikId===schedule.tahunAkademikId&&k.status==='DISETUJUI'&&db.kRSDetail.some(d=>d.krsId===k.id&&d.kelasMataKuliahId===schedule.kelasMataKuliahId&&d.status==='DISETUJUI')));}
  assert.equal(db.tahunAkademik.filter(x=>x.isActive).length,1);
  const activeYear=db.tahunAkademik.find(x=>x.isActive);
@@ -45,6 +45,16 @@ for(let run=0;run<2;run++){
   assert.ok(paid<=Number(bill.nominal));
   assert.equal(paid===Number(bill.nominal),bill.status==='LUNAS');
   for(const payment of payments)assert.equal(payment.paidAt!==null,payment.status==='SUCCESS');
+ }
+ assert.equal(db.nilai.filter(x=>x.status==='FINAL').length,114);
+ assert.equal(db.nilai.filter(x=>x.status==='BELUM_LENGKAP').length,6);
+ for(const grade of db.nilai){
+  const detail=db.kRSDetail.find(x=>x.id===grade.krsDetailId);assert.ok(detail);assert.equal(detail.status,'DISETUJUI');
+  const transcript=db.transkrip.find(x=>x.krsDetailId===detail.id);
+  if(grade.status==='FINAL'){
+   assert.ok(transcript);assert.equal(grade.nilaiAkhir,transcript.nilaiAngka);assert.equal(grade.grade,transcript.nilaiHuruf);assert.equal(grade.bobot,transcript.bobot);
+   assert.ok(Math.abs(grade.tugas*0.3+grade.uts*0.3+grade.uas*0.4-grade.nilaiAkhir)<0.00001);
+  }else{assert.equal(grade.uas,null);assert.equal(grade.nilaiAkhir,null);assert.equal(grade.grade,null);assert.equal(grade.finalizedAt,null);assert.equal(transcript,undefined);}
  }
  assert.equal(new Set(db.tagihanUKT.map(x=>x.nomorTagihan)).size,30);
  assert.equal(new Set(db.pembayaranUKT.map(x=>x.nomorPembayaran)).size,34);

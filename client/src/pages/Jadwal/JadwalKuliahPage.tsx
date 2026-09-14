@@ -40,7 +40,7 @@ export default function JadwalPage() {
   const [editing, setEditing] = useState<Jadwal | null>(null)
   const [deleting, setDeleting] = useState<Jadwal | null>(null)
   const columns = useMemo(() => {
-    const actions = createActionColumn<Jadwal>(setEditing, setDeleting)
+    const actions = { ...createActionColumn<Jadwal>(setEditing, setDeleting), meta: { label: "Aksi" } }
     return [...jadwalColumns.filter((column) => column.id !== "actions"), actions]
   }, [])
   const refreshTable = async () => {

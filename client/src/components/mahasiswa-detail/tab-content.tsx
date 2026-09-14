@@ -1,10 +1,11 @@
+import { StudentAttendanceTab } from "./student-attendance-tab"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { StudentDetail, TahunAkademik } from "@/types/campus"
 import { useAppSelector } from "@/hooks/redux"
-import { ArrowLeft, BookOpen, CalendarDays, CircleCheck, GraduationCap, History, UserRound, Wallet } from "lucide-react"
+import { ArrowLeft, BookOpen, CircleCheck, GraduationCap, History, UserRound, Wallet } from "lucide-react"
 import { useState } from "react"
 import { TabContentSkeleton } from "../loading/tab-content-skeleton"
 
@@ -12,12 +13,6 @@ import { TabContentSkeleton } from "../loading/tab-content-skeleton"
 
 const tabs = ["Informasi Pribadi", "Akademik", "Status Mahasiswa", "KRS", "Nilai", "Presensi", "Keuangan", "Akun"] as const
 type Tab = (typeof tabs)[number]
-
-const attendanceCourses = [
-    { name: "Basis Data", meetings: 12, present: 11, excused: 1, sick: 0, absent: 0, percentage: "91.7%" },
-    { name: "Struktur Data", meetings: 12, present: 12, excused: 0, sick: 0, absent: 0, percentage: "100%" },
-    { name: "Pemrograman Web", meetings: 12, present: 10, excused: 1, sick: 1, absent: 0, percentage: "83.3%" },
-]
 
 const financeTransactions = [
     { year: "2025/2026 Ganjil", type: "UKT", bill: 3500000, paid: 3500000, remaining: 0, status: "Lunas" },
@@ -39,7 +34,6 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 
 
 export function TabContent({ tab, student, currentStatus, academicYears, selectedKrsAcademicYearId, onKrsAcademicYearChange, selectedNilaiAcademicYearId, onNilaiAcademicYearChange }: { tab: Tab; student: StudentDetail['student']; currentStatus: string; academicYears: TahunAkademik[]; selectedKrsAcademicYearId?: number; onKrsAcademicYearChange: (id: number) => void; selectedNilaiAcademicYearId?: number; onNilaiAcademicYearChange: (id: number) => void }) {
-	const [selectedCourse, setSelectedCourse] = useState<string | null>(null)
 	const [selectedTransaction, setSelectedTransaction] = useState<string | null>(null)
 	const { riwayatSemester, krsMahasiswa, nilaiMahasiswa, isLoadingStudentsDetail } = useAppSelector((state) => state.students)
 
@@ -312,90 +306,7 @@ export function TabContent({ tab, student, currentStatus, academicYears, selecte
 		)
 	}
 
-	if (tab === "Presensi") {
-		const selectedCourseData = attendanceCourses.find((course) => course.name === selectedCourse)
-
-		if (selectedCourseData) {
-			return (
-				<div className="space-y-5">
-					<Button variant="ghost" className="-ml-2 text-muted-foreground" onClick={() => setSelectedCourse(null)}><ArrowLeft /> Kembali ke ringkasan presensi</Button>
-					<Card>
-						<CardHeader>
-							<CardTitle>{selectedCourseData.name}</CardTitle>
-							<p className="text-sm text-muted-foreground">Detail kehadiran pertemuan</p>
-						</CardHeader>
-						<CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-							{Array.from({ length: selectedCourseData.meetings }, (_, index) => <div key={index + 1} className="flex items-center justify-between rounded-lg border bg-muted/20 px-4 py-3"><span className="text-sm font-medium">Pertemuan {index + 1}</span><Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">Hadir</Badge></div>)}
-						</CardContent>
-					</Card>
-				</div>
-			)
-		}
-
-		return (
-			<div className="space-y-5">
-				<Card>
-					<CardHeader>
-						<CardTitle className="flex items-center gap-2"><CalendarDays className="size-4 text-muted-foreground" /> Presensi</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<label className="block max-w-sm space-y-2 text-sm font-medium">
-							<span className="text-muted-foreground">Tahun Akademik</span>
-							<select defaultValue="2026/2027 Ganjil" className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm font-medium shadow-xs outline-none transition-colors focus:border-ring focus:ring-3 focus:ring-ring/50">
-								<option>2026/2027 Ganjil</option>
-								<option>2025/2026 Genap</option>
-								<option>2025/2026 Ganjil</option>
-							</select>
-						</label>
-					</CardContent>
-				</Card>
-
-				<Card>
-					<CardContent className="grid divide-y py-0 sm:grid-cols-5 sm:divide-x sm:divide-y-0">
-						{[
-							["Rata-rata Kehadiran", "91.5%"],
-							["Hadir", "44"],
-							["Izin", "2"],
-							["Sakit", "1"],
-							["Alpa", "1"],
-						].map(([label, value]) => <div key={label} className="flex items-center justify-between gap-4 py-4 first:pt-5 last:pb-5 sm:block sm:px-5 sm:py-5 sm:first:pl-0 sm:last:pr-0"><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p><p className="text-xl font-semibold sm:mt-2">{value}</p></div>)}
-					</CardContent>
-				</Card>
-
-				<Card>
-					<CardHeader><CardTitle>Rekap Mata Kuliah</CardTitle></CardHeader>
-					<CardContent className="p-0">
-						<div className="overflow-x-auto">
-							<table className="w-full min-w-220 text-sm">
-								<thead className="border-y bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
-									<tr>
-										<th className="px-6 py-3 font-medium">Mata Kuliah</th>
-										<th className="px-6 py-3 text-right font-medium">Pertemuan</th>
-										<th className="px-6 py-3 text-right font-medium">Hadir</th>
-										<th className="px-6 py-3 text-right font-medium">Izin</th>
-										<th className="px-6 py-3 text-right font-medium">Sakit</th>
-										<th className="px-6 py-3 text-right font-medium">Alpa</th>
-										<th className="px-6 py-3 text-right font-medium">%</th>
-									</tr>
-								</thead>
-								<tbody className="divide-y">
-									{attendanceCourses.map((course) => <tr key={course.name} className="transition-colors hover:bg-muted/30">
-										<td className="px-6 py-4"><button type="button" className="font-medium text-primary underline-offset-4 hover:underline" onClick={() => setSelectedCourse(course.name)}>{course.name}</button></td>
-										<td className="px-6 py-4 text-right">{course.meetings}</td>
-										<td className="px-6 py-4 text-right">{course.present}</td>
-										<td className="px-6 py-4 text-right">{course.excused}</td>
-										<td className="px-6 py-4 text-right">{course.sick}</td>
-										<td className="px-6 py-4 text-right">{course.absent}</td>
-										<td className="px-6 py-4 text-right font-medium">{course.percentage}</td>
-									</tr>)}
-								</tbody>
-							</table>
-						</div>
-					</CardContent>
-				</Card>
-			</div>
-		)
-	}
+	if (tab === "Presensi") return <StudentAttendanceTab key={student.id} studentId={student.id} academicYears={academicYears} />
 
 	if (tab === "Keuangan") {
 		const selectedTransactionData = financeTransactions.find((transaction) => transaction.year === selectedTransaction)

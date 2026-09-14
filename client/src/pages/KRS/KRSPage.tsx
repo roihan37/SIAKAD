@@ -51,7 +51,7 @@ export default function KRSPage() {
   const [editing, setEditing] = useState<KRS | null>(null)
   const [deleting, setDeleting] = useState<KRS | null>(null)
   const columns = useMemo<ColumnDef<KRS>[]>(() => {
-    return [...krsColumns.filter((column) => column.id !== "actions"), { id: "actions", cell: ({ row }) => row.original.krsId ? <ActionCell row={row.original} onEdit={setEditing} onDelete={setDeleting} /> : <span className="text-xs text-muted-foreground">Belum ada KRS</span> }]
+    return [...krsColumns.filter((column) => column.id !== "actions"), { id: "actions", meta: { label: "Aksi" }, cell: ({ row }) => row.original.krsId ? <ActionCell row={row.original} onEdit={setEditing} onDelete={setDeleting} /> : <span className="text-xs text-muted-foreground">Belum ada KRS</span> }]
   }, [])
   const refreshTable = async () => {
     try { await dispatch(getAllKRS({ page, limit: 10, search, sortBy, sortOrder, prodiId, tahunAkademikId, angkatan, status })).unwrap() }
@@ -260,6 +260,7 @@ export default function KRSPage() {
         {/* Summary */}
 
         <DataTable
+          showAddButton={false}
                     isLoading={tableLoading}
           columns={columns}
           data={krs}

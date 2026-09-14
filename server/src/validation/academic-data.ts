@@ -1,5 +1,5 @@
 import { Hari } from "@prisma/client";
-import { integer, text } from "./master-data";
+import { integer, text, patchBody } from "./master-data";
 
 export const stringId = text("ID", 100);
 const time = (value: unknown): string => {
@@ -19,3 +19,15 @@ export const jadwalPatch = {
   ruanganId: integer("Ruangan"), hari: day, jamMulai: time, jamSelesai: time,
 };
 export const krsPatch = { mahasiswaId: stringId, tahunAkademikId: integer("Tahun akademik") };
+
+export function jadwalCreate(body: unknown) {
+  const parsed = patchBody(body, jadwalPatch);
+  return {
+    kelasMataKuliahId: jadwalPatch.kelasMataKuliahId(parsed.kelasMataKuliahId),
+    tahunAkademikId: jadwalPatch.tahunAkademikId(parsed.tahunAkademikId),
+    ruanganId: jadwalPatch.ruanganId(parsed.ruanganId),
+    hari: jadwalPatch.hari(parsed.hari),
+    jamMulai: jadwalPatch.jamMulai(parsed.jamMulai),
+    jamSelesai: jadwalPatch.jamSelesai(parsed.jamSelesai),
+  };
+}

@@ -35,22 +35,26 @@ export const krsColumns: ColumnDef<KRS>[] = [
   {
     id: 'nama',
     accessorKey: "nama",
-    header: "Nama Mahasiswa"
+    header: "Nama Mahasiswa",
+    meta: { label: "Nama Mahasiswa" }
   },
   {
     id: 'prodi',
     accessorKey: "prodi",
     header: "Program Studi",
+    meta: { label: "Program Studi" },
   },
   {
     id: 'sks',
     accessorKey: "totalSks",
     header: "SKS",
+    meta: { label: "SKS" },
   },
   {
     id: 'status',
     accessorKey: "status",
     header: "Status",
+    meta: { label: "Status" },
     cell: ({ row }) => {
       const status = row.original.status
       const labels: Record<string, string> = { DRAFT: "Draft", DIAJUKAN: "Diajukan", MENUNGGU: "Diajukan", DISETUJUI: "Disetujui", DITOLAK: "Ditolak", BELUM_KRS: "Belum KRS" }
@@ -64,6 +68,6 @@ export const krsColumns: ColumnDef<KRS>[] = [
     },
 
   },
-  createActionColumn(),
+  { ...createActionColumn<KRS>(), meta: { label: "Aksi" } },
 
 ];

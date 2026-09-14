@@ -41,6 +41,7 @@ import { DialogForm } from "../form-add-data/dialog-form"
 
 
 interface DataTableProps<TData, TValue> {
+  showAddButton?: boolean
   embedded?: boolean
   // Table
   columns: ColumnDef<TData, TValue>[]
@@ -89,6 +90,7 @@ interface DataTableProps<TData, TValue> {
 export function DataTable<TData, TValue>({
   columns,
   embedded = false,
+  showAddButton = true,
   data,
   rowSelection: controlledSelection,
   onRowSelectionChange,
@@ -166,9 +168,9 @@ export function DataTable<TData, TValue>({
 
           <div className="flex w-full gap-2 sm:w-auto">
 
-            <div className="flex-1 sm:flex-none">
+            {showAddButton && <div className="flex-1 sm:flex-none">
               <DialogForm />
-            </div>
+            </div>}
 
             <DropdownMenu>
               <DropdownMenuTrigger

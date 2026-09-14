@@ -12,7 +12,7 @@ router.get("/:id",adminOrMahasiswaMiddleware,Controller.getStudentById);
 router.get("/:id/history-semester",adminOrMahasiswaMiddleware,Controller.getStudentSemesterHistory);
 router.get("/:id/krs",adminOrMahasiswaMiddleware,Controller.getStudentKRS);
 router.get("/:id/nilai",adminOrMahasiswaMiddleware,Controller.getStudentNilai);
-router.get("/:id/presensi",adminOrMahasiswaMiddleware,Controller.getStudentAttendance);
+router.get("/:id/presensi",adminMiddleware,Controller.getStudentAttendance);
 router.patch("/:userId/reset-password",adminOrMahasiswaMiddleware, Controller.resetPassword);
 router.patch("/bulk/status",adminMiddleware,Controller.bulkUpdateStatus);
 router.delete("/bulk",adminMiddleware,Controller.bulkDelete);

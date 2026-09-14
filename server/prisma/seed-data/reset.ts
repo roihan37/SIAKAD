@@ -6,6 +6,8 @@ export async function resetDatabase(tx: Prisma.TransactionClient) {
   await tx.tagihanUKT.deleteMany();
   await tx.absensi.deleteMany();
   await tx.pertemuan.deleteMany();
+  await tx.riwayatKoreksiNilai.deleteMany();
+  await tx.nilai.deleteMany();
   await tx.transkrip.deleteMany();
   await tx.kRSDetail.deleteMany();
   await tx.kRS.deleteMany();

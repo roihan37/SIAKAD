@@ -93,3 +93,13 @@ Ini simulasi tampilan nilai: nilai semester aktif tersedia meskipun snapshot per
 Ringkasan API hanya menghitung pembayaran SUCCESS; riwayat tetap menampilkan PENDING dan FAILED. Tanggal demo tetap pada September 2026, sehingga status efektif API dapat berubah menjadi jatuh tempo setelah tanggal tersebut. Pilih ID tahun akademik aktual dari database, bukan mengasumsikan ID 3.
 
 Nomor tagihan `UKT-SEED-...` dan pembayaran `PAY-SEED-...` deterministik dan di-upsert. Seed melewati tagihan yang bukan milik seed atau tagihan seed yang sudah memiliki pembayaran dari aplikasi. Karena itu data keuangan tambahan tetap terjaga dan jumlah bisa berbeda. `--reset` menghapus pembayaran sebelum tagihan dan mahasiswa untuk memenuhi foreign key.
+
+## Assessment records (Nilai)
+
+The seed now creates 120 Nilai records linked to KRSDetail: 96 historical FINAL records, 18 current FINAL records, and 6 current BELUM_LENGKAP records. The remaining 48 current enrollments have no Nilai relation and appear as BELUM_DIINPUT. Only approved enrollments receive assessment records.
+
+For the active year, the grades summary therefore contains 12 students, 72 records, 18 completed and 54 incomplete records. The first three courses of each approved student's current enrollment have final grades; the fourth has assignment and midterm scores but no final exam, final score, or letter grade; the last two are not entered.
+
+Final scores, letters and weights match Transkrip. Demo component weighting is assignment 30%, midterm 30%, final exam 40%; this is a seed convention, not a production grading rule. Active grades remain a UI simulation rather than a real semester timeline. No correction history is fabricated.
+
+Repeated seeds rebuild the scoped KRSDetail records, cascading their Nilai and correction history, then recreate the demo assessments. As with the existing academic seed, do not run this against academic records that need preserving. Reset explicitly deletes correction history and Nilai before KRSDetail. Tests verify repeated-seed counts, component calculations, transcript consistency, and incomplete records.
