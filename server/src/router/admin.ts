@@ -19,4 +19,9 @@ router.get("/grades/students", adminMiddleware, Controller.getStudentGradeRecap)
 router.get("/grades/courses", adminMiddleware, Controller.getCourseGradeRecap);
 router.get("/grades/courses/:kelasMataKuliahId/students", adminMiddleware, Controller.getCourseGradeDetail);
 router.get("/grades/students/:studentId/courses/:kelasMataKuliahId", adminMiddleware, Controller.getStudentGradeDetail);
+
+router.get("/payments", adminMiddleware, Controller.getPayments);
+router.get("/payments/:paymentId", adminMiddleware, Controller.getPaymentById);
+router.patch("/payments/:paymentId/verify", adminMiddleware, Controller.verifyPayment);
+router.patch("/payments/:paymentId/cancel", adminMiddleware, Controller.cancelPayment);
 export default router;

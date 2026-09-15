@@ -1,0 +1,17 @@
+model RiwayatStatusPembayaran {
+  id              String   @id @default(uuid())
+
+  pembayaranId    String
+  statusLama      StatusPembayaran?
+  statusBaru      StatusPembayaran
+
+  alasan           String?
+  actorId          String?
+
+  pembayaran      PembayaranUKT @relation(fields: [pembayaranId],references: [id],onDelete: Cascade)
+
+  createdAt        DateTime @default(now())
+
+  @@index([pembayaranId])
+  @@index([pembayaranId, createdAt])
+}

@@ -1,3 +1,4 @@
+import { StudentFinanceTab } from "./student-finance-tab"
 import { StudentAttendanceTab } from "./student-attendance-tab"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -5,23 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { StudentDetail, TahunAkademik } from "@/types/campus"
 import { useAppSelector } from "@/hooks/redux"
-import { ArrowLeft, BookOpen, CircleCheck, GraduationCap, History, UserRound, Wallet } from "lucide-react"
-import { useState } from "react"
+import { BookOpen, CircleCheck, GraduationCap, History, UserRound } from "lucide-react"
 import { TabContentSkeleton } from "../loading/tab-content-skeleton"
 
 
 
-const tabs = ["Informasi Pribadi", "Akademik", "Status Mahasiswa", "KRS", "Nilai", "Presensi", "Keuangan", "Akun"] as const
-type Tab = (typeof tabs)[number]
-
-const financeTransactions = [
-    { year: "2025/2026 Ganjil", type: "UKT", bill: 3500000, paid: 3500000, remaining: 0, status: "Lunas" },
-    { year: "2025/2026 Genap", type: "UKT", bill: 3500000, paid: 3500000, remaining: 0, status: "Lunas" },
-]
-
-function formatRupiah(value: number) {
-    return `Rp${value.toLocaleString("id-ID")}`
-}
+type Tab = "Informasi Pribadi" | "Akademik" | "Status Mahasiswa" | "KRS" | "Nilai" | "Presensi" | "Keuangan" | "Akun"
 
 function InfoRow({ label, value }: { label: string; value: string }) {
     return (
@@ -34,7 +24,6 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 
 
 export function TabContent({ tab, student, currentStatus, academicYears, selectedKrsAcademicYearId, onKrsAcademicYearChange, selectedNilaiAcademicYearId, onNilaiAcademicYearChange }: { tab: Tab; student: StudentDetail['student']; currentStatus: string; academicYears: TahunAkademik[]; selectedKrsAcademicYearId?: number; onKrsAcademicYearChange: (id: number) => void; selectedNilaiAcademicYearId?: number; onNilaiAcademicYearChange: (id: number) => void }) {
-	const [selectedTransaction, setSelectedTransaction] = useState<string | null>(null)
 	const { riwayatSemester, krsMahasiswa, nilaiMahasiswa, isLoadingStudentsDetail } = useAppSelector((state) => state.students)
 
 	if (isLoadingStudentsDetail && tab === "Akademik") {
@@ -308,78 +297,7 @@ export function TabContent({ tab, student, currentStatus, academicYears, selecte
 
 	if (tab === "Presensi") return <StudentAttendanceTab key={student.id} studentId={student.id} academicYears={academicYears} />
 
-	if (tab === "Keuangan") {
-		const selectedTransactionData = financeTransactions.find((transaction) => transaction.year === selectedTransaction)
-
-		if (selectedTransactionData) {
-			return (
-				<div className="space-y-5">
-					<Button variant="ghost" className="-ml-2 text-muted-foreground" onClick={() => setSelectedTransaction(null)}><ArrowLeft /> Kembali ke transaksi</Button>
-					<Card>
-						<CardHeader>
-							<CardTitle>Detail Pembayaran</CardTitle>
-							<p className="text-sm text-muted-foreground">{selectedTransactionData.year} · {selectedTransactionData.type}</p>
-						</CardHeader>
-						<CardContent>
-							<dl className="grid gap-4 sm:grid-cols-2">
-								<InfoRow label="Tahun Akademik" value={selectedTransactionData.year} />
-								<InfoRow label="Jenis Tagihan" value={selectedTransactionData.type} />
-								<InfoRow label="Total Tagihan" value={formatRupiah(selectedTransactionData.bill)} />
-								<InfoRow label="Sudah Dibayar" value={formatRupiah(selectedTransactionData.paid)} />
-								<InfoRow label="Sisa" value={formatRupiah(selectedTransactionData.remaining)} />
-								<InfoRow label="Status" value={selectedTransactionData.status} />
-							</dl>
-						</CardContent>
-					</Card>
-				</div>
-			)
-		}
-
-		return (
-			<div className="space-y-5">
-				<Card>
-					<CardHeader>
-						<CardTitle className="flex items-center gap-2"><Wallet className="size-4 text-muted-foreground" /> Keuangan</CardTitle>
-					</CardHeader>
-					<CardContent className="grid gap-3 sm:grid-cols-3">
-						<div className="rounded-lg bg-muted/50 px-4 py-4"><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Total Tagihan</p><p className="mt-2 text-xl font-semibold">{formatRupiah(7000000)}</p></div>
-						<div className="rounded-lg bg-emerald-50 px-4 py-4 dark:bg-emerald-900/20"><p className="text-xs font-medium uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Sudah Dibayar</p><p className="mt-2 text-xl font-semibold text-emerald-700 dark:text-emerald-300">{formatRupiah(7000000)}</p></div>
-						<div className="rounded-lg border border-emerald-200 px-4 py-4 dark:border-emerald-900/50"><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Sisa</p><p className="mt-2 text-xl font-semibold text-emerald-700 dark:text-emerald-300">{formatRupiah(0)}</p></div>
-					</CardContent>
-				</Card>
-
-				<Card>
-					<CardHeader><CardTitle>Riwayat Transaksi</CardTitle><p className="text-sm text-muted-foreground">Klik transaksi untuk melihat detail pembayaran.</p></CardHeader>
-					<CardContent className="p-0">
-						<div className="overflow-x-auto">
-							<table className="w-full min-w-220 text-sm">
-								<thead className="border-y bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
-									<tr>
-										<th className="px-6 py-3 font-medium">Tahun Akademik</th>
-										<th className="px-6 py-3 font-medium">Jenis</th>
-										<th className="px-6 py-3 text-right font-medium">Tagihan</th>
-										<th className="px-6 py-3 text-right font-medium">Dibayar</th>
-										<th className="px-6 py-3 text-right font-medium">Sisa</th>
-										<th className="px-6 py-3 font-medium">Status</th>
-									</tr>
-								</thead>
-								<tbody className="divide-y">
-									{financeTransactions.map((transaction) => <tr key={transaction.year} className="transition-colors hover:bg-muted/30">
-										<td className="px-6 py-4"><button type="button" className="font-medium text-primary underline-offset-4 hover:underline" onClick={() => setSelectedTransaction(transaction.year)}>{transaction.year}</button></td>
-										<td className="px-6 py-4">{transaction.type}</td>
-										<td className="px-6 py-4 text-right">{formatRupiah(transaction.bill)}</td>
-										<td className="px-6 py-4 text-right">{formatRupiah(transaction.paid)}</td>
-										<td className="px-6 py-4 text-right">{formatRupiah(transaction.remaining)}</td>
-										<td className="px-6 py-4"><Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">{transaction.status}</Badge></td>
-									</tr>)}
-								</tbody>
-							</table>
-						</div>
-					</CardContent>
-				</Card>
-			</div>
-		)
-	}
+	if (tab === "Keuangan") return <StudentFinanceTab key={student.id} studentId={student.id} />
 
 	if (tab === "Akun") {
 		return (

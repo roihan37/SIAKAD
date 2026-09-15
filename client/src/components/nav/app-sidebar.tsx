@@ -121,7 +121,7 @@ const data = {
         {
           title: "Pembayaran",
           icon: <CreditCardIcon />,
-          url: upcomingPath("Pembayaran"),
+          url: "/pembayaran",
         },
         {
           title: "Beasiswa",

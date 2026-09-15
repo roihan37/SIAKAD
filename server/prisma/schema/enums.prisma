@@ -96,3 +96,8 @@ enum StatusNilai {
   BELUM_LENGKAP
   FINAL
 }
+
+enum SumberPembayaran {
+  MANUAL
+  PAYMENT_GATEWAY
+}

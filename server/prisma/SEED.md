@@ -80,7 +80,7 @@ Ini simulasi tampilan nilai: nilai semester aktif tersedia meskipun snapshot per
 
 ## Keuangan UKT
 
-`seed-data/finance.ts` mengisi 30 tagihan dan 34 transaksi pembayaran pada database kosong. Nominal per semester TI Rp5.000.000, Manajemen Rp4.000.000. Total nominal Rp135.000.000, pembayaran berhasil Rp108.000.000, sisa Rp27.000.000.
+`seed-data/finance.ts` mengisi 30 tagihan dan 36 transaksi pembayaran pada database kosong. Nominal per semester TI Rp5.000.000, Manajemen Rp4.000.000. Total nominal Rp135.000.000, pembayaran berhasil Rp108.000.000, sisa Rp27.000.000.
 
 - Semester sebelumnya: 16 tagihan lunas, termasuk mahasiswa yang sekarang cuti.
 - Semester aktif: 14 tagihan; 6 lunas, 2 cicilan, 4 belum dibayar, 2 jatuh tempo (snapshot 14 September 2026).
@@ -100,6 +100,22 @@ The seed now creates 120 Nilai records linked to KRSDetail: 96 historical FINAL 
 
 For the active year, the grades summary therefore contains 12 students, 72 records, 18 completed and 54 incomplete records. The first three courses of each approved student's current enrollment have final grades; the fourth has assignment and midterm scores but no final exam, final score, or letter grade; the last two are not entered.
 
-Final scores, letters and weights match Transkrip. Demo component weighting is assignment 30%, midterm 30%, final exam 40%; this is a seed convention, not a production grading rule. Active grades remain a UI simulation rather than a real semester timeline. No correction history is fabricated.
+Final scores, letters and weights match Transkrip. Demo component weighting is assignment 30%, midterm 30%, final exam 40%; this is a seed convention, not a production grading rule. Active grades remain a UI simulation rather than a real semester timeline. One historical correction demonstrates an assignment-score correction; its final value matches the transcript.
 
 Repeated seeds rebuild the scoped KRSDetail records, cascading their Nilai and correction history, then recreate the demo assessments. As with the existing academic seed, do not run this against academic records that need preserving. Reset explicitly deletes correction history and Nilai before KRSDetail. Tests verify repeated-seed counts, component calculations, transcript consistency, and incomplete records.
+
+## Payment schema coverage
+
+The finance seed now includes 36 payments and 68 status-history entries. Two additional unsuccessful attempts demonstrate CANCELLED (mahasiswa6) and EXPIRED (mahasiswa14); bill balances remain unchanged. CASH payments are demonstrated by mahasiswa2/10. Payment source is MANUAL for cash and bank transfers, PAYMENT_GATEWAY for virtual accounts. Manual successful/failed verification metadata uses the seeded admin ID; gateway confirmations have no fabricated human verifier.
+
+Every payment starts with a PENDING history entry. Completed attempts have a second transition with a timestamp, reason, and an admin actor for manual processing/cancellation. History marked `[Seed]` is rebuilt within scope on repeated seeds. Bills containing payments created outside the seed or non-seed history are skipped entirely, preserving API verification/cancellation results. Optional proof keys already attached to payments are retained.
+
+One historical grade correction is included for mahasiswa0's first course. The corrected final score still matches its components and transcript. Nilai correction history follows the existing academic rebuild behavior.
+
+To upload a small, clearly marked text proof fixture for one pending manual payment:
+
+```sh
+npm run seed -- --payment-proofs
+```
+
+This requires the existing S3 configuration. The file is a development fixture, not a bank receipt. Its key is stored only after upload succeeds. Repeated uploads replace the same seed object; existing non-seed proof keys are preserved. Without this option, no storage request is made and missing proof URLs remain null. The optional upload occurs after the database seed commits; an upload failure does not roll back the academic seed.

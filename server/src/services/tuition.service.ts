@@ -78,6 +78,7 @@ export async function listStudentTuitionBills(tx: Prisma.TransactionClient, user
 }
 
 type BillRow = {
+  prodiId: number; studyProgramName: string;
   id: string; nomorTagihan: string; mahasiswaId: string; userId: string; nim: string; name: string;
   tahunAkademikId: number; tahun: string; semester: string; nominal: Prisma.Decimal;
   paidAmount: Prisma.Decimal; remainingAmount: Prisma.Decimal; jatuhTempo: Date; effectiveStatus: string;
@@ -94,12 +95,13 @@ export async function listTuitionBills(tx: Prisma.TransactionClient, filters: Re
     conditions.push(Prisma.sql`(u."name" ILIKE ${pattern} OR m."nim" ILIKE ${pattern} OR b."nomorTagihan" ILIKE ${pattern})`);
   }
   const base = Prisma.sql`WITH balances AS (
-    SELECT b.*, m."userId", m."nim", u."name", y."tahun", y."semester",
+    SELECT b.*, m."userId", m."nim", u."name", y."tahun", y."semester", m."prodiId", sp."name" AS "studyProgramName",
       COALESCE(p.amount, 0) AS "paidAmount",
       GREATEST(b."nominal" - COALESCE(p.amount, 0), 0) AS "remainingAmount"
     FROM "TagihanUKT" b
     JOIN "Mahasiswa" m ON m.id = b."mahasiswaId"
     JOIN "User" u ON u.id = m."userId"
+    JOIN "Prodi" sp ON sp.id = m."prodiId"
     JOIN "TahunAkademik" y ON y.id = b."tahunAkademikId"
     LEFT JOIN LATERAL (
       SELECT SUM(p."nominal") AS amount FROM "PembayaranUKT" p
@@ -133,7 +135,7 @@ export async function listTuitionBills(tx: Prisma.TransactionClient, filters: Re
     },
     bills: rows.map((row) => ({
       id: row.id, billNumber: row.nomorTagihan,
-      student: { id: row.userId, studentId: row.mahasiswaId, nim: row.nim, name: row.name },
+      student: { id: row.userId, studentId: row.mahasiswaId, nim: row.nim, name: row.name, prodi: { id: row.prodiId, name: row.studyProgramName } },
       academicYear: { id: row.tahunAkademikId, year: row.tahun, semester: row.semester },
       amount: Number(row.nominal), paidAmount: Number(row.paidAmount), remainingAmount: Number(row.remainingAmount),
       dueDate: dateFormat.format(row.jatuhTempo), status: row.effectiveStatus,

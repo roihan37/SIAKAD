@@ -2,7 +2,7 @@ export type BillStatus = "BELUM_DIBAYAR" | "SEBAGIAN" | "LUNAS" | "JATUH_TEMPO"
 export interface Bill {
   id: string
   billNumber: string
-  student: { id: string; studentId: string; nim: string; name: string }
+  student: { id: string; studentId: string; nim: string; name: string; prodi: { id: number; name: string } }
   academicYear: { id: number; year: string; semester: string }
   amount: number
   paidAmount: number

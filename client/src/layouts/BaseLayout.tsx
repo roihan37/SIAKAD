@@ -18,6 +18,7 @@ const pageLabels: Record<string, string> = {
   ...Object.fromEntries(comingSoonPages.map(({ path, title }) => [path.slice(1), title])),
   dashboard: "Dashboard",
   "tagihan-ukt": "Tagihan UKT",
+  pembayaran: "Pembayaran",
   presensi: "Presensi",
   nilai: "Nilai",
   mahasiswa: "Mahasiswa",

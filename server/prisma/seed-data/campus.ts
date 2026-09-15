@@ -13,7 +13,7 @@ export async function seedCampus(reset = false) {
   return prisma.$transaction(async (tx) => {
     if (reset) await resetDatabase(tx);
     const admin = { name: "Ratna Puspita", email: "admin@siakad.com", username: "admin", password, role: Role.Admin, gender: Gender.Female, address: "Tasikmalaya" };
-    await tx.user.upsert({ where: { email: admin.email }, update: admin, create: admin });
+    const adminUser = await tx.user.upsert({ where: { email: admin.email }, update: admin, create: admin });
     // Snapshot demo ini memiliki tepat satu periode akademik aktif.
     await tx.tahunAkademik.updateMany({ where: { isActive: true }, data: { isActive: false } });
     await tx.periodeKRS.updateMany({ where: { isActive: true }, data: { isActive: false } });
@@ -70,7 +70,7 @@ export async function seedCampus(reset = false) {
         const advisor = lecturers[i % 3];
         const studentData = { nim, angkatan: 2025, semester: 3, status: i === 7 ? Status.Cuti : Status.Aktif, prodiId: prodi.id, dosenId: advisor.id };
         const student = await tx.mahasiswa.upsert({ where: { userId: user.id }, update: studentData, create: { userId: user.id, ...studentData } });
-        await seedStudentFinance(tx, student, years, p, i);
+        await seedStudentFinance(tx, student, years, p, i, adminUser.id);
         if (index === 0) photoTargets.push({ userId: user.id, entity: "students" });
         await tx.riwayatStatusMahasiswa.deleteMany({ where: { mahasiswaId: student.id, alasan: { startsWith: "[Seed]" } } });
         await tx.riwayatStatusMahasiswa.create({ data: { mahasiswaId: student.id, statusLama: i === 7 ? Status.Aktif : null, statusBaru: student.status, alasan: i === 7 ? "[Seed] Cuti satu semester atas permohonan mahasiswa." : "[Seed] Registrasi ulang semester ganjil 2026/2027.", tanggal: new Date("2026-09-01T08:00:00+07:00") } });
@@ -87,7 +87,7 @@ export async function seedCampus(reset = false) {
           for (const [courseIndex, assignment] of classesByPeriod[periodIndex].entries()) {
             const approved = status === StatusKRS.DISETUJUI;
             const detail = await tx.kRSDetail.create({ data: { krsId: krs.id, kelasMataKuliahId: assignment.id, status: approved ? KRSStatus.DISETUJUI : status === StatusKRS.DITOLAK ? KRSStatus.DITOLAK : KRSStatus.MENUNGGU, approvedBy: approved ? advisor.userId : null, approvedAt: approved ? new Date(`${periods[periodIndex].approval}T09:00:00+07:00`) : null } });
-            if (approved && (periodIndex === 0 || courseIndex < 4)) await seedAssessment(tx, detail.id, index, courseIndex, periodIndex);
+            if (approved && (periodIndex === 0 || courseIndex < 4)) await seedAssessment(tx, detail.id, index, courseIndex, periodIndex, adminUser.id);
             // Semester aktif: tiga mata kuliah bernilai sebagai simulasi UI.
             if (approved && (periodIndex === 0 || courseIndex < 3)) {
               const grade = seedGrade(index, courseIndex, periodIndex);

@@ -16,7 +16,7 @@ export function seedGrade(studentIndex: number, courseIndex: number, periodIndex
 
 // Demo weighting: assignment 30%, midterm 30%, final exam 40%.
 // Offsets preserve the existing transcript score exactly.
-export async function seedAssessment(tx: Prisma.TransactionClient, detailId: string, studentIndex: number, courseIndex: number, periodIndex: number) {
+export async function seedAssessment(tx: Prisma.TransactionClient, detailId: string, studentIndex: number, courseIndex: number, periodIndex: number, adminId: string) {
   const sample = seedGrade(studentIndex, courseIndex, periodIndex);
   const complete = periodIndex === 0 || courseIndex < 3;
   const data = {
@@ -29,5 +29,12 @@ export async function seedAssessment(tx: Prisma.TransactionClient, detailId: str
     status: complete ? "FINAL" as const : "BELUM_LENGKAP" as const,
     finalizedAt: complete ? new Date(periodIndex === 0 ? "2026-06-26T09:00:00+07:00" : "2026-09-14T09:00:00+07:00") : null,
   };
-  await tx.nilai.upsert({ where: { krsDetailId: detailId }, update: data, create: { krsDetailId: detailId, ...data } });
+  const assessment = await tx.nilai.upsert({ where: { krsDetailId: detailId }, update: data, create: { krsDetailId: detailId, ...data } });
+  if (periodIndex === 0 && courseIndex === 0 && studentIndex === 0) {
+    await tx.riwayatKoreksiNilai.deleteMany({ where: { nilaiId: assessment.id, alasan: { startsWith: '[Seed]' } } });
+    await tx.riwayatKoreksiNilai.create({ data: {
+      nilaiId: assessment.id, changedById: adminId, nilaiAkhirLama: sample.score - 2, nilaiAkhirBaru: sample.score,
+      alasan: '[Seed] Corrected an omitted assignment score after review.', createdAt: new Date('2026-06-27T09:00:00+07:00'),
+    } });
+  }
 }
