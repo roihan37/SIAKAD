@@ -142,6 +142,12 @@ export const errorHandler: ErrorRequestHandler = (
         message: error.message || "Akses ditolak",
       });
 
+    case "TooManyRequests":
+      return res.status(429).json({ code: "RATE_LIMITED", message: error.message });
+    case "PasswordChangeRequired":
+      return res.status(403).json({ code: "PASSWORD_CHANGE_REQUIRED", message: error.message });
+    case "JsonWebTokenError":
+    case "NotBeforeError":
     case "TokenInvalid":
       return res.status(401).json({
         code: "TOKEN_INVALID",

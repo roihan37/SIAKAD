@@ -9,7 +9,7 @@ async function main() {
   const targets = await seedCampus(process.argv.includes("--reset"));
   if (process.argv.includes("--photos")) for (const target of targets) await ensureProfilePhoto(target.userId, target.entity);
   if (process.argv.includes("--payment-proofs")) await seedPaymentProof();
-  console.log("Seed selesai: 2 fakultas, 2 prodi, 6 dosen, 16 mahasiswa, 24 mata kuliah, 4 kelas, 24 jadwal. Tahun aktif: 2026/2027 GANJIL.");
+  console.log("Seed selesai: 2 fakultas, 2 prodi, 6 dosen, 17 mahasiswa (termasuk 1 akun trial), 24 mata kuliah, 4 kelas, 24 jadwal. Tahun aktif: 2026/2027 GANJIL.");
   console.log("Login demo: admin / dosen0 / mahasiswa0. Password mengikuti SEED_PASSWORD, default Tasik123.");
 }
 if (require.main === module) main().catch((error) => { console.error(error); process.exitCode = 1; }).finally(() => prisma.$disconnect());

@@ -354,7 +354,6 @@ export function MahasiswaField({
     onSuccess()
 
   } catch (error: any) {
-    console.log(error, "<<<");
     
     onError(
       error ??

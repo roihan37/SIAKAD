@@ -45,33 +45,33 @@ type EntityType =
 
 
 const getEntityType = (pathname: string): EntityType => {
-  if (pathname.startsWith("/fakultas")) {
+  if (pathname.startsWith("/admin/fakultas")) {
     return "fakultas"
   }
   if (
-    pathname.startsWith("/program-studi")
+    pathname.startsWith("/admin/program-studi")
     // pathname.startsWith("/prodi")
   ) {
     return "prodi"
   }
 
-  if (pathname.startsWith("/dosen")) {
+  if (pathname.startsWith("/admin/dosen")) {
     return "dosen"
   }
 
-  if (pathname.startsWith("/mata-kuliah")) {
+  if (pathname.startsWith("/admin/mata-kuliah")) {
     return "matkul"
   }
 
-  if (pathname.startsWith("/ruangan")) {
+  if (pathname.startsWith("/admin/ruangan")) {
     return "ruangan"
   }
 
-  if (pathname.startsWith("/tahun-akademik")) {
+  if (pathname.startsWith("/admin/tahun-akademik")) {
     return "tAkademik"
   }
 
-  if (pathname.startsWith("/kurikulum")) {
+  if (pathname.startsWith("/admin/kurikulum")) {
     return "kurikulum"
   }
 
@@ -117,7 +117,7 @@ const entityConfig = {
 
 export function DialogForm() {
   const { pathname } = useLocation()
-  return pathname === "/jadwal-kuliah" ? <JadwalFormDialog /> : <EntityDialogForm />
+  return pathname === "/admin/jadwal-kuliah" ? <JadwalFormDialog /> : <EntityDialogForm />
 }
 
 function EntityDialogForm() {

@@ -4,7 +4,7 @@ import { Controller } from "../controllers/ruanganController";
 
 const router = express.Router();
 
-router.post("/", Controller.createRuangan);
+router.post("/", adminMiddleware, Controller.createRuangan);
 router.put("/:id", adminMiddleware, Controller.updateRuangan);
 router.patch("/:id", adminMiddleware, Controller.updateRuangan);
 router.get("/", Controller.getAllRuangan);

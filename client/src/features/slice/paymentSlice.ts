@@ -1,7 +1,7 @@
 import { createSlice, isAnyOf, type PayloadAction } from "@reduxjs/toolkit"
 import { getPayments, getPaymentDetail, getPaymentOptions, verifyPayment, cancelPayment, exportPaymentRows } from "../action/paymentThunk"
 import { logout } from "./authSlice"
-import { logoutApi, refreshToken } from "../action/authThunk"
+import { logoutApi } from "../action/authThunk"
 import type { PaymentDetail, PaymentFilters, PaymentList, PaymentOptions } from "@/types/payments"
 interface Remote<T> { data: T | null; loading: boolean; error: string | null; requestId: string | null }
 const remote = <T>(): Remote<T> => ({ data: null, loading: false, error: null, requestId: null })
@@ -32,7 +32,7 @@ const slice = createSlice({
       .addCase(exportPaymentRows.pending, (state, action) => { state.exporting = { ...remote(), loading: true, requestId: action.meta.requestId } })
       .addCase(exportPaymentRows.fulfilled, (state, action) => { if (state.exporting.requestId === action.meta.requestId) state.exporting = remote() })
       .addCase(exportPaymentRows.rejected, (state, action) => { if (state.exporting.requestId !== action.meta.requestId) return; state.exporting = { ...remote(), error: action.meta.aborted ? null : action.payload ?? "Export gagal." } })
-      .addCase(logout, () => initialState).addCase(logoutApi.fulfilled, () => initialState).addCase(refreshToken.rejected, () => initialState)
+      .addCase(logout, () => initialState).addCase(logoutApi.fulfilled, () => initialState)
       .addMatcher(isAnyOf(verifyPayment.pending, cancelPayment.pending), (state, action) => { state.mutation = { ...remote(), loading: true, requestId: action.meta.requestId } })
       .addMatcher(isAnyOf(verifyPayment.fulfilled, cancelPayment.fulfilled), (state, action) => {
         if (state.mutation.requestId !== action.meta.requestId) return

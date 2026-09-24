@@ -108,6 +108,7 @@ export class Controller {
             if (body.password !== undefined && body.password !== "") {
                 if (typeof body.password !== "string" || body.password.length < 8) return invalid("Password minimal 8 karakter");
                 userData.password = hashPassword(body.password);
+                userData.refreshTokens = { updateMany: { where: {}, data: { revoked: true } } };
             }
             if (body.nidn !== undefined) {
                 if (typeof body.nidn !== "string" || !body.nidn.trim()) return invalid("NIDN wajib berupa teks yang tidak kosong");

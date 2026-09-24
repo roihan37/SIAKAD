@@ -17,5 +17,6 @@ export const comingSoonPages = [
 ] as const
 
 export function upcomingPath(title: string) {
-  return comingSoonPages.find((page) => page.title === title)?.path ?? "#"
+  const path = comingSoonPages.find((page) => page.title === title)?.path
+  return path ? `/admin${path}` : "#"
 }

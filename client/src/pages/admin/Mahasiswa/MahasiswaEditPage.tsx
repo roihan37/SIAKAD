@@ -143,7 +143,7 @@ export default function MahasiswaEditPage() {
       navigate(-1)
       return
     }
-    navigate(id ? `/mahasiswa/${id}` : "/mahasiswa", { replace: true })
+    navigate(id ? `/admin/mahasiswa/${id}` : "/admin/mahasiswa", { replace: true })
   }
   const handleBack = () => isDirty || photoChanged ? setConfirmLeaveOpen(true) : leavePage()
 
@@ -279,7 +279,7 @@ export default function MahasiswaEditPage() {
     // ==========================================
     // Success/error notifications for updateStudent are owned by toastMiddleware.
 
-    navigate(id ? `/mahasiswa/${id}` : "/mahasiswa")
+    navigate(id ? `/admin/mahasiswa/${id}` : "/admin/mahasiswa")
   } catch (error) {
     if (!updateDispatched) toast.error(getErrorMessage(error))
   } finally {

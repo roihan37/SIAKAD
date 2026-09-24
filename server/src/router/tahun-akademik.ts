@@ -4,7 +4,7 @@ import { Controller } from "../controllers/tahunAkademikController";
 
 const router = express.Router();
 
-router.post("/", Controller.createTahunAkademik);
+router.post("/", adminMiddleware, Controller.createTahunAkademik);
 router.put("/:id", adminMiddleware, Controller.updateTahunAkademik);
 router.patch("/:id", adminMiddleware, Controller.updateTahunAkademik);
 router.get("/", Controller.getAllTahunAkademik);

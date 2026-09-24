@@ -2,7 +2,7 @@ import { GraduationCap } from "lucide-react"
 import { Link } from "react-router"
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar"
 
-export function SidebarBrand() {
+export function SidebarBrand({ dashboardPath }: { dashboardPath: string }) {
   const { isMobile, setOpenMobile } = useSidebar()
 
   return (
@@ -12,7 +12,7 @@ export function SidebarBrand() {
           size="lg"
           tooltip="SIAKAD · Dashboard"
           className="h-auto gap-3 rounded-xl py-3 hover:bg-sidebar-accent/60 group-data-[collapsible=icon]:p-0!"
-          render={<Link to="/dashboard" aria-label="SIAKAD — buka Dashboard" onClick={() => { if (isMobile) setOpenMobile(false) }} />}
+          render={<Link to={dashboardPath} aria-label="SIAKAD — buka Dashboard" onClick={() => { if (isMobile) setOpenMobile(false) }} />}
         >
           <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-sm ring-1 ring-black/5 group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:rounded-lg">
             <GraduationCap className="size-6 group-data-[collapsible=icon]:size-5" strokeWidth={1.8} aria-hidden="true" />

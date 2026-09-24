@@ -660,6 +660,7 @@ export class Controller {
                                         undefined && {
                                         password:
                                             hashedPassword,
+                                        refreshTokens: { updateMany: { where: {}, data: { revoked: true } } },
                                     }),
 
                                     ...(parsedBirthDate !==
@@ -1934,15 +1935,11 @@ export class Controller {
 
             const hashedPassword = await hashPassword(password)
 
-            await prisma.user.update({
-                where: {
-                    id: userId,
-                },
-                data: {
-                    password: hashedPassword,
-                    mustChangePassword: true,
-                },
-            })
+            // Password reset and session revocation must commit together.
+            await prisma.$transaction(async tx => {
+                await tx.user.update({ where: { id: userId }, data: { password: hashedPassword, mustChangePassword: true } });
+                await tx.refreshToken.updateMany({ where: { userId }, data: { revoked: true } });
+            }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
             return res.status(200).json({
                 message: "Password mahasiswa berhasil direset",

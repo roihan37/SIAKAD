@@ -2,7 +2,7 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit"
 import type { GradeSummary, StudentGradeItem, CourseGradeItem, StudentGradeDetail, CourseGradeDetail, GradeFilters, GradeStatus, GradeOptions, Pagination } from "@/types/grades"
 import { getGradeSummary, getStudentGrades, getCourseGrades, getStudentGradeDetail, getCourseGradeDetail, getGradeOptions } from "../action/gradeThunk"
 import { logout } from "./authSlice"
-import { logoutApi, refreshToken } from "../action/authThunk"
+import { logoutApi } from "../action/authThunk"
 type Remote<T> = { data: T | null; loading: boolean; error: string | null; requestId: string | null }
 const empty = <T>(): Remote<T> => ({ data: null, loading: false, error: null, requestId: null })
 const pagination = (): Pagination => ({ page: 1, limit: 10, totalRows: 0, totalPages: 1 })
@@ -54,7 +54,7 @@ const slice = createSlice({ name: "grades", initialState, reducers: {
     .addCase(getGradeOptions.pending, (state, action) => { state.options = { data: null, loading: true, error: null, requestId: action.meta.requestId } })
     .addCase(getGradeOptions.fulfilled, (state, action) => { if (state.options.requestId !== action.meta.requestId) return; state.options = { data: action.payload, loading: false, error: null, requestId: null }; if (!state.filters.academicYearId) { state.filters.academicYearId = Number((action.payload.years.find((year) => year.active) ?? action.payload.years[0])?.id) || undefined; } })
     .addCase(getGradeOptions.rejected, (state, action) => { if (state.options.requestId !== action.meta.requestId) return; state.options = { data: null, loading: false, error: action.meta.aborted ? null : action.payload ?? "Data nilai gagal dimuat.", requestId: null } })
-    .addCase(logout, () => initialState).addCase(logoutApi.fulfilled, () => initialState).addCase(refreshToken.rejected, () => initialState)
+    .addCase(logout, () => initialState).addCase(logoutApi.fulfilled, () => initialState)
 } })
 export const { setAcademicYearId, setStudyProgramId, setClassId, setCourseId, setLecturerId, setStatus, setSearch, setStudentPage, setCoursePage, resetFilters, clearStudentDetail, clearCourseDetail } = slice.actions
 export default slice.reducer

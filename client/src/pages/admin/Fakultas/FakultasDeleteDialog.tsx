@@ -20,7 +20,7 @@ export function FakultasDeleteDialog({ faculty, onClose, onDeleted }: {
         setIsDeleting(true)
         setError(null)
         try {
-            await api.delete(`/fakultas/${faculty.id}`)
+            await api.delete(`/admin/fakultas/${faculty.id}`)
         } catch (error) {
             const message = isAxiosError(error) ? error.response?.data?.message : undefined
             setError(typeof message === "string" ? message : "Gagal menghapus fakultas. Silakan coba lagi.")

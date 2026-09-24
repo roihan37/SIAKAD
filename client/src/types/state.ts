@@ -1,12 +1,7 @@
 import type { LecturerDetailResponse } from "./lecturer-detail"
 import type { Dosen, Fakultas, Jadwal, KRS, Kurikulum, Mahasiswa, MataKuliah, ProgramStudi, riwayatSemester, Ruangan, StudentDetail, StudentKRS, StudentNilai, TahunAkademik } from "./campus"
 
-export interface AuthState {
-    isLoading : boolean
-    accessToken : string | null
-    error: string | null
-    initialized: boolean
-}
+export type { AuthState } from "@/features/slice/authSlice"
 
 export interface MahasiswaState extends Pagination{
     isBulkMutating: boolean

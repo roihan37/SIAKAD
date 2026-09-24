@@ -35,7 +35,7 @@ export const dosenColumns: ColumnDef<Dosen>[] = [
   {
     accessorKey: "name",
     header: "Nama",
-    cell: ({ row }) => <Link to={`/dosen/${row.original.id}`} className="font-medium hover:underline">{row.original.name}</Link>,
+    cell: ({ row }) => <Link to={`/admin/dosen/${row.original.id}`} className="font-medium hover:underline">{row.original.name}</Link>,
     meta: {
       label: "Name",
     },
@@ -61,7 +61,7 @@ export const dosenColumns: ColumnDef<Dosen>[] = [
       label: "Status",
     },
   },
-  createActionColumn<Dosen>((lecturer) => `/dosen/${lecturer.id}/edit`, undefined, undefined, (lecturer) => `/dosen/${lecturer.id}`),
+  createActionColumn<Dosen>((lecturer) => `/admin/dosen/${lecturer.id}/edit`, undefined, undefined, (lecturer) => `/admin/dosen/${lecturer.id}`),
 
 
 ];

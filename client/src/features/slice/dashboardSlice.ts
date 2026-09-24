@@ -2,7 +2,7 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit"
 import type { AcademicYearOption, DashboardData } from "@/types/dashboard"
 import { fetchDashboard, fetchDashboardYears } from "@/features/action/dashboardThunk"
 import { logout } from "@/features/slice/authSlice"
-import { logoutApi, refreshToken } from "@/features/action/authThunk"
+import { logoutApi } from "@/features/action/authThunk"
 
 type RemoteData<T> = { data: T | null; loading: boolean; error: string | null; requestId: string | null }
 const empty = <T>(): RemoteData<T> => ({ data: null, loading: false, error: null, requestId: null })
@@ -61,7 +61,7 @@ const dashboardSlice = createSlice({
       })
       .addCase(logout, () => initialState)
       .addCase(logoutApi.fulfilled, () => initialState)
-      .addCase(refreshToken.rejected, () => initialState)
+      
   },
 })
 export const { selectDashboardYear, reloadDashboard, reloadDashboardYears } = dashboardSlice.actions

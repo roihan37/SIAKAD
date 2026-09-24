@@ -155,7 +155,7 @@ export default function MahasiswaDetailPage() {
 
 	return (
 		<main className="mx-auto w-full max-w-6xl space-y-5 py-5 sm:py-7">
-			<Button variant="ghost" className="-ml-2 text-muted-foreground" onClick={() => navigate("/mahasiswa")}><ArrowLeft /> Mahasiswa</Button>
+			<Button variant="ghost" className="-ml-2 text-muted-foreground" onClick={() => navigate("/admin/mahasiswa")}><ArrowLeft /> Mahasiswa</Button>
 
 			<section className="relative overflow-hidden rounded-xl bg-primary px-5 py-6 text-primary-foreground sm:px-8 sm:py-8">
 				<div className="absolute -right-16 -top-20 size-56 rounded-full border-32 border-primary-foreground/10" />
@@ -174,11 +174,11 @@ export default function MahasiswaDetailPage() {
 						</div>
 					</div>
 					<div className="flex gap-2 self-start sm:self-center">
-						<Button variant="secondary" size="sm" onClick={() => navigate(`/mahasiswa/${id}/edit`)}><Pencil /> Edit Mahasiswa</Button>
+						<Button variant="secondary" size="sm" onClick={() => navigate(`/admin/mahasiswa/${id}/edit`)}><Pencil /> Edit Mahasiswa</Button>
 						<DropdownMenu>
 							<DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground" aria-label="Buka menu aksi admin"><Ellipsis /></Button>} />
 							<DropdownMenuContent align="end" className="w-52">
-								<DropdownMenuItem onClick={() => navigate(`/mahasiswa/${id}/edit`)}><Pencil /> Edit Data</DropdownMenuItem>
+								<DropdownMenuItem onClick={() => navigate(`/admin/mahasiswa/${id}/edit`)}><Pencil /> Edit Data</DropdownMenuItem>
 								<DropdownMenuItem onClick={() => { setNewStatus(currentStatus); setStatusReason(""); setIsStatusDialogOpen(true) }}><UserRound /> Ubah Status</DropdownMenuItem>
 								<DropdownMenuItem disabled={isResettingPassword} onClick={openResetPasswordDialog}><KeyRound /> Reset Password</DropdownMenuItem>
 								<DropdownMenuItem onClick={() => setActiveTab("Status Mahasiswa")}><Activity /> Lihat Riwayat Status</DropdownMenuItem>

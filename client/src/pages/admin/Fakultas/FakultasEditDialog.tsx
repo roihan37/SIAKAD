@@ -24,7 +24,7 @@ export function FakultasEditDialog({ faculty, onClose, onSaved }: {
     const submit = async (values: FakultasFormValues) => {
         setServerError(null)
         try {
-            await api.put(`/fakultas/${faculty.id}`, values)
+            await api.put(`/admin/fakultas/${faculty.id}`, values)
         } catch (error) {
             const message = isAxiosError(error) ? error.response?.data?.message : undefined
             setServerError(typeof message === "string" ? message : "Gagal memperbarui fakultas. Silakan coba lagi.")

@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from "express";
 import { Role } from "@prisma/client";
 import { decoded } from "../lib/jwt";
 import { prisma } from "../lib/prisma";
-import { ResultToken } from "../types/token";
 
 
 export async function authMiddleware(
@@ -17,21 +16,19 @@ export async function authMiddleware(
         throw { name: "TokenInvalid" };
       }
   
-      const token = authHeader.split(" ")[1];
-  
-      const payload = decoded(token) as ResultToken;
-      
-      
-      const user = await prisma.user.findUnique({
-        where: {
-          id: payload.id,
-        },
+      const match = /^Bearer ([^\s]+)$/.exec(authHeader);
+      if (!match) throw { name: "TokenInvalid" };
+      const payload = decoded(match[1]);
+      // A revoked session invalidates access tokens immediately after logout/password reset.
+      const session = await prisma.refreshToken.findUnique({
+        where: { id: payload.sid },
+        select: { userId: true, revoked: true, expireAt: true, user: { select: { id: true, role: true, mustChangePassword: true } } },
       });
-  
-      if (!user) {
-        throw { name: "NotFound" };
+      if (!session || session.userId !== payload.id || session.revoked || session.expireAt <= new Date()) throw { name: "TokenInvalid" };
+      const user = session.user;
+      if (user.mustChangePassword && req.originalUrl.split('?')[0] !== '/api/v1/auth/change-password') {
+        throw { name: "PasswordChangeRequired", message: "Change your password before continuing." };
       }
-  
       req.userLogin = {
         id: user.id,
         role: user.role,

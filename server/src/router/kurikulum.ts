@@ -4,7 +4,7 @@ import { Controller } from "../controllers/kurikulumController";
 
 const router = express.Router();
 
-router.post("/", Controller.createKurikulum);
+router.post("/", adminMiddleware, Controller.createKurikulum);
 router.put("/:id", adminMiddleware, Controller.updateKurikulum);
 router.patch("/:id", adminMiddleware, Controller.updateKurikulum);
 router.get("/", Controller.getAllKurikulum);

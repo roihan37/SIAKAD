@@ -1,13 +1,8 @@
-import { Navigate, Outlet } from "react-router";
-import { useAppSelector } from "@/hooks/redux";
-
+import { Navigate, Outlet } from "react-router"
+import { useAppSelector } from "@/hooks/redux"
+import { roleHome } from "@/router/role-paths"
+import { SessionGate } from "./SessionGate"
 export default function PublicRoute() {
-  const { accessToken } = useAppSelector((state) => state.auth);
-  // console.log(accessToken, '<< public');
-  
-  if (accessToken) {
-    return <Navigate to="/mahasiswa" replace />;
-  }
-
-  return <Outlet />;
+  const { accessToken, user } = useAppSelector(state => state.auth)
+  return <SessionGate>{accessToken && user ? <Navigate to={roleHome(user.role)} replace /> : <Outlet />}</SessionGate>
 }

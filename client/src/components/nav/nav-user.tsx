@@ -32,7 +32,7 @@ export function NavUser() {
       toast.dismiss(toastId)
       navigate("/", { replace: true })
     } catch (error) {
-      toast.error(typeof error === "string" ? error : "Gagal keluar. Silakan coba lagi.", { id: toastId })
+      toast.error(error && typeof error === "object" && "message" in error && typeof error.message === "string" ? error.message : "Gagal keluar. Silakan coba lagi.", { id: toastId })
     } finally {
       pending.current = false
       setIsLoggingOut(false)

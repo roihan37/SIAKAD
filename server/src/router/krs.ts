@@ -3,6 +3,7 @@ import express from "express";
 import { Controller } from "../controllers/krsController";
 
 const router = express.Router();
+router.use(adminMiddleware);
 
 router.post("/", Controller.createKRS);
 router.put("/:id", adminMiddleware, Controller.updateKRS);

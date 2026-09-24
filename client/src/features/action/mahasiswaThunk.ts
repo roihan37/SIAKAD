@@ -53,7 +53,6 @@ export const updateStudent = createAsyncThunk(
       const response = await api.patch(`/students/${id}`, payload)
       return response.data
     } catch (err: any) {
-      console.log(err, "<<<<")
       return thunkAPI.rejectWithValue(err.response?.data?.message ?? "Gagal memperbarui mahasiswa")
     }
   }

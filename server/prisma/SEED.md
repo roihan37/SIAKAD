@@ -119,3 +119,9 @@ npm run seed -- --payment-proofs
 ```
 
 This requires the existing S3 configuration. The file is a development fixture, not a bank receipt. Its key is stored only after upload succeeds. Repeated uploads replace the same seed object; existing non-seed proof keys are preserved. Without this option, no storage request is made and missing proof URLs remain null. The optional upload occurs after the database seed commits; an upload failure does not roll back the academic seed.
+
+## Dedicated trial student
+
+An additional student is seeded for authentication/error testing: username `mahasiswa_trial`, email `mahasiswa.trial@example.test`, NIM `20251999`, default password `TrialSIAKAD123!` (override with `SEED_TRIAL_PASSWORD`). The account belongs to TI with its first lecturer as advisor, is active, and has `mustChangePassword=true`. Login must lead to the password-change flow. After changing password, sign in again; this student is correctly denied access to the admin portal.
+
+This account has no academic or financial transactions, allowing empty-state tests. Total users/students are now 24/17; active students are 15, so dashboard counts based on active students change accordingly (five active students without submitted KRS including this trial account). The earlier dataset tables describe the original 16 academic-demo students. Re-running seed resets the trial password and mandatory-change flag and revokes the trial account's existing sessions. No live database execution is implied by adding this fixture.

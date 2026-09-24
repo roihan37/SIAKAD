@@ -27,7 +27,7 @@ export default function DosenEditPage() {
     const request = dispatch(getLecturerById(id))
     return () => request.abort()
   }, [dispatch, id])
-  if (!id || lecturerDetailError) return <main className="mx-auto max-w-6xl space-y-4 py-7"><Button variant="ghost" onClick={() => navigate("/dosen")}><ArrowLeft /> Daftar Dosen</Button><p role="alert">{lecturerDetailError ?? "ID dosen tidak tersedia."}</p>{id && <Button variant="outline" onClick={() => dispatch(getLecturerById(id))}>Coba Lagi</Button>}</main>
+  if (!id || lecturerDetailError) return <main className="mx-auto max-w-6xl space-y-4 py-7"><Button variant="ghost" onClick={() => navigate("/admin/dosen")}><ArrowLeft /> Daftar Dosen</Button><p role="alert">{lecturerDetailError ?? "ID dosen tidak tersedia."}</p>{id && <Button variant="outline" onClick={() => dispatch(getLecturerById(id))}>Coba Lagi</Button>}</main>
   if (isLoadingLecturerDetail || !lecturerDetail || lecturerDetail.id !== id) return <main className="mx-auto w-full max-w-6xl py-7"><TabSkeleton /></main>
   return <DosenEditForm key={lecturerDetail.id} lecturer={lecturerDetail} />
 }
@@ -63,7 +63,7 @@ function DosenEditForm({ lecturer }: { lecturer: LecturerDetailResponse["lecture
   }, [hasChanges])
   const goBack = () => {
     if (typeof window.history.state?.idx === "number" && window.history.state.idx > 0) navigate(-1)
-    else navigate(`/dosen/${lecturer.id}`)
+    else navigate(`/admin/dosen/${lecturer.id}`)
   }
   const submit = async (values: DosenEditValues) => {
     if (saveLock.current || !hasChanges) return
@@ -79,7 +79,7 @@ function DosenEditForm({ lecturer }: { lecturer: LecturerDetailResponse["lecture
       await dispatch(updateLecturer({ id: lecturer.id, payload, photo })).unwrap()
       allowLeave.current = true
       reset(values)
-      navigate(`/dosen/${lecturer.id}`, { replace: true })
+      navigate(`/admin/dosen/${lecturer.id}`, { replace: true })
     } catch {
       // Satu toast loading/sukses/gagal dikelola middleware Redux.
     } finally { saveLock.current = false }

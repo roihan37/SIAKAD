@@ -1,3 +1,4 @@
+import { clientOrigin, jwtSecret } from "./auth/config";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import express from "express";
@@ -5,6 +6,7 @@ import router from "./router/index";
 import { errorHandler } from "./middleware/errHendler";
 import "dotenv/config";
 
+jwtSecret(); // Validate signing configuration before accepting requests.
 const app = express();
 const port = 4000;
 
@@ -13,8 +15,10 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: clientOrigin,
     credentials: true,
+    // Allow the frontend to honor authentication rate-limit cooldowns across origins.
+    exposedHeaders: ["Retry-After"],
   })
 );
 app.use(router)

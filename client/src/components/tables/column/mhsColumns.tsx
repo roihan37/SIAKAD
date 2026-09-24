@@ -42,7 +42,7 @@ export function createMhsColumns(
 
     return (
         <Link
-            to={`/mahasiswa/${student.id}`}
+            to={`/admin/mahasiswa/${student.id}`}
             className="font-medium hover:underline"
         >
             {student.name}
@@ -72,10 +72,10 @@ export function createMhsColumns(
     },
   },
   createActionColumn<Mahasiswa>(
-    (student) => `/mahasiswa/${student.id}/edit`,
+    (student) => `/admin/mahasiswa/${student.id}/edit`,
     onDelete,
     undefined,
-    (student) => `/mahasiswa/${student.id}`,
+    (student) => `/admin/mahasiswa/${student.id}`,
   ),
 ];
 }

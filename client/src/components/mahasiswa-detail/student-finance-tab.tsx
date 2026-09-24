@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { money, dateLabel, statusLabels } from "@/pages/TagihanUKT/billing-format"
+import { money, dateLabel, statusLabels } from "@/pages/admin/TagihanUKT/billing-format"
 import type { StudentFinanceBill } from "@/types/student-finance"
 
 const paymentStatuses = { PENDING: "Menunggu", SUCCESS: "Berhasil", FAILED: "Gagal", EXPIRED: "Kedaluwarsa", CANCELLED: "Dibatalkan" }

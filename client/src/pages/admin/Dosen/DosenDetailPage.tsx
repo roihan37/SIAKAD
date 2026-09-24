@@ -41,7 +41,7 @@ export default function DosenDetailPage() {
 
   const goBack = () => {
     if (typeof window.history.state?.idx === "number" && window.history.state.idx > 0) navigate(-1)
-    else navigate("/dosen", { replace: true })
+    else navigate("/admin/dosen", { replace: true })
   }
 
   if (!id || (!isLoadingLecturerDetail && lecturerDetailError)) {
@@ -77,7 +77,7 @@ function LecturerDetailContent({ lecturer, goBack }: { lecturer: LecturerDetailR
           <div className="min-w-0"><p className="mb-1 text-xs font-medium uppercase tracking-widest text-primary-foreground/70">Profil Dosen</p><h1 className="break-words text-2xl font-semibold tracking-tight sm:text-3xl">{lecturer.nama}</h1><p className="mt-2 text-sm text-primary-foreground/80">NIDN {lecturer.nidn ?? "—"}</p><p className="mt-1 text-sm text-primary-foreground/80">{lecturer.prodi?.nama ?? "Program studi belum tersedia"} · {lecturer.fakultas?.nama ?? "Fakultas belum tersedia"}</p></div>
         </div>
         <div className="flex shrink-0 items-center gap-2 self-start sm:self-center">
-          <Button variant="secondary" size="sm" onClick={() => navigate(`/dosen/${lecturer.id}/edit`)}><Pencil /> Edit Dosen</Button>
+          <Button variant="secondary" size="sm" onClick={() => navigate(`/admin/dosen/${lecturer.id}/edit`)}><Pencil /> Edit Dosen</Button>
           <DropdownMenu><DropdownMenuTrigger render={<Button variant="ghost" size="icon" aria-label="Buka menu aksi dosen" className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"><EllipsisVertical /></Button>} /><DropdownMenuContent align="end" className="w-56"><p className="px-2 py-2 text-xs text-muted-foreground">Aksi tersedia sebagai simulasi di tab Akun.</p><DropdownMenuItem disabled><UserRound /> Ubah Status</DropdownMenuItem><DropdownMenuItem onClick={() => setActiveSection("Akun")}><KeyRound /> Reset Password</DropdownMenuItem><DropdownMenuItem disabled><Activity /> Lihat Aktivitas</DropdownMenuItem><DropdownMenuSeparator /><DropdownMenuItem variant="destructive" onClick={() => setActiveSection("Akun")}><Ban /> Nonaktifkan Akun</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
         </div>
       </div>

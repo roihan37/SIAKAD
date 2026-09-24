@@ -180,13 +180,14 @@ export class Controller {
             const hash = await hashPassword(password)
 
             const userUpdate = await prisma.$transaction(async (tx) => {
-                const user = await prisma.user.update({
+                const user = await tx.user.update({
                     where : {id : id as string},
                     data: {
                         name,
                         email,
                         username,
                         password : hash,
+                        refreshTokens: { updateMany: { where: {}, data: { revoked: true } } },
                         birthDate,
                         role,
                         phoneNumber,

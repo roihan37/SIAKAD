@@ -2,7 +2,7 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit"
 import type { StudentAttendance, StudentAttendanceQuery } from "@/types/student-attendance"
 import { getStudentAttendance } from "../action/studentAttendanceThunk"
 import { logout } from "./authSlice"
-import { logoutApi, refreshToken } from "../action/authThunk"
+import { logoutApi } from "../action/authThunk"
 const initialState = {
   data: null as StudentAttendance | null,
   loading: false,
@@ -35,7 +35,7 @@ const slice = createSlice({
       })
       .addCase(logout, () => initialState)
       .addCase(logoutApi.fulfilled, () => initialState)
-      .addCase(refreshToken.rejected, () => initialState)
+      
   },
 })
 export const { setStudentAttendanceYear, clearStudentAttendance } = slice.actions

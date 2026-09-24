@@ -1,3 +1,4 @@
+import { sessionGuard } from "./middleware/session-guard"
 import paymentReducer from "@/features/slice/paymentSlice"
 import studentFinanceReducer from "@/features/slice/studentFinanceSlice"
 import tuitionReducer from "@/features/slice/tuitionSlice"
@@ -6,7 +7,7 @@ import gradeReducer from "@/features/slice/gradeSlice"
 import attendanceReducer from "@/features/slice/attendanceSlice"
 import dashboardReducer from "@/features/slice/dashboardSlice"
 import lecturerTabsReducer from "@/features/slice/lecturerTabsSlice"
-import { configureStore } from '@reduxjs/toolkit'
+import { combineReducers, configureStore, type UnknownAction } from '@reduxjs/toolkit'
 import authReducer from '@/features/slice/authSlice'
 import dosenReducer from '@/features/slice/dosenSlice'
 import mahasiswaReducer from '@/features/slice/mahasiswaSlice'
@@ -21,8 +22,7 @@ import { injectStore } from '@/api/axios'
 import { toastMiddleware } from './middleware/toast-middleware'
 // ...
 
-export const store = configureStore({
-  reducer: {
+const combinedReducer = combineReducers({
     payments: paymentReducer,
     studentFinance: studentFinanceReducer,
     tuition: tuitionReducer,
@@ -41,11 +41,23 @@ export const store = configureStore({
     kurikulum: kurikulumReducer,
     jadwal: jadwalReducer,
     krs: krsReducer
-  },
-
+  })
+function rootReducer(state: ReturnType<typeof combinedReducer> | undefined, action: UnknownAction): ReturnType<typeof combinedReducer> {
+  const previous = state?.auth
+  const auth = authReducer(previous, action)
+  const identityChanged = previous?.user?.id !== auth.user?.id || previous?.user?.role !== auth.user?.role || previous?.user?.mustChangePassword !== auth.user?.mustChangePassword
+  if (action.type === 'auth/logoutLocal' || identityChanged) {
+    return { ...combinedReducer(undefined, { type: '@@session/reset' }), auth }
+  }
+  return combinedReducer(state, action)
+}
+export const store = configureStore({
+  reducer: rootReducer,
+  // Auth thunk arguments contain passwords; do not expose them through Redux DevTools.
+  devTools: false,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().prepend(
-      toastMiddleware.middleware
+      sessionGuard, toastMiddleware.middleware
     ),
 
 })

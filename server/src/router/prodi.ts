@@ -3,7 +3,7 @@ import express, { Request, Response } from "express";
 import { Controller } from "../controllers/prodiController";
 
 const router = express.Router()
-router.post("/", Controller.createProdi);
+router.post("/", adminMiddleware, Controller.createProdi);
 router.put("/:id", adminMiddleware, Controller.updateProdi);
 router.patch("/:id", adminMiddleware, Controller.updateProdi);
 router.get("/", Controller.getAllProdi);

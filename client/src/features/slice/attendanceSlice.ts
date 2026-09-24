@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit"
 import { logout } from "./authSlice"
-import { logoutApi, refreshToken } from "../action/authThunk"
+import { logoutApi } from "../action/authThunk"
 import type { AttendanceQuery, AttendanceSummary, StudentAttendancePage, MeetingAttendancePage, AttendanceOptions, MeetingAttendanceDetail } from "@/types/attendance"
 import { fetchAttendanceSummary, fetchAttendanceStudents, fetchAttendanceMeetings, fetchAttendanceFilters, fetchAttendanceDetail } from "../action/attendanceThunk"
 type Remote<T> = { data: T | null; loading: boolean; error: string | null; requestId: string | null }
@@ -42,7 +42,7 @@ const slice = createSlice({
       .addCase(fetchAttendanceDetail.rejected, (state, action) => { if (state.detail.requestId !== action.meta.requestId) return; state.detail = { data: null, loading: false, error: action.meta.aborted ? null : String(action.payload ?? "Data gagal dimuat."), requestId: null } })
       .addCase(logout, () => initialState)
       .addCase(logoutApi.fulfilled, () => initialState)
-      .addCase(refreshToken.rejected, () => initialState)
+      
   },
 })
 export const { setAttendanceQuery, setAttendancePage, setAttendanceView, clearAttendanceDetail } = slice.actions

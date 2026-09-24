@@ -27,9 +27,12 @@ prisma.$transaction=async fn=>fn(tx);
 (async()=>{
 for(let run=0;run<2;run++){
  const targets=await seedCampus();assert.equal(targets.length,2);
- for(const [model,count] of Object.entries({user:23,fakultas:2,prodi:2,dosen:6,mahasiswa:16,kelas:4,jadwal:24,kRS:28,kRSDetail:168,transkrip:114,periodeKRS:2,riwayatStatusMahasiswa:16,pertemuan:16,absensi:64,tagihanUKT:30,pembayaranUKT:36,nilai:120,riwayatStatusPembayaran:68,riwayatKoreksiNilai:1}))assert.equal(db[model].length,count,model);
+ for(const [model,count] of Object.entries({user:24,fakultas:2,prodi:2,dosen:6,mahasiswa:17,kelas:4,jadwal:24,kRS:28,kRSDetail:168,transkrip:114,periodeKRS:2,riwayatStatusMahasiswa:16,pertemuan:16,absensi:64,tagihanUKT:30,pembayaranUKT:36,nilai:120,riwayatStatusPembayaran:68,riwayatKoreksiNilai:1}))assert.equal(db[model].length,count,model);
  for(const mark of db.absensi){const session=db.pertemuan.find(x=>x.id===mark.pertemuanId);assert.equal(session.status,'SELESAI');const schedule=db.jadwal.find(x=>x.id===session.jadwalId);assert.ok(db.kRS.some(k=>k.mahasiswaId===mark.mahasiswaId&&k.tahunAkademikId===schedule.tahunAkademikId&&k.status==='DISETUJUI'&&db.kRSDetail.some(d=>d.krsId===k.id&&d.kelasMataKuliahId===schedule.kelasMataKuliahId&&d.status==='DISETUJUI')));}
  assert.equal(db.tahunAkademik.filter(x=>x.isActive).length,1);
+ const trial=db.user.find(x=>x.username==='mahasiswa_trial');assert.equal(trial.role,'Mahasiswa');assert.equal(trial.mustChangePassword,true);
+ assert.ok(await require('../src/lib/bycript').comparePassword(process.env.SEED_TRIAL_PASSWORD||'TrialSIAKAD123!',trial.password));
+ const trialProfile=db.mahasiswa.find(x=>x.userId===trial.id);assert.equal(trialProfile.nim,'20251999');assert.ok(db.prodi.some(x=>x.id===trialProfile.prodiId));assert.ok(db.dosen.some(x=>x.id===trialProfile.dosenId));
  const activeYear=db.tahunAkademik.find(x=>x.isActive);
  const activeBills=db.tagihanUKT.filter(x=>x.tahunAkademikId===activeYear.id);
  assert.equal(activeBills.length,14);

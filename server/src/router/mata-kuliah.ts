@@ -4,7 +4,7 @@ import { Controller } from "../controllers/mataKuliahController";
 
 const router = express.Router();
 
-router.post("/", Controller.createMataKuliah);
+router.post("/", adminMiddleware, Controller.createMataKuliah);
 router.put("/:id", adminMiddleware, Controller.updateMataKuliah);
 router.patch("/:id", adminMiddleware, Controller.updateMataKuliah);
 router.get("/", Controller.getAllMataKuliah);

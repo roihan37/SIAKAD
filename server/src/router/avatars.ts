@@ -1,7 +1,9 @@
+import { adminMiddleware } from "../middleware/authMid";
 import express from "express";
 import { AvatarController } from "../controllers/avatarController";
 
 const router = express.Router();
+router.use(adminMiddleware);
 
 router.post("/students/upload-url", (req, res, next) =>
     AvatarController.createUploadUrl("students", req, res, next)

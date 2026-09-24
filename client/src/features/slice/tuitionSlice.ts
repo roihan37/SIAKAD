@@ -1,7 +1,7 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit"
 import { getTuitionBills, getTuitionOptions, generateTuitionBills } from "../action/tuitionThunk"
 import { logout } from "./authSlice"
-import { logoutApi, refreshToken } from "../action/authThunk"
+import { logoutApi } from "../action/authThunk"
 import type { BillFilters, BillList, BillOptions } from "@/types/tuition"
 interface TuitionState {
   data: BillList | null
@@ -38,7 +38,7 @@ const slice = createSlice({
       .addCase(generateTuitionBills.pending, (state, action) => { state.generating = true; state.generateError = null; state.generateRequestId = action.meta.requestId })
       .addCase(generateTuitionBills.fulfilled, (state, action) => { if (state.generateRequestId !== action.meta.requestId) return; state.generating = false; state.generateRequestId = null })
       .addCase(generateTuitionBills.rejected, (state, action) => { if (state.generateRequestId !== action.meta.requestId) return; state.generating = false; state.generateRequestId = null; state.generateError = action.payload ?? "Generate tagihan gagal." })
-      .addCase(logout, () => initialState).addCase(logoutApi.fulfilled, () => initialState).addCase(refreshToken.rejected, () => initialState)
+      .addCase(logout, () => initialState).addCase(logoutApi.fulfilled, () => initialState)
   },
 })
 export const { setBillFilters, setBillPage, resetBillFilters, clearGenerateError } = slice.actions

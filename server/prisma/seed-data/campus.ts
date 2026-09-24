@@ -1,3 +1,4 @@
+import { seedTrialStudent } from "./trial-student";
 import { seedAssessment, seedGrade } from "./grades";
 import { seedStudentFinance } from "./finance";
 import { seedAttendance } from "./attendance";
@@ -41,6 +42,7 @@ export async function seedCampus(reset = false) {
         lecturers.push(await tx.dosen.upsert({ where: { userId: user.id }, update: detail, create: { userId: user.id, ...detail } }));
         if (index === 0) photoTargets.push({ userId: user.id, entity: "lecturers" });
       }
+      if (p === 0) await seedTrialStudent(tx, prodi.id, lecturers[0].id);
       const room = await tx.ruangan.upsert({ where: { kode: `${definition.code}-201` }, update: {}, create: { kode: `${definition.code}-201`, nama: `Ruang ${definition.code} 201`, kapasitas: 30, gedung: p === 0 ? "Gedung Teknik" : "Gedung Ekonomi" } });
       const curriculumData = { kode: `${definition.code}-2025`, nama: `Kurikulum ${definition.name} 2025`, isActive: true };
       const curriculum = await tx.kurikulum.upsert({ where: { prodiId_tahun: { prodiId: prodi.id, tahun: 2025 } }, update: curriculumData, create: { ...curriculumData, prodiId: prodi.id, tahun: 2025 } });

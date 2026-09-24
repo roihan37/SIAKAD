@@ -3,6 +3,7 @@ import { Controller } from "../controllers/lecturerController";
 import { adminMiddleware } from "../middleware/authMid";
 
 const router = express.Router()
+router.use(adminMiddleware);
 
 // CRUD dosen
 router.route("/")
