@@ -2,7 +2,7 @@
 
 ## Status and context
 
-**Active: M1 complete; M2 implementation/local validation complete, deployment acceptance pending; M3 tooling implemented with legacy lint blockers; M4–M6 not started.** Baseline: 2026-10-04. The user authorized M3 testing/quality tooling after M2. Domain controllers, architecture, schemas, and API contracts remain unchanged.
+**Active: M1 complete; M2 implementation/local validation complete, deployment acceptance pending; M3 tooling implemented with legacy lint blockers; M4 complete; M5–M6 not started.** Baseline: 2026-10-04. The user authorized M3 testing/quality tooling after M2. Domain controllers, architecture, schemas, and API contracts remain unchanged.
 
 SIAKAD is approximately 60% implemented by project estimate. Its production foundation needs attention before architectural cleanup. See [architecture](../../../ARCHITECTURE.md), [quality](../../QUALITY.md), [security](../../SECURITY.md), [reliability](../../RELIABILITY.md), and the [debt tracker](../tech-debt-tracker.md).
 
