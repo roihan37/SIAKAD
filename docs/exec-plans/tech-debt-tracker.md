@@ -1,0 +1,25 @@
+# Technical Debt Tracker
+
+Baseline: 2026-10-04. All items were **Open; not fixed during harness bootstrap**. M1 subsequently resolved TD-01 on 2026-10-04; all other items remain open. Priorities describe sequencing, not a completed security or severity assessment. P0 blocks the production foundation; P1 hardens safety and operations; P2/P3 follow through separate scoped work. Ownership is unassigned until implementation starts.
+
+| ID | Priority | Debt and evidence | Intended follow-up / closure evidence |
+| --- | --- | --- | --- |
+| TD-01 | P0 | Production backend build is broken: `server/package.json` runs `tsc`, `server/tsconfig.json` sets `noEmit`, but start expects `dist/server.js`. | **Resolved 2026-10-04 (M1):** separate typecheck/build configs emit the correct artifact; clean locked install, generation, and typecheck/build/start sequence passed on Node 24.18.0. See the plan validation record; live DB/S3 readiness and M3 quality gates remain separate. |
+| TD-02 | P0 | AWS credential configuration needs hardening: `server/src/config/s3.ts` explicitly supplies environment access keys with non-null assertions. | Platform M2: validated deployment configuration, temporary role credentials where applicable, least privilege, safe failure tests. |
+| TD-03 | P2 | API response shapes are inconsistent; `krsController.ts` includes bare objects and differing envelopes. | Separate contract inventory/migration; characterize clients and preserve existing contracts. Platform M3 only adds compatibility coverage. |
+| TD-04 | P1 | Error handling is inconsistent despite an existing central handler in `middleware/errHendler.ts`. | Platform M4: consistent safe boundary behavior with regression coverage for legacy mappings. |
+| TD-05 | P1 | Plain error objects are thrown in controllers and services, including student and payment flows. | Platform M4: introduce typed Error-based foundation and migrate only scoped callers; broader conversion stays open. |
+| TD-06 | P2 | Server state is overused in Redux: `client/src/app/store.ts` and `features/slice/` contain fetched academic/finance data. | Separate decision and feature migration plan; retain session isolation and select a server-state solution explicitly. |
+| TD-07 | P3 | Frontend folder organization needs gradual cleanup across `pages/`, `components/`, and `features/slice/`. | Feature-scoped structure decisions and import/route verification; no broad rename campaign. |
+| TD-08 | P2 | KRS model requires domain review: `server/prisma/schema/krs.prisma`, detail/period models, and `controllers/krsController.ts`. | Separate domain review of lifecycle, enrollment rules, periods, and constraints before proposing any schema change. |
+| TD-09 | P3 | `server/src/middleware/errHendler.ts` naming. | Separate scoped rename with import verification; leave path unchanged in bootstrap and platform hardening. |
+| TD-10 | P3 | `server/src/lib/bycript.ts` naming. | Separate scoped rename with import verification; leave path unchanged in bootstrap and platform hardening. |
+| TD-11 | P1 | Backend testing tooling is immature: `.cjs` tests exist but package scripts lack lint, typecheck, and test. | Platform M3: documented runner, all existing tests accounted for, meaningful gates, isolated data and repeatable results. |
+| TD-12 | P2 | Swagger/OpenAPI is missing; the API contract markdown is guidance, not an implemented endpoint specification. | Separate endpoint/authorization/schema inventory and validated OpenAPI coverage reflecting actual behavior. |
+| TD-13 | P1 | Structured logging is missing; entry point and error middleware use console logging. | Platform M6: structured infrastructure logs, request correlation, and verified secret/PII redaction. |
+| TD-14 | P1 | Health endpoints are missing from backend routing. | Platform M5: liveness/readiness probes, bounded dependency checks, and outage tests. |
+| TD-15 | P1 | Standard API 404 handling is missing; router installs authentication before remaining paths, with no explicit catch-all. | Platform M5: compatibility decision for unknown authenticated/unauthenticated requests and verified safe JSON behavior. |
+| TD-16 | P2 | StudentController hotspot mixes student, finance, attendance, and Prisma transaction logic in `server/src/controllers/studentController.ts`. | Separate StudentController execution plan with characterization tests and domain-focused service extraction. |
+| TD-17 | P1 | Graceful shutdown is absent in `server/src/server.ts`. | Platform M6: bounded request drain, database cleanup, and signal tests. |
+
+“Platform M#” refers to [platform-hardening.md](active/platform-hardening.md). A foundational improvement does not close every legacy instance: record residual scope explicitly. Close an item only with implementation and validation evidence, and preserve its ID and history.

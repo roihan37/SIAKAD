@@ -3,9 +3,11 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "nodemon --exec ts-node --files src/server.ts",
-    "build": "tsc",
+    "build": "tsc --project tsconfig.build.json",
     "start": "node dist/server.js",
-    "seed": "ts-node --transpile-only prisma/seed.ts"
+    "seed": "ts-node --transpile-only prisma/seed.ts",
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "prisma:generate": "prisma generate"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1105.0",
@@ -35,5 +37,8 @@
     "prisma": "^7.9.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2"
+  },
+  "engines": {
+    "node": ">=24.0.0 <25"
   }
 }
