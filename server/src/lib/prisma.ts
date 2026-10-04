@@ -1,15 +1,15 @@
 import { PrismaClient } from "@prisma/client";
-import "dotenv/config";
+import { getDatabaseUrl } from "../config/env";
 
-// Construct PrismaClient with default options. Connection URL is read from
-// the environment (`DATABASE_URL`) by the Prisma runtime.
+// Validate before constructing the adapter; configuration failures stay explicit.
+const connectionString = getDatabaseUrl();
 let prisma: PrismaClient;
 try {
 	// Dynamically require to avoid hard crash when dependency is missing; the
 	// error message below will be more actionable for the developer.
 	// eslint-disable-next-line @typescript-eslint/no-var-requires
 	const { PrismaPg } = require("@prisma/adapter-pg");
-	const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+	const adapter = new PrismaPg({ connectionString });
 	prisma = new PrismaClient({ adapter });
 } catch (err) {
 	throw new Error(

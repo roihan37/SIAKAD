@@ -1,3 +1,4 @@
+import { getSeedEnv } from "../../src/config/env";
 import { seedTrialStudent } from "./trial-student";
 import { seedAssessment, seedGrade } from "./grades";
 import { seedStudentFinance } from "./finance";
@@ -10,7 +11,7 @@ import { programs, periods, statuses, days } from "./catalog";
 import { resetDatabase } from "./reset";
 
 export async function seedCampus(reset = false) {
-  const password = hashPassword(process.env.SEED_PASSWORD || "Tasik123");
+  const password = hashPassword(getSeedEnv().SEED_PASSWORD);
   return prisma.$transaction(async (tx) => {
     if (reset) await resetDatabase(tx);
     const admin = { name: "Ratna Puspita", email: "admin@siakad.com", username: "admin", password, role: Role.Admin, gender: Gender.Female, address: "Tasikmalaya" };

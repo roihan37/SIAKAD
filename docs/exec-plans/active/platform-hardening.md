@@ -2,7 +2,7 @@
 
 ## Status and context
 
-**Active: M1 implemented and validated; M2–M6 not started.** Inspection baseline: 2026-10-04. The user subsequently authorized production backend build work only. This update changes build configuration and adds focused validation; application source, schemas, architecture, and API behavior remain unchanged.
+**Active: M1 complete; M2 implementation/local validation complete, deployment acceptance pending; M3–M6 not started.** Baseline: 2026-10-04. The user authorized M2 environment/AWS hardening after M1. Domain controllers, architecture, schemas, and API contracts remain unchanged.
 
 SIAKAD is approximately 60% implemented by project estimate. Its production foundation needs attention before architectural cleanup. See [architecture](../../../ARCHITECTURE.md), [quality](../../QUALITY.md), [security](../../SECURITY.md), [reliability](../../RELIABILITY.md), and the [debt tracker](../tech-debt-tracker.md).
 
@@ -105,7 +105,7 @@ Deliver milestones as small independent changes. Before deployment, retain a ver
 - [x] 2026-10-04: Inspected repository and documented current/target architecture and debt.
 - [x] 2026-10-04: Prepared this plan; implementation remains outside bootstrap scope.
 - [x] M1: Production build and startup (2026-10-04); scoped validation below. Missing lint/test gates remain M3 blockers to overall plan closure.
-- [ ] M2: Deployment configuration and AWS credentials.
+- [ ] M2: Code and local validation complete (2026-10-04); actual restricted non-production S3/workload-role verification remains pending.
 - [ ] M3: Validation tooling and compatibility baselines.
 - [ ] M4: Error foundation.
 - [ ] M5: Health and API fallback.
@@ -116,7 +116,7 @@ Decision: production reliability and credential safety precede architectural cle
 
 ## Outcome
 
-M1 is implemented and the clean typecheck → build → start sequence passed. Overall platform hardening remains incomplete: M2–M6 and full quality gates are still pending. No production deployment or live database/S3 verification was performed. Keep this plan active.
+M1 is implemented and the clean typecheck → build → start sequence passed. M2 now has a validated environment boundary and default AWS credential chain with passing local tests. Its live deployment acceptance, M3–M6, and full quality gates are still pending. No production deployment or live database/S3 verification was performed. Keep this plan active.
 
 
 ## M1 implementation record — 2026-10-04
@@ -158,3 +158,84 @@ Working directory for package commands: `server/`, then a fresh temporary backen
 | `node --test tests/production-build.test.cjs` | Initial sandbox run: missing-secret case passed; listener case denied with EPERM. Approved listener retry: 2 tests passed, exit 0. |
 
 The compiled server loads real runtime dependencies without ts-node. Smoke requests reject before database access. These checks establish build/startup behavior, not database readiness, S3 access, full domain regression coverage, or deployment readiness. Missing lint/test scripts still block closing the overall plan. Clean-build instructions prevent relying on stale output; the build does not destructively clean the developer's dist directory.
+
+## M2 implementation record — 2026-10-04
+
+### Initial findings
+
+- Runtime reads were spread across auth, Prisma, S3 client, and avatar/storage services. dotenv was loaded by auth, Prisma, server, CLI configuration, and the seed entry point. No server `.env.example` or backend environment-validation library existed; dotenv already supplied loading, while frontend Zod was not a backend dependency.
+- Only JWT signing-secret length was checked early. DATABASE_URL, AWS_REGION, and AWS_BUCKET_NAME could fail later or produce invalid URLs. TypeScript non-null assertions supplied no runtime validation.
+- S3 explicitly received AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY, preventing normal provider-chain selection and omitting temporary session-token handling.
+- The ignored local server `.env` contains DATABASE_URL, JWT_SECRET, AWS_REGION, AWS_BUCKET_NAME, AWS_ACCESS_KEY_ID, and AWS_SECRET_ACCESS_KEY keys. Values were neither printed nor copied. NODE_ENV and CLIENT_ORIGIN were absent there; existing development defaults applied unless injected externally.
+- Existing optional tooling variables are SEED_PASSWORD and SEED_TRIAL_PASSWORD. NODE_ENV controls secure cookies and the seed production guard. CLIENT_ORIGIN defaults to localhost:5173. Port 4000 is hardcoded, not an environment setting.
+- No real environment file is tracked. Server ignore rules previously covered `.env` only, not `.env.production` and similar variants.
+- A targeted current tracked-tree scan found demo passwords in seed code/docs and frontend login shortcuts, test fixture secrets, and an intentional auth timing placeholder. It found no apparent production AWS key literals/private-key blocks. This is not proof that repository history or all possible secret formats are clean. Seed startup printed a demo password; controllers and the central error handler log raw error objects, which remain a potential disclosure risk.
+
+### Decisions and behavior
+
+- Added `src/config/env.ts`, using existing dotenv plus a small dependency-free validator. It loads the working-directory `.env` quietly, does not override injected values, and is the only backend application/tooling boundary reading process.env.
+- Full HTTP startup validates DATABASE_URL, JWT_SECRET (minimum 32 bytes), AWS_REGION, and AWS_BUCKET_NAME, including lightweight format checks. CLIENT_ORIGIN retains its localhost default but validates a supplied HTTP(S) origin. NODE_ENV retains development fallback and existing literal-production semantics. Validation errors contain names/rules only; raw URL parser errors and their values are discarded.
+- Preserve `AWS_BUCKET_NAME`; do not introduce AWS_S3_BUCKET or new required credentials. S3Client receives only validated region. The SDK default chain supports local profiles/environment credentials, temporary tokens, and runtime IAM roles. No custom credential loader, credential resolution at startup, or live credential preflight was added. Reference: [AWS credential provider chain](https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/setting-credentials-node.html).
+- Prisma generation/DB-only work uses a narrow database accessor within the same boundary, without requiring JWT/S3 values. Storage uses a narrow accessor for the existing optional storage seed operations. Seed overrides/defaults are centralized without changing demo passwords. Optional seed storage imports now occur only when requested and before writes, preventing new HTTP/S3 requirements on DB-only seeding. The seed production guard remains and the default password is no longer printed.
+- Added a placeholders-only server `.env.example`; ignore all real server `.env.*` variants while allowing that example. No dependency, data-model, controller, frontend, or API-contract changes.
+
+### Files changed in M2
+
+- `server/src/config/env.ts`: loading, typed immutable application configuration, validation and narrow tooling/storage accessors.
+- `server/src/config/s3.ts`: SDK default credential chain.
+- `server/src/auth/config.ts`, `server/src/lib/prisma.ts`, `server/src/server.ts`: consume validated settings and remove duplicated dotenv loading.
+- `server/src/services/s3.service.ts`, `server/src/services/avatar.service.ts`: validated bucket/region wiring only.
+- `server/prisma.config.ts`: shared database validation for the Prisma CLI; no schema change.
+- `server/prisma/seed.ts`, `server/prisma/seed-data/campus.ts`, `server/prisma/seed-data/trial-student.ts`: central environment access, optional storage initialization, and removal of password output. Seed defaults/domain operations unchanged.
+- `server/.env.example`, `server/.gitignore`: safe example and environment-file exclusion.
+- `server/tests/environment.test.cjs`, `server/tests/production-build.test.cjs`: environment/provider/compiled-startup coverage.
+- `server/docs/production-build.md`, ARCHITECTURE.md, SECURITY.md, RELIABILITY.md, this plan and the debt tracker: current configuration behavior, validation evidence, and remaining deployment checks.
+
+### Validation performed and exact command record
+
+From `server/`:
+
+```sh
+npm run typecheck
+npm run build
+npm run lint
+npm test
+node --test tests/environment.test.cjs tests/production-build.test.cjs
+```
+
+- Typecheck and production build: exit 0, including the final code changes.
+- Lint and npm test: exit 1, existing missing scripts. No M3 scripts/tooling added, and these are not treated as passed gates.
+- Focused tests: final run 13/13 passed, exit 0. Tests cover missing/blank/malformed settings, diagnostics without sensitive values, dotenv precedence, immutable config, DB-only configuration, unchanged production/development cookie behavior, temporary environment credentials with a session token, local AWS profile credentials, and simulated container-role credentials with no static environment keys. Compiled server rejects each missing required setting before listening, and starts without static AWS keys with the existing unauthenticated HTTP 401 response.
+- The first sandbox test run passed 11 cases but local listeners were denied with EPERM in two cases. The authorized retry and final run passed all 13. AWS role resolution used only a local HTTP fixture; no live AWS calls or database operations were made.
+- An initial typecheck/build invocation from repository root failed ENOENT because there is no root package.json; rerunning from server/ passed. No code workaround was made for that invocation error.
+
+Additional existing regression and CLI checks used the following exact child command arguments (absolute paths), launched by a Python subprocess harness from an empty temporary working directory:
+
+```sh
+node -r /Users/amiramilin/Documents/ROIHAN/project/SIAKAD/server/node_modules/ts-node/register /Users/amiramilin/Documents/ROIHAN/project/SIAKAD/server/tests/auth-security.cjs
+node -r /Users/amiramilin/Documents/ROIHAN/project/SIAKAD/server/node_modules/ts-node/register /Users/amiramilin/Documents/ROIHAN/project/SIAKAD/server/tests/seed.cjs
+node /Users/amiramilin/Documents/ROIHAN/project/SIAKAD/server/node_modules/prisma/build/index.js generate --config /Users/amiramilin/Documents/ROIHAN/project/SIAKAD/server/prisma.config.ts
+```
+
+The subprocess environment was explicitly constructed: PATH, NODE_ENV=test, dummy DATABASE_URL, TS_NODE_PROJECT pointing to server/tsconfig.json, and TS_NODE_FILES=true; the auth case also received a test-only JWT secret, region, and bucket. No developer `.env` was loaded. All three checks ultimately exited 0. The seed test initially failed because it resolves modules relative to cwd; providing temporary `src`/`prisma` symlinks to the checkout corrected the harness and it passed with no JWT/storage environment values. Seed tests mock the database; no actual seed command or migrations ran. Prisma generation required only the dummy database URL and did not connect to a database.
+
+Repository checks (from repository root):
+
+```sh
+rg -n 'process\.env|dotenv' server/src server/prisma server/prisma.config.ts
+git ls-files '*env*'
+git check-ignore server/.env server/.env.production server/.env.local
+git check-ignore server/.env.example
+git diff --exit-code -- server/src/controllers server/prisma/schema client server/package.json server/package-lock.json
+git diff --check
+```
+
+The real server environment paths are ignored; the example is not (expected exit 1 for that check). Only the central boundary reads process.env. No controller/schema/frontend/dependency diff exists. Diff whitespace checks pass. The secret scan reported candidate paths/line numbers/categories without printing candidate values; local `.env` inspection reported keys only.
+
+### Remaining risks and milestone status
+
+**M2 implementation and local validation complete; live deployment acceptance pending.** Keep M2 open until its original acceptance criterion for restricted non-production S3 access is met. No deployment host, authorized test bucket, workload role, or IAM policy was supplied. Actual role trust/permissions, bucket ownership/region, least privilege, network reachability, and any KMS requirements remain unverified. Startup deliberately does not resolve credentials or test external services.
+
+Operators must remove stale static AWS variables from role-based deployments because provider precedence can select them over role credentials. Valid configuration values must be provisioned before rollout; services that previously started with missing storage settings will now fail early as requested. Production operators must explicitly set NODE_ENV=production and the real CLIENT_ORIGIN; defaults are preserved for compatibility.
+
+Configuration/startup test output contains no test secrets, and seed startup no longer prints the default password. This is not a global no-secret-logging guarantee: raw legacy error logs and committed demo login defaults remain outside the scoped configuration change. No production keys were rotated, and Git history was not exhaustively scanned. The overall plan remains active. **M3–M6 were not started.**

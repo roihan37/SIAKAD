@@ -4,9 +4,8 @@ import cookieParser from "cookie-parser";
 import express from "express";
 import router from "./router/index";
 import { errorHandler } from "./middleware/errHendler";
-import "dotenv/config";
 
-jwtSecret(); // Validate signing configuration before accepting requests.
+jwtSecret(); // Auth configuration validates all application settings before listening.
 const app = express();
 const port = 4000;
 

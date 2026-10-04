@@ -29,7 +29,7 @@ Build from a clean checkout/output directory for each release. `tsc` does not re
 
 ## Environment prerequisites
 
-Run commands from `server/`. Existing dotenv loading reads `.env` from the working directory when present; deployment-injected environment variables can be used instead. Never package a developer's `.env` with release artifacts.
+Run commands from `server/`. The single boundary in `src/config/env.ts` loads `.env` quietly from the working directory when present, without overriding deployment-injected environment variables. Never package a developer's `.env` with release artifacts.
 
 | Variable | Existing use |
 | --- | --- |
@@ -37,18 +37,22 @@ Run commands from `server/`. Existing dotenv loading reads `.env` from the worki
 | `JWT_SECRET` | Required at startup, at least 32 bytes; provision a strong secret through deployment configuration. |
 | `DATABASE_URL` | Required by Prisma CLI configuration and for runtime database operations. |
 | `CLIENT_ORIGIN` | Set the real frontend origin; otherwise existing code defaults to localhost:5173. |
-| `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_BUCKET_NAME` | Required for existing S3 operations; current credential handling is unchanged. |
+| `AWS_REGION`, `AWS_BUCKET_NAME` | Required non-empty storage configuration; validated before application startup. The existing bucket variable name is preserved. |
 
-The server currently binds port 4000; a `PORT` variable is not implemented. Database connectivity and S3 permissions are not verified just by starting the listener. Environment/AWS hardening remains milestone M2; this change does not add new runtime validation.
+The server currently binds port 4000; a `PORT` variable is not implemented. Database connectivity and S3 permissions are not verified just by starting the listener. Missing/invalid critical application settings now fail before listening with variable names only. JWT secrets retain the 32-byte minimum. PostgreSQL URL, HTTP(S) client origin, region syntax, and bucket-name input receive lightweight validation. `NODE_ENV` defaults to development; only the literal production value enables secure cookies, preserving existing behavior. The localhost client-origin fallback remains for compatibility: production operators must set the real origin.
+
+S3 uses the [AWS SDK default credential provider chain](https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/setting-credentials-node.html), without a credentials object in S3Client. Local AWS profiles/SSO and standard AWS environment credentials remain supported, including session tokens. Production should supply workload-role credentials and omit static access-key variables from its environment and `.env`; stale local keys can take precedence over role providers. Credentials are resolved lazily by the SDK, so startup is not proof of role permissions or bucket access. No custom loader or credential preflight network call was added.
+
+Prisma CLI uses the same boundary but validates only DATABASE_URL. Demo seed overrides (`SEED_PASSWORD`, `SEED_TRIAL_PASSWORD`) and defaults remain unchanged; values are no longer printed by the seed entry point. Database-only seeding does not require JWT/S3 configuration; optional photo/proof seed flags validate storage before writes. The seed production guard remains intact. No seeds or migrations are part of startup.
 
 ## Focused smoke validation
 
 After building, with port 4000 free:
 
 ```sh
-node --test tests/production-build.test.cjs
+node --test tests/environment.test.cjs tests/production-build.test.cjs
 ```
 
-This test launches compiled JavaScript in an empty temporary working directory with explicit dummy environment values. It verifies missing-secret failure and the existing unauthenticated HTTP 401 contract, then stops its process. It does not load the developer's `.env`, connect to PostgreSQL, or make S3 requests. It needs permission to bind a local listener. It is scoped build validation, not a replacement for the full test suite.
+This test launches compiled JavaScript in an empty temporary working directory with explicit dummy environment values. It verifies missing-secret failure and the existing unauthenticated HTTP 401 contract, then stops its process. It does not load the developer's `.env`, connect to PostgreSQL, or make S3 requests. Tests also verify safe environment validation, dotenv precedence, cookie settings, AWS temporary environment credentials, a local profile, and a local container-role credential endpoint. They need permission to bind local listeners. It is scoped build validation, not a replacement for the full test suite.
 
 `npm run lint` and `npm test` currently fail because those scripts do not exist. Their implementation remains milestone M3; no placeholder commands were added. See the [execution plan](../../docs/exec-plans/active/platform-hardening.md) for actual validation evidence and limitations.

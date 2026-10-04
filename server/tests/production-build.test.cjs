@@ -13,8 +13,6 @@ const environment = {
   DATABASE_URL: 'postgresql://test:test@127.0.0.1:1/test',
   CLIENT_ORIGIN: 'http://localhost:5173',
   AWS_REGION: 'us-east-1',
-  AWS_ACCESS_KEY_ID: 'test-only',
-  AWS_SECRET_ACCESS_KEY: 'test-only',
   AWS_BUCKET_NAME: 'test-only',
 };
 
@@ -39,8 +37,22 @@ test('compiled startup preserves signing-secret validation', { timeout: 10000 },
   const app = await launch(t, { JWT_SECRET: '' });
   const [code] = await app.closed;
   assert.notEqual(code, 0);
-  assert.match(app.output(), /JWT_SECRET must contain at least 32 bytes/);
+  assert.match(app.output(), /JWT_SECRET is required/);
+  assert.ok(!app.output().includes(environment.DATABASE_URL));
 });
+
+for (const variable of ['DATABASE_URL', 'AWS_REGION', 'AWS_BUCKET_NAME']) {
+  test(`compiled startup rejects missing ${variable} safely`, { timeout: 10000 }, async t => {
+    const secret = 'test-only-signing-secret-'.repeat(3);
+    const app = await launch(t, { JWT_SECRET: secret, [variable]: '' });
+    const [code] = await app.closed;
+    assert.notEqual(code, 0);
+    assert.ok(app.output().includes(`${variable} is required`));
+    assert.ok(!app.output().includes(secret));
+    assert.ok(!app.output().includes(environment.DATABASE_URL));
+    assert.ok(!app.output().includes('Server berjalan'));
+  });
+}
 
 test('compiled server loads runtime dependencies and serves unauthenticated requests', { timeout: 15000 }, async t => {
   // Port 4000 is fixed by the existing app; refuse to test another process.
@@ -60,4 +72,6 @@ test('compiled server loads runtime dependencies and serves unauthenticated requ
   assert.equal(response.status, 401);
   assert.deepEqual(await response.json(), { code: 'TOKEN_INVALID', message: 'Invalid or expired token' });
   assert.equal(app.child.exitCode, null, app.output());
+  assert.ok(!app.output().includes(environment.DATABASE_URL));
+  assert.ok(!app.output().includes('test-only-signing-secret-'));
 });

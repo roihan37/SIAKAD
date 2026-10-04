@@ -2,9 +2,11 @@
 
 ## Current architecture and gaps
 
-The backend validates signing configuration at startup through `server/src/auth/config.ts`. Authentication includes JWT access tokens, refresh-session services, HTTP-only refresh cookies, production secure-cookie settings, and origin/rate-limit middleware. These are observed controls, not a complete security audit.
+The backend validates critical application configuration at startup through `server/src/config/env.ts`, consumed by auth, Prisma, and storage configuration. Authentication includes JWT access tokens, refresh-session services, HTTP-only refresh cookies, production secure-cookie settings, and origin/rate-limit middleware. These are observed controls, not a complete security audit.
 
-`server/src/config/s3.ts` explicitly supplies `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` using non-null assertions. This needs configuration hardening; it is not evidence that literal credentials were committed. Environment file values were not needed for the harness inspection.
+M2 removes explicit static credentials from `server/src/config/s3.ts`; the SDK resolves standard environment/profile or workload-role credentials. Configuration diagnostics expose variable names and rules only, not values. `server/.env.example` contains placeholders and real server `.env.*` files are ignored. Runtime values take precedence over local dotenv values.
+
+A targeted current-tree scan found demo passwords in seed configuration/docs and frontend login shortcuts, test-only secrets, and an auth timing placeholder; no apparent production keys or private-key blocks were found in tracked files. No real environment files are tracked. This is not a history or exhaustive secret audit. The local server environment file was inspected for key names only. Existing raw error logging in controllers/error middleware remains a potential disclosure risk; this milestone verifies safe configuration diagnostics, not global log redaction. Seed startup no longer prints its default password; demo defaults and frontend shortcuts remain unchanged.
 
 ## Target safeguards for future changes
 

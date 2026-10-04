@@ -1,9 +1,10 @@
+import { getSeedEnv } from "../../src/config/env";
 import { Gender, Prisma, Role, Status } from '@prisma/client';
 import { hashPassword } from '../../src/lib/bycript';
 import { newPassword } from '../../src/auth/validation';
 
 export async function seedTrialStudent(tx: Prisma.TransactionClient, prodiId: number, dosenId: string) {
-  const password = newPassword(process.env.SEED_TRIAL_PASSWORD || 'TrialSIAKAD123!');
+  const password = newPassword(getSeedEnv().SEED_TRIAL_PASSWORD);
   const profile = {
     name: 'Mahasiswa Trial', email: 'mahasiswa.trial@example.test', username: 'mahasiswa_trial',
     password: hashPassword(password), role: Role.Mahasiswa, gender: Gender.Male,

@@ -1,3 +1,4 @@
+import { getStorageEnv } from "../config/env";
 import { randomUUID } from "crypto";
 import { prisma } from "../lib/prisma";
 import { S3Service } from "./s3.service";
@@ -7,8 +8,8 @@ export const AVATAR_ENTITIES = ["students", "lecturers"] as const;
 export type AvatarEntity = (typeof AVATAR_ENTITIES)[number];
 
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
-const BUCKET_NAME = process.env.AWS_BUCKET_NAME!;
-const AWS_REGION = process.env.AWS_REGION!;
+const BUCKET_NAME = getStorageEnv().AWS_BUCKET_NAME;
+const AWS_REGION = getStorageEnv().AWS_REGION;
 
 export class AvatarService {
     static getPublicUrl(key: string) {
