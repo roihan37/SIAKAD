@@ -2,7 +2,7 @@
 
 ## Status and context
 
-**Active: M1 complete; M2 implementation/local validation complete, deployment acceptance pending; M3 tooling implemented with legacy lint blockers; M4 complete; M5–M6 not started.** Baseline: 2026-10-04. The user authorized M3 testing/quality tooling after M2. Domain controllers, architecture, schemas, and API contracts remain unchanged.
+**Active: M1 complete; M2 implementation/local validation complete, deployment acceptance pending; M3 tooling implemented with legacy lint blockers; M4 complete; M5 implemented (integration tests blocked by sandbox EPERM); M6 not started.** Baseline: 2026-10-04. The user authorized M3 testing/quality tooling after M2. Domain controllers, architecture, schemas, and API contracts remain unchanged.
 
 SIAKAD is approximately 60% implemented by project estimate. Its production foundation needs attention before architectural cleanup. See [architecture](../../../ARCHITECTURE.md), [quality](../../QUALITY.md), [security](../../SECURITY.md), [reliability](../../RELIABILITY.md), and the [debt tracker](../tech-debt-tracker.md).
 
@@ -323,6 +323,81 @@ Additional checks: `git diff --check`, production-source/schema/frontend diff ch
 
 ### M3 status and limits
 
-**Tooling implementation complete; original all-gates-pass acceptance remains blocked by legacy lint debt TD-18–TD-20.** Leave M3 unchecked rather than claim a green gate. The user explicitly limited this task to tooling; domain and error-behavior fixes were not performed. M2's live deployment acceptance also remains pending. M4–M6 have not started.
+**Tooling implementation complete; original all-gates-pass acceptance remains blocked by legacy lint debt TD-18–TD-20.** Leave M3 unchecked rather than claim a green gate. The user explicitly limited this task to tooling; domain and error-behavior fixes were not performed. M2's live deployment acceptance also remains pending. M4 complete. M5 implemented. M6 not started.
 
 A fresh CI job needs Node 24, installed locked development dependencies, a generated Prisma client, writable temporary storage, and local HTTP listener permission with port 4000 free. No production environment or external account should be supplied to tests. The network guard is protection against accidental service use, not a sandbox against malicious tests; new subprocess tests must retain it. Real PostgreSQL/S3 integration coverage remains separate work. Existing source lint defects keep any all-gates CI job red until resolved in scope.
+
+### M5 — API Reliability Foundation (404 handling, health endpoints, request ID)
+
+**Status: Implemented; integration tests blocked by sandbox EPERM (pre-existing from M3/M4).**
+
+Add standard API 404 for unknown routes, process liveness probe, dependency readiness probe, and request ID propagation through the middleware stack.
+
+#### Acceptance
+
+- Unknown API routes return `{ code: "ROUTE_NOT_FOUND", message: "API route not found", requestId: "..." }` at HTTP 404
+- Resource-not-found errors (e.g. `GET /api/v1/students/nonexistent`) remain distinct from route-not-found
+- `GET /health/live` returns 200 with `{ status: "ok" }` without checking dependencies
+- `GET /health/ready` returns 200 when PostgreSQL responds to `SELECT 1`, 503 otherwise
+- Every response includes `X-Request-Id` header and `requestId` in error body
+- Request ID accepts valid UUID or legacy `req_` prefix headers; rejects unsafe values
+- Health endpoints placed before auth middleware (publicly accessible for ALB/Docker probes)
+
+#### Validation performed
+
+Commands executed from `server/`:
+
+```sh
+npm run build
+npm run typecheck
+npm run lint
+npm test
+```
+
+| Gate | Result |
+| --- | --- |
+| `npm run build` | Exit 0 ✅ |
+| `npm run typecheck` | Exit 0 ✅ |
+| `npm run lint` | Exit 1 ⚠️ (same 5 pre-existing TD-18–TD-20; no new failures) |
+| `npm test` | 88 pass / 9 fail — **1 pre-existing EPERM** (environment.test), **7 sandbox EPERM** on localhost:4000 (health-endpoints + production-build), **8 request-id unit tests pass** |
+
+The 7 integration test failures are all `EPERM: operation not permitted` on `127.0.0.1:4000` — a sandbox restriction documented in M3/M4. Unit tests for the request ID middleware pass (8/8). Error foundation tests pass (30/30). No domain controllers were modified. No existing business endpoints changed.
+
+| Type | Count |
+| --- | --- |
+| New source files | `middleware/requestId.ts`, `router/health.ts`, `middleware/notFound.ts` |
+| Modified source files | `router/index.ts`, `middleware/errHendler.ts`, `server.ts`, `types/express.d.ts` |
+| New test files | `tests/health-endpoints.test.cjs`, `tests/request-id.test.cjs` |
+
+#### Middleware/router ordering (critical)
+
+```
+app.use(requestIdMiddleware)          // Every request gets an ID
+app.use(router)                       // Router internally:
+  → /health/*                         // Public, no auth (before auth middleware)
+  → /api/v1/auth/*                    // Public
+  → authMiddleware                    // Blocks unauthenticated on everything else
+  → /api/v1/* domain routers
+  → notFoundHandler                   // Catch-all 404 for unknown API routes
+app.use(errorHandler)
+```
+
+#### Key decisions
+
+- Health endpoints intentionally placed before auth middleware so ALB/Docker health checks work without credentials
+- Readiness checks only `SELECT 1` via Prisma — lightweight, bounded, no schema exposure
+- Request ID accepts UUID v4 format OR legacy `req_` prefix; rejects anything else (no injection vector)
+- The `X-Request-Id` header is echoed back to clients and exposed via CORS `exposedHeaders`
+- Did NOT add structured logging (deferred to M6 per instructions)
+- Did NOT modify any domain controllers or existing business endpoints
+
+#### Items deferred to M6 (structured logging)
+
+- Add timestamp, level, method, sanitized path, status, duration to log lines
+- Use `req.requestId` as correlation key in log output
+- Ensure log redaction of credentials/tokens/personal data
+
+### M5 status and limits
+
+**Implementation complete; integration tests blocked by pre-existing sandbox EPERM restrictions.** All unit tests pass. Build, typecheck pass. Lint unchanged from M4 (same 5 errors + 1 warning). No domain behavior was altered. Ready for deployment acceptance once sandbox listener permissions are available.
+

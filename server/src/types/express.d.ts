@@ -8,5 +8,6 @@ declare module "express-serve-static-core" {
       id: string;
       role: Role;
     };
+    requestId: string;
   }
 }

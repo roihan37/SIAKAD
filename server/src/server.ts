@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import express from "express";
 import router from "./router/index";
 import { errorHandler } from "./middleware/errHendler";
+import { requestIdMiddleware } from "./middleware/requestId";
 
 jwtSecret(); // Auth configuration validates all application settings before listening.
 const app = express();
@@ -17,12 +18,16 @@ app.use(
     origin: clientOrigin,
     credentials: true,
     // Allow the frontend to honor authentication rate-limit cooldowns across origins.
-    exposedHeaders: ["Retry-After"],
+    exposedHeaders: ["Retry-After", "X-Request-Id"],
   })
 );
-app.use(router)
 
-app.use(errorHandler)
+// Request ID middleware — runs on every request, generates/validates request ID
+app.use(requestIdMiddleware);
+
+app.use(router);
+
+app.use(errorHandler);
 
 app.listen(port, () => {
   console.log(`Server berjalan di http://localhost:${port}`);

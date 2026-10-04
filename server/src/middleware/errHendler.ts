@@ -3,6 +3,7 @@ import { ErrorRequestHandler, Request, Response } from "express";
 import { AppError } from "../errors/app-error";
 
 type LegacyError = { name?: string; message?: string };
+type ExpressRequest = Request & { requestId?: string };
 
 /**
  * Generate a safe request ID for correlation. Uses crypto when available,
@@ -23,11 +24,12 @@ function response(
   code: string,
   message: string,
   details?: Record<string, unknown>,
+  requestId?: string,
 ) {
   const payload: Record<string, unknown> = {
     code,
     message,
-    requestId: generateRequestId(),
+    requestId: requestId || generateRequestId(),
   };
   if (details && Object.keys(details).length > 0) {
     payload.details = details;
@@ -61,33 +63,33 @@ function duplicateMessage(fields: string[]): string {
   return `${names.slice(0, -1).join(", ")} dan ${last.toLowerCase()} sudah terdaftar`;
 }
 
-function legacyResponse(error: LegacyError, res: Response): Response | undefined {
+function legacyResponse(error: LegacyError, res: Response, requestId?: string): Response | undefined {
   const message = error.message;
   switch (error.name) {
     case "TokenExpiredError":
-      return response(res, 401, "TOKEN_EXPIRED", "Access token expired");
+      return response(res, 401, "TOKEN_EXPIRED", "Access token expired", undefined, requestId);
     case "badRequest":
     case "BadRequest":
     case "LecturerValidationError":
-      return response(res, 400, "VALIDATION_ERROR", message || "Email / Password is required");
+      return response(res, 400, "VALIDATION_ERROR", message || "Email / Password is required", undefined, requestId);
     case "Conflict":
     case "LecturerInUse":
     case "LecturerStatusConflict":
-      return response(res, 409, "CONFLICT", message || "Data masih digunakan.");
+      return response(res, 409, "CONFLICT", message || "Data masih digunakan.", undefined, requestId);
     case "Unauthorized":
-      return response(res, 401, "INVALID_CREDENTIALS", message || "Invalid Email / Password");
+      return response(res, 401, "INVALID_CREDENTIALS", message || "Invalid Email / Password", undefined, requestId);
     case "Forbidden":
-      return response(res, 403, "FORBIDDEN", message || "Akses ditolak");
+      return response(res, 403, "FORBIDDEN", message || "Akses ditolak", undefined, requestId);
     case "TooManyRequests":
-      return response(res, 429, "RATE_LIMITED", message || "Too many requests");
+      return response(res, 429, "RATE_LIMITED", message || "Too many requests", undefined, requestId);
     case "PasswordChangeRequired":
-      return response(res, 403, "PASSWORD_CHANGE_REQUIRED", message || "Change your password before continuing.");
+      return response(res, 403, "PASSWORD_CHANGE_REQUIRED", message || "Change your password before continuing.", undefined, requestId);
     case "JsonWebTokenError":
     case "NotBeforeError":
     case "TokenInvalid":
-      return response(res, 401, "TOKEN_INVALID", "Invalid or expired token");
+      return response(res, 401, "TOKEN_INVALID", "Invalid or expired token", undefined, requestId);
     case "NotFound":
-      return response(res, 404, "NOT_FOUND", message || "Data not found");
+      return response(res, 404, "NOT_FOUND", message || "Data not found", undefined, requestId);
     default:
       return undefined;
   }
@@ -110,10 +112,13 @@ function legacyResponse(error: LegacyError, res: Response): Response | undefined
  * - environment variables
  * - secrets
  */
-export const errorHandler: ErrorRequestHandler = (error: unknown, _req: Request, res: Response): void => {
+export const errorHandler: ErrorRequestHandler = (error: unknown, req: ExpressRequest, res: Response): void => {
+  // Use request-scoped requestId if available
+  const requestId = req.requestId;
+
   // 1. Handle typed AppError instances
   if (error instanceof AppError) {
-    response(res, error.statusCode, error.code, error.message, error.details);
+    response(res, error.statusCode, error.code, error.message, error.details, requestId);
     return;
   }
 
@@ -121,16 +126,16 @@ export const errorHandler: ErrorRequestHandler = (error: unknown, _req: Request,
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     switch (error.code) {
       case "P2002":
-        response(res, 409, "DUPLICATE_DATA", duplicateMessage(prismaDuplicateFields(error)));
+        response(res, 409, "DUPLICATE_DATA", duplicateMessage(prismaDuplicateFields(error)), undefined, requestId);
         return;
       case "P2003":
-        response(res, 409, "CONFLICT", "Operasi tidak dapat dilakukan karena data memiliki relasi yang masih digunakan atau referensi tidak valid");
+        response(res, 409, "CONFLICT", "Operasi tidak dapat dilakukan karena data memiliki relasi yang masih digunakan atau referensi tidak valid", undefined, requestId);
         return;
       case "P2034":
-        response(res, 409, "CONFLICT", "Data sedang berubah, silakan ulangi operasi");
+        response(res, 409, "CONFLICT", "Data sedang berubah, silakan ulangi operasi", undefined, requestId);
         return;
       case "P2025":
-        response(res, 404, "NOT_FOUND", "Data yang akan diproses tidak ditemukan");
+        response(res, 404, "NOT_FOUND", "Data yang akan diproses tidak ditemukan", undefined, requestId);
         return;
       default:
         break;
@@ -138,7 +143,7 @@ export const errorHandler: ErrorRequestHandler = (error: unknown, _req: Request,
   }
 
   // 3. Handle legacy named error objects for backward compatibility
-  const known = legacyResponse(typeof error === "object" && error !== null ? (error as LegacyError) : {}, res);
+  const known = legacyResponse(typeof error === "object" && error !== null ? (error as LegacyError) : {}, res, requestId);
   if (known) {
     return;
   }
@@ -150,5 +155,5 @@ export const errorHandler: ErrorRequestHandler = (error: unknown, _req: Request,
     console.error("[ERROR]", String(error ?? "unknown error"));
   }
 
-  response(res, 500, "INTERNAL_SERVER_ERROR", "Internal Server Error");
+  response(res, 500, "INTERNAL_SERVER_ERROR", "Internal Server Error", undefined, requestId);
 };

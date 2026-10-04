@@ -16,12 +16,21 @@ import routerMataKuliah from "./mata-kuliah";
 import routerJadwal from "./jadwal";
 import routerAdmin from "./admin";
 import routerKRS from "./krs";
+import routerHealth from "./health";
+import { notFoundHandler } from "../middleware/notFound";
 
 const router = express.Router()
 
+// Health endpoints (public, no auth required)
+router.use('/health', routerHealth)
 
+// Auth routes (public)
 router.use('/api/v1/auth',routerAunth)
+
+// Apply authentication middleware to all remaining routes
 router.use(authMiddleware)
+
+// Domain routers
 router.use('/api/v1/admin',routerAdmin)
 router.use('/api/v1/users',routerUser)
 router.use('/api/v1/students',routerStudents)
@@ -37,5 +46,8 @@ router.use('/api/v1/mata-kuliah', routerMataKuliah)
 router.use('/api/v1/kelas-mata-kuliah', routerKelasMataKuliah)
 router.use('/api/v1/jadwal', routerJadwal)
 router.use('/api/v1/krs', routerKRS)
+
+// Catch-all for unknown API routes (must be after all valid routes)
+router.use(notFoundHandler)
 
 export default router
