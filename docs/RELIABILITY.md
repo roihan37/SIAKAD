@@ -2,9 +2,9 @@
 
 ## Current state
 
-M1 now separates no-emit typechecking from production compilation and emits the `dist/server.js` expected by startup. Clean compilation and isolated startup passed on Node 24.18.0; live dependency readiness remains unverified. The backend still lacks standard lint/test scripts. See [build instructions](../server/docs/production-build.md).
+M1 now separates no-emit typechecking from production compilation and emits the `dist/server.js` expected by startup. Clean compilation and isolated startup passed on Node 24.18.0; live dependency readiness remains unverified. M3 now supplies standard lint/test commands; known legacy lint findings still prevent an all-green gate. See [build instructions](../server/docs/production-build.md).
 
-M2 now validates required application environment settings before listening. AWS credential resolution remains lazy through the SDK; successful startup is not a database/S3 readiness check.
+M2 now validates required application environment settings before listening. AWS credential resolution remains lazy through the SDK; successful startup is not a database/S3 readiness check. M4 adds a shared `AppError` boundary and keeps unexpected HTTP 500 responses safe while preserving legacy error mappings.
 
 `server/src/server.ts` starts Express directly on port 4000. Central error handling exists in `middleware/errHendler.ts`, but error creation and responses vary. Console logging remains; explicit health endpoints, a standard API catch-all 404, structured request logging, and graceful shutdown are absent from the entry point.
 

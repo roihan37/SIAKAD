@@ -9,6 +9,7 @@ const path = require('node:path');
 const entry = path.resolve(__dirname, '../dist/server.js');
 const environment = {
   PATH: process.env.PATH,
+  NODE_OPTIONS: process.env.NODE_OPTIONS,
   NODE_ENV: 'production',
   DATABASE_URL: 'postgresql://test:test@127.0.0.1:1/test',
   CLIENT_ORIGIN: 'http://localhost:5173',
@@ -69,8 +70,9 @@ test('compiled server loads runtime dependencies and serves unauthenticated requ
     await new Promise(resolve => setTimeout(resolve, 50));
   }
   const response = await fetch('http://127.0.0.1:4000/api/v1/students', { signal: AbortSignal.timeout(2000) });
-  assert.equal(response.status, 401);
-  assert.deepEqual(await response.json(), { code: 'TOKEN_INVALID', message: 'Invalid or expired token' });
+  const body = await response.json();
+  assert.equal(response.status, 401, `${response.status}: ${JSON.stringify(body)}; output=${app.output()}`);
+  assert.deepEqual(body, { code: 'TOKEN_INVALID', message: 'Invalid or expired token' });
   assert.equal(app.child.exitCode, null, app.output());
   assert.ok(!app.output().includes(environment.DATABASE_URL));
   assert.ok(!app.output().includes('test-only-signing-secret-'));

@@ -11,6 +11,7 @@ const s3Path = path.resolve(__dirname, '../dist/config/s3.js');
 const authPath = path.resolve(__dirname, '../dist/auth/config.js');
 const base = {
   PATH: process.env.PATH,
+  NODE_OPTIONS: process.env.NODE_OPTIONS,
   NODE_ENV: 'production',
   DATABASE_URL: 'postgresql://dummy:private-marker@127.0.0.1:1/test',
   JWT_SECRET: 'private-test-signing-marker-'.repeat(3),

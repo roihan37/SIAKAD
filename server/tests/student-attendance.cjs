@@ -16,6 +16,7 @@ for(const scenario of ['data','empty','missingStudent','missingYear','failure'])
 }
 for(const value of [undefined,'0',['3'],'abc']){let error;prisma.$transaction=()=>assert.fail();await Controller.getStudentAttendance({params:{id:'u1'},query:{tahunAkademikId:value}},{},e=>error=e);assert.equal(error.name,'BadRequest');}
 const route=require('../src/router/students').default.stack.find(x=>x.route?.path==='/:id/presensi').route;
-assert.equal(route.stack[0].handle,require('../src/middleware/authMid').adminOrMahasiswaMiddleware);
-console.log('PASS: student/year scope, counts, per-course percentages, empty results, errors, validation and ownership guard');
+assert.equal(route.stack[0].handle,require('../src/middleware/authMid').adminMiddleware);
+let denied;route.stack[0].handle({userLogin:{id:'u1',role:'Mahasiswa'}},{},error=>denied=error);assert.equal(denied.name,'Forbidden');
+console.log('PASS: student/year scope, counts, per-course percentages, empty results, errors, validation and admin-only guard');
 })().catch(e=>{console.error(e);process.exitCode=1;});

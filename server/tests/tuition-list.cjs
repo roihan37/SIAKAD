@@ -18,7 +18,7 @@ async function main() {
   const data = await listTuitionBills(tx, filters, new Date('2026-09-14T00:00:00Z'));
   assert.deepEqual(data.pagination, { page: 2, limit: 10, totalRows: 11, totalPages: 2 });
   assert.equal(data.summary.totalBills, 12);
-  assert.deepEqual(data.bills[0].student, { id: 'user', studentId: 'student', nim: '20240001', name: 'Andi', studyProgram: { id: 1, name: 'Teknik Informatika' } });
+  assert.deepEqual(data.bills[0].student, { id: 'user', studentId: 'student', nim: '20240001', name: 'Andi', prodi: { id: 1, name: 'Teknik Informatika' } });
   assert.equal(data.bills[0].dueDate, '2026-09-30');
   assert.equal(data.bills[0].remainingAmount, 5000000);
   assert.doesNotThrow(() => JSON.stringify(data));

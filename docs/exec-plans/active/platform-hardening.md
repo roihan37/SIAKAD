@@ -2,7 +2,7 @@
 
 ## Status and context
 
-**Active: M1 complete; M2 implementation/local validation complete, deployment acceptance pending; M3–M6 not started.** Baseline: 2026-10-04. The user authorized M2 environment/AWS hardening after M1. Domain controllers, architecture, schemas, and API contracts remain unchanged.
+**Active: M1 complete; M2 implementation/local validation complete, deployment acceptance pending; M3 tooling implemented with legacy lint blockers; M4–M6 not started.** Baseline: 2026-10-04. The user authorized M3 testing/quality tooling after M2. Domain controllers, architecture, schemas, and API contracts remain unchanged.
 
 SIAKAD is approximately 60% implemented by project estimate. Its production foundation needs attention before architectural cleanup. See [architecture](../../../ARCHITECTURE.md), [quality](../../QUALITY.md), [security](../../SECURITY.md), [reliability](../../RELIABILITY.md), and the [debt tracker](../tech-debt-tracker.md).
 
@@ -106,7 +106,7 @@ Deliver milestones as small independent changes. Before deployment, retain a ver
 - [x] 2026-10-04: Prepared this plan; implementation remains outside bootstrap scope.
 - [x] M1: Production build and startup (2026-10-04); scoped validation below. Missing lint/test gates remain M3 blockers to overall plan closure.
 - [ ] M2: Code and local validation complete (2026-10-04); actual restricted non-production S3/workload-role verification remains pending.
-- [ ] M3: Validation tooling and compatibility baselines.
+- [ ] M3: Tooling baseline implemented and all 52 tests pass; five legacy lint errors prevent the original all-gates-pass acceptance (TD-18–TD-20).
 - [ ] M4: Error foundation.
 - [ ] M5: Health and API fallback.
 - [ ] M6: Logging and shutdown.
@@ -116,7 +116,7 @@ Decision: production reliability and credential safety precede architectural cle
 
 ## Outcome
 
-M1 is implemented and the clean typecheck → build → start sequence passed. M2 now has a validated environment boundary and default AWS credential chain with passing local tests. Its live deployment acceptance, M3–M6, and full quality gates are still pending. No production deployment or live database/S3 verification was performed. Keep this plan active.
+M1 is implemented and the clean typecheck → build → start sequence passed. M2 now has a validated environment boundary and default AWS credential chain with passing local tests. Its live deployment acceptance remains pending. M3 now exposes all four commands and passes the full test suite, but legacy lint failures block M3 all-green acceptance. M4–M6 remain pending. No production deployment or live database/S3 verification was performed. Keep this plan active.
 
 
 ## M1 implementation record — 2026-10-04
@@ -239,3 +239,90 @@ The real server environment paths are ignored; the example is not (expected exit
 Operators must remove stale static AWS variables from role-based deployments because provider precedence can select them over role credentials. Valid configuration values must be provisioned before rollout; services that previously started with missing storage settings will now fail early as requested. Production operators must explicitly set NODE_ENV=production and the real CLIENT_ORIGIN; defaults are preserved for compatibility.
 
 Configuration/startup test output contains no test secrets, and seed startup no longer prints the default password. This is not a global no-secret-logging guarantee: raw legacy error logs and committed demo login defaults remain outside the scoped configuration change. No production keys were rotated, and Git history was not exhaustively scanned. The overall plan remains active. **M3–M6 were not started.**
+
+## M3 implementation record — 2026-10-04
+
+### Tooling discovered
+
+- Sixteen existing backend `.cjs` files: thirteen standalone assertion scripts and three files using Node test cases. Existing loaders were ts-node direct imports and a custom VM/TypeScript loader in master-data tests. No backend Jest, Vitest, Supertest, shared test setup, or ESLint configuration existed. No tests were renamed or replaced wholesale.
+- The suite mixes unit-style validation/mapping assertions, mocked controller/service/transaction tests, router-stack checks, mocked seed idempotency, and local process/HTTP credential/startup integration tests. No existing suite requires a real database or cloud account. Current inventory is in QUALITY.md.
+- Some legacy tests import the real Prisma singleton then replace methods, and `seed.cjs` resolves source paths from cwd. Ad-hoc execution could load the developer's `.env`, and partial mocks could attempt live connections. The M1/M2 tests had explicit child environments but required a compiled dist and local listener access.
+- TypeScript already has strict/noEmit checks and a separate production compile config. Preserve those. Frontend tooling was inspected only to reuse compatible ESLint package versions; no frontend file changed.
+
+### Decisions and commands established
+
+- Retain Node's built-in test runner/assertions and existing ts-node/TypeScript loaders. Add no test framework or Supertest dependency. Reference: [Node test runner](https://nodejs.org/docs/latest-v24.x/api/test.html).
+- `npm test` invokes `scripts/test.cjs`. It discovers every `.cjs` test recursively except support directories, prints the inventory, rejects an empty suite, creates a temporary workspace without `.env`, links installed dependencies, and compiles fresh test artifacts there. It never needs a pre-existing production dist. All 16 originals remain discovered; one new tooling test file makes 17.
+- Each test file runs in its own Node process, sequentially, with an explicit dummy environment and temporary HOME/AWS config paths. A test-only guard prevents remote sockets and actual pg connections; subprocess tests inherit it through NODE_OPTIONS. A 30-second Node test timeout and 180-second subprocess bound prevent unbounded command execution. Child errors/non-zero status propagate; no skip/xfail or success-forcing logic was added.
+- Existing tests retain their mock/VM styles. The loader uses ts-node transpileOnly to execute them; separate strict typecheck/build gates remain unchanged.
+- Add standalone `npm run lint` using ESLint 10.8.0, @eslint/js 10.0.1, typescript-eslint 8.65.0, and globals 17.8.0 (versions already installed by the frontend). These are backend dev dependencies only; no existing dependency version changed. Core recommended rules plus TypeScript compatibility and Node globals form the baseline. TypeScript no-undef is handled by tsc; unused-variable/explicit-any/style campaigns are not enabled in this initial baseline. Detected legacy errors were not suppressed or downgraded.
+- Preserve `npm run typecheck` and `npm run build`. No root command aggregator, CI service, application source change, schema change, or M4 work was added.
+
+### Failure classifications and repairs
+
+| Category | Finding | Disposition |
+| --- | --- | --- |
+| A — tooling/configuration | Missing lint/test commands, no common loader/environment/discovery, smoke tests depending on prior dist, cwd-sensitive seed tests. | Resolved through scripts/config and temporary workspace. Existing assertions retained. |
+| A — setup during implementation | ESLint preset objects were initially treated as iterable arrays. | Corrected config; lint now executes independently. |
+| C — stale/broken test | `master-data.test.cjs` omitted `transkrip.count`, used by the existing SKS-change guard, causing undefined status instead of success. | Added the missing mock and a regression assertion that recorded transcripts prohibit credit changes without writes. No controller change. |
+| C — stale/broken test | `student-attendance.cjs` expected admin-or-owner while the existing `/:id/presensi` route is admin-only. | Assert existing admin guard and explicitly verify a student is denied. No authorization change. |
+| C — stale/broken test | `tuition-list.cjs` expected `studyProgram`; actual backend and frontend tuition type use `prodi` (backend history commit 16272ab). | Corrected the response assertion to current consumer contract, preserving the full object assertion. No API change. |
+| D — unavailable runtime capability | Sandbox denied local listener fixtures (EPERM); initial npm registry lookup failed ENOTFOUND. | Authorized tool retries succeeded. These failures were reported, never skipped. Tests require local listeners, not live external services. |
+| B — existing application defect exposed by lint | `userController.ts:130` Dosen case falls into the default HTTP 400 branch; `:235,237` delete handler is empty. | TD-18/TD-19. Left unchanged, outside tooling scope. No claim these are newly introduced regressions. |
+| A — established lint policy versus legacy source | `prefer-const` at `userController.ts:103`; `preserve-caught-error` at `lib/prisma.ts:15`; unused old lint suppression at `:10`. | TD-20. Visible source-policy failures/warning, not a broken linter. Requires separate scoped cleanup/diagnostic decision. |
+
+There are no remaining failing legacy tests after the C repairs. There are still five lint errors and one warning. No application bug was fixed to obtain green validation.
+
+### Validation performed
+
+Commands executed from `server/` unless explicitly noted:
+
+```sh
+npm install --save-dev --save-exact eslint@10.8.0 @eslint/js@10.0.1 typescript-eslint@8.65.0 globals@17.8.0 --cache /tmp/siakad-npm-cache --no-audit --no-fund --fetch-retries=0
+npm run lint
+npm run typecheck
+npm test
+npm run build
+```
+
+The installation initially failed with sandbox ENOTFOUND, then succeeded with authorized network access (72 added packages; existing npm lifecycle-policy warnings retained). No broad dependency upgrade was performed.
+
+| Gate | Result |
+| --- | --- |
+| `npm run lint` | Exit 1: 5 errors, 1 warning at the exact source locations above. Tooling runs; gate is not green. |
+| `npm run typecheck` | Exit 0. A before/after SHA-256 inventory confirms no dist file was added or changed; noEmit remains configured. |
+| `npm test` | Final exit 0: 17 files, 52 reported tests, 52 pass, 0 failures/skips/cancellations, approximately 8 seconds of test-runner time plus temporary compilation. |
+| `npm run build` | Exit 0; production `dist/server.js` exists. |
+
+The initial full test run reported 48 tests, 43 passed and five failed (three stale tests plus two listener denials). Authorized retry reported 45 passed/three failed and exited 1: evidence that existing failures are discovered and propagate to the command. After documented test repairs, the added transcript-rule and isolation checks bring the count to 52; all pass. Existing standalone scripts appear as file-level tests, not a count of every assertion.
+
+The production smoke test now characterizes both a known protected API path and an unknown API path: both remain the existing unauthenticated 401/TOKEN_INVALID response. No 404/error architecture was introduced. Environment tests prove default-chain local fixtures; safety tests prove dummy configuration, blocked remote sockets (including Node normalized arguments), and rejected real PostgreSQL connections. Mock seed tests perform no live writes.
+
+Additional checks: `git diff --check`, production-source/schema/frontend diff checks, package-lock comparison confirming no existing package-version changes, and documentation relative-link checks. No full coverage target or live DB/S3 integration was claimed.
+
+### Exact files changed in M3
+
+- `server/package.json`
+- `server/package-lock.json`
+- `server/eslint.config.cjs`
+- `server/scripts/test.cjs`
+- `server/tests/support/setup.cjs`
+- `server/tests/support/network-guard.cjs`
+- `server/tests/tooling.test.cjs`
+- `server/tests/environment.test.cjs`
+- `server/tests/production-build.test.cjs`
+- `server/tests/master-data.test.cjs`
+- `server/tests/student-attendance.cjs`
+- `server/tests/tuition-list.cjs`
+- `docs/QUALITY.md`
+- `docs/exec-plans/active/platform-hardening.md`
+- `docs/exec-plans/tech-debt-tracker.md`
+- `ARCHITECTURE.md`
+- `docs/RELIABILITY.md`
+- `server/docs/production-build.md`
+
+### M3 status and limits
+
+**Tooling implementation complete; original all-gates-pass acceptance remains blocked by legacy lint debt TD-18–TD-20.** Leave M3 unchecked rather than claim a green gate. The user explicitly limited this task to tooling; domain and error-behavior fixes were not performed. M2's live deployment acceptance also remains pending. M4–M6 have not started.
+
+A fresh CI job needs Node 24, installed locked development dependencies, a generated Prisma client, writable temporary storage, and local HTTP listener permission with port 4000 free. No production environment or external account should be supplied to tests. The network guard is protection against accidental service use, not a sandbox against malicious tests; new subprocess tests must retain it. Real PostgreSQL/S3 integration coverage remains separate work. Existing source lint defects keep any all-gates CI job red until resolved in scope.

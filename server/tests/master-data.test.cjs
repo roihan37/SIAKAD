@@ -25,6 +25,7 @@ function setup(entry, { missing = false, used = false, parentMissing = false } =
     delete: async args => { writes.push({ operation: 'delete', ...plain(args) }); return { id: 1 }; },
   };
   prisma.kurikulumMataKuliah = { count: async () => used ? 1 : 0 };
+  prisma.transkrip = { count: async () => used ? 1 : 0 };
   prisma.$transaction = async (callback, options) => { assert.equal(options.isolationLevel, 'Serializable'); return callback(prisma); };
   return { writes, Controller: load(`src/controllers/${entry[1]}.ts`, { '../lib/prisma': { prisma }, '../validation/master-data': validation, '@prisma/client': { Prisma: { TransactionIsolationLevel: { Serializable: 'Serializable' } } } }).Controller };
 }
@@ -78,4 +79,11 @@ test('check references and prevent moving linked curriculum',async()=>{
     const {Controller,writes}=setup(entry,{parentMissing:true});assert.equal((await invoke(Controller[entry[3]],body)).error.name,'NotFound');assert.equal(writes.length,0);
   }
   const {Controller,writes}=setup(entries[4],{used:true});assert.equal((await invoke(Controller.updateKurikulum,{prodiId:2})).error.name,'Conflict');assert.equal(writes.length,0);
+});
+
+test('course credits with recorded transcripts cannot change', async () => {
+  const { Controller, writes } = setup(entries[1], { used: true });
+  const result = await invoke(Controller.updateMataKuliah, { sks: 4 });
+  assert.equal(result.error.name, 'Conflict');
+  assert.equal(writes.length, 0);
 });

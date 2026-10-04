@@ -47,6 +47,10 @@ Single resource:
   "requestId": "req_xxx"
 }
 
+New and migrated backend flows should use the shared `AppError` foundation. It carries an HTTP status, stable machine-readable `code`, human-readable `message`, and optional safe structured `details`. The centralized middleware preserves `message` for existing frontend consumers.
+
+Unexpected errors return HTTP 500 with `INTERNAL_SERVER_ERROR` and a generic message. Responses never include stack traces, Prisma metadata, SQL, filesystem paths, environment values, or secrets. Legacy named errors remain mapped for compatibility while callers migrate incrementally.
+
 ---
 
 # Validation Error

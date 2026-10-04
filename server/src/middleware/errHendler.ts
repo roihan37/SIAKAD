@@ -1,171 +1,69 @@
 import { Prisma } from "@prisma/client";
-import { ErrorRequestHandler } from "express";
+import { ErrorRequestHandler, Response } from "express";
+import { AppError } from "../errors/app-error";
 
-export const errorHandler: ErrorRequestHandler = (
-  error,
-  req,
-  res,
-  next
-) => {
-  // Prisma Error
-  if (
-    error instanceof Prisma.PrismaClientKnownRequestError &&
-    error.code === "P2002"
-  ) {
-    const meta = error.meta as any
+type LegacyError = { name?: string; message?: string };
 
-    const fields =
-      meta?.target ??
-      meta?.driverAdapterError?.cause?.constraint?.fields ??
-      []
+function response(res: Response, statusCode: number, code: string, message: string, details?: Record<string, unknown>) {
+  const payload = { code, message, ...(details ? { details } : {}) };
+  res.status(statusCode).json(payload);
+  return res;
+}
 
-    const formatFieldName = (text: string) => {
-      const field = text.replace(/^["']|["']$/g, "")
+function prismaDuplicateFields(error: Prisma.PrismaClientKnownRequestError): string[] {
+  const meta = error.meta;
+  if (!meta || typeof meta !== "object") return [];
+  const target = (meta as { target?: unknown }).target;
+  return Array.isArray(target) && target.every((field): field is string => typeof field === "string") ? target : [];
+}
 
-      const fieldMap: Record<string, string> = {
-        prodiId: "Prodi",
-        mataKuliahId: "Mata Kuliah",
-        kurikulumId: "Kurikulum",
-        fakultasId: "Fakultas",
-        tahunAkademikId: "Tahun Akademik",
-      }
+function duplicateMessage(fields: string[]) {
+  const labels: Record<string, string> = { prodiId: "Prodi", mataKuliahId: "Mata Kuliah", kurikulumId: "Kurikulum", fakultasId: "Fakultas", tahunAkademikId: "Tahun Akademik" };
+  const names = fields.map((field) => labels[field] ?? field.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()));
+  if (names.length === 0) return "Data sudah terdaftar";
+  if (names.length === 1) return `${names[0]} sudah terdaftar`;
+  if (names.length === 2) return `${names[0]} dan ${names[1].toLowerCase()} sudah terdaftar`;
+  const last = names[names.length - 1];
+  return `${names.slice(0, -1).join(", ")} dan ${last.toLowerCase()} sudah terdaftar`;
+}
 
-      return (
-        fieldMap[field] ??
-        field
-          .replace(/_/g, " ")
-          .replace(/\b\w/g, (char) =>
-            char.toUpperCase()
-          )
-      )
-    }
-
-    const formatDuplicateMessage = (
-      fields: string[]
-    ) => {
-      const names = fields.map(formatFieldName)
-
-      // Jadikan semua field setelah field pertama lowercase
-      const formattedNames = names.map(
-        (name, index) =>
-          index === 0
-            ? name
-            : name.toLowerCase()
-      )
-
-      if (formattedNames.length === 1) {
-        return `${formattedNames[0]} sudah terdaftar`
-      }
-
-      if (formattedNames.length === 0) return "Data sudah terdaftar";
-
-      if (formattedNames.length === 2) {
-        return `${formattedNames[0]} dan ${formattedNames[1]} sudah terdaftar`
-      }
-
-      const last =
-        formattedNames[formattedNames.length - 1]
-
-      const first =
-        formattedNames.slice(0, -1).join(", ")
-
-      return `${first} dan ${last} sudah terdaftar`
-    }
-
-    return res.status(409).json({
-      code: "DUPLICATE_DATA",
-      message: Array.isArray(fields)
-        ? formatDuplicateMessage(fields)
-        : "Data sudah terdaftar",
-    })
+function legacyResponse(error: LegacyError, res: Response) {
+  const message = error.message;
+  switch (error.name) {
+    case "TokenExpiredError": return response(res, 401, "TOKEN_EXPIRED", "Access token expired");
+    case "badRequest":
+    case "BadRequest":
+    case "LecturerValidationError": return response(res, 400, "VALIDATION_ERROR", message || "Email / Password is required");
+    case "Conflict":
+    case "LecturerInUse":
+    case "LecturerStatusConflict": return response(res, 409, "CONFLICT", message || "Data masih digunakan.");
+    case "Unauthorized": return response(res, 401, "INVALID_CREDENTIALS", message || "Invalid Email / Password");
+    case "Forbidden": return response(res, 403, "FORBIDDEN", message || "Akses ditolak");
+    case "TooManyRequests": return response(res, 429, "RATE_LIMITED", message || "Too many requests");
+    case "PasswordChangeRequired": return response(res, 403, "PASSWORD_CHANGE_REQUIRED", message || "Change your password before continuing.");
+    case "JsonWebTokenError":
+    case "NotBeforeError":
+    case "TokenInvalid": return response(res, 401, "TOKEN_INVALID", "Invalid or expired token");
+    case "NotFound": return response(res, 404, "NOT_FOUND", message || "Data not found");
+    default: return undefined;
   }
+}
+
+export const errorHandler: ErrorRequestHandler = (error: unknown, _req, res) => {
+  if (error instanceof AppError) return response(res, error.statusCode, error.code, error.message, error.details);
 
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     switch (error.code) {
-      case "P2003":
-        return res.status(409).json({
-          code: "CONFLICT",
-          message: "Operasi tidak dapat dilakukan karena data memiliki relasi yang masih digunakan atau referensi tidak valid",
-        });
-      case "P2034":
-        return res.status(409).json({
-          code: "CONFLICT",
-          message: "Data sedang berubah, silakan ulangi operasi",
-        });
-      case "P2025":
-        return res.status(404).json({
-          code: "NOT_FOUND",
-          message: "Data yang akan diproses tidak ditemukan",
-        });
+      case "P2002": return response(res, 409, "DUPLICATE_DATA", duplicateMessage(prismaDuplicateFields(error)));
+      case "P2003": return response(res, 409, "CONFLICT", "Operasi tidak dapat dilakukan karena data memiliki relasi yang masih digunakan atau referensi tidak valid");
+      case "P2034": return response(res, 409, "CONFLICT", "Data sedang berubah, silakan ulangi operasi");
+      case "P2025": return response(res, 404, "NOT_FOUND", "Data yang akan diproses tidak ditemukan");
+      default: break;
     }
   }
 
-  switch (error.name) {
-    case "TokenExpiredError":
-      return res.status(401).json({
-        code: "TOKEN_EXPIRED",
-        message: "Access token expired",
-      });
-
-    case "badRequest":
-    case "BadRequest":
-    case "LecturerValidationError":
-      return res.status(400).json({
-        code: "VALIDATION_ERROR",
-        message: error.message || "Email / Password is required",
-      });
-
-    case "Conflict":
-      return res.status(409).json({ code: "CONFLICT", message: error.message || "Data masih digunakan." });
-
-    case "LecturerInUse":
-      return res.status(409).json({
-        code: "CONFLICT",
-        message: error.message || "Dosen masih memiliki mahasiswa bimbingan atau kelas mengajar. Pindahkan relasi tersebut sebelum menghapus dosen.",
-      });
-
-    case "LecturerStatusConflict":
-      return res.status(409).json({
-        code: "CONFLICT",
-        message: error.message || "Data dosen sedang berubah, silakan ulangi pembaruan status",
-      });
-
-    case "Unauthorized":
-      return res.status(401).json({
-        code: "INVALID_CREDENTIALS",
-        message: error.message || "Invalid Email / Password",
-      });
-
-    case "Forbidden":
-      return res.status(403).json({
-        code: "FORBIDDEN",
-        message: error.message || "Akses ditolak",
-      });
-
-    case "TooManyRequests":
-      return res.status(429).json({ code: "RATE_LIMITED", message: error.message });
-    case "PasswordChangeRequired":
-      return res.status(403).json({ code: "PASSWORD_CHANGE_REQUIRED", message: error.message });
-    case "JsonWebTokenError":
-    case "NotBeforeError":
-    case "TokenInvalid":
-      return res.status(401).json({
-        code: "TOKEN_INVALID",
-        message: "Invalid or expired token",
-      });
-
-    case "NotFound":
-      return res.status(404).json({
-        code: "NOT_FOUND",
-        message: error.message || "Data not found",
-      });
-
-    default:
-      console.error(error);
-
-      return res.status(500).json({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "Internal Server Error",
-      });
-  }
+  const known = legacyResponse(typeof error === "object" && error !== null ? error as LegacyError : {}, res);
+  if (known) return known;
+  if (error instanceof Error) console.error(error);
+  return response(res, 500, "INTERNAL_SERVER_ERROR", "Internal Server Error");
 };
