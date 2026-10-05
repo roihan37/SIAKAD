@@ -7,6 +7,6 @@ router.use(adminMiddleware);
 router.post("/", Controller.addUser);
 router.get("/:id", Controller.getUserById);
 router.put("/:id", Controller.updateUserById);
-// router.delete('/:id', Controller.deleteUserById)
+router.delete('/:id', Controller.deleteUserById)
 
 export default router

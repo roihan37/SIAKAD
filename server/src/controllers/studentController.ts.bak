@@ -935,10 +935,10 @@ export class Controller {
     }
     static async getStudentNilai(req: Request, res: Response, next: NextFunction) {
         try {
-            const userId = text("ID user mahasiswa", 100)(req.params.id);
-            const tahunAkademikId = req.query.tahunAkademikId === undefined ? undefined : resourceId(req.query.tahunAkademikId);
-            if (tahunAkademikId === undefined) {
-                throw { name: "BadRequest", message: "tahunAkademikId wajib diisi" };
+            const userId = String(req.params.id);
+            const tahunAkademikId = Number(req.query.tahunAkademikId);
+            if (!Number.isInteger(tahunAkademikId) || tahunAkademikId <= 0) {
+                throw { name: "BadRequest", message: "tahunAkademikId harus berupa angka positif" };
             }
 
             const result = await prisma.$transaction(

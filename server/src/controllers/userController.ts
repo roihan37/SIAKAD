@@ -35,19 +35,19 @@ export class Controller {
             const hash = await hashPassword(password)
 
             const newUser = await prisma.$transaction(async (tx) => {
-            const user = await tx.user.create({
-                data: {
-                    name,
-                    email,
-                    username,
-                    password: hash,
-                    birthDate,
-                    role,
-                    phoneNumber,
-                    gender,
-                    address,
-                },
-            })
+                const user = await prisma.user.create({
+                    data: {
+                        name,
+                        email,
+                        username,
+                        password: hash,
+                        birthDate,
+                        role,
+                        phoneNumber,
+                        gender,
+                        address,
+                    }
+                })
 
                 if (role === "Mahasiswa") {
                     await tx.mahasiswa.create({
@@ -108,33 +108,32 @@ export class Controller {
                 gender: true,
             }
 
-            switch (user.role) {
-            case "Mahasiswa":
-                select.mahasiswa = {
-                    select: {
-                        id: true,
-                        nim: true,
-                        status: true,
-                    },
-                }
-                break
+            switch (user?.role) {
+                case "Mahasiswa":
+                    select.mahasiswa = {
+                        select: {
+                            id: true,
+                            nim: true,
+                            status: true,
+                        },
+                    }
+                    break;
+                case "Dosen":
+                    select.dosen = {
+                        select: {
+                            id: true,
+                            nidn: true,
+                            status: true,
+                            jabatan: true
+                        }
+                    }
+                    break;
+                default:
+                    return res.status(400).json({
+                        message: "Role tidak dikenali",
+                    });
 
-            case "Dosen":
-                select.dosen = {
-                    select: {
-                        id: true,
-                        nidn: true,
-                        status: true,
-                        jabatan: true,
-                    },
-                }
-                break
-
-            default:
-                return res.status(400).json({
-                    message: "Role tidak dikenali",
-                })
-        }
+            }
 
             const result = await prisma.user.findUnique({
                 where: { id: id as string },
@@ -230,6 +229,15 @@ export class Controller {
             });
         } catch (error) {
             next(error)
+        }
+    }
+
+    static async deleteUserById(req: Request, res: Response, next: NextFunction) {
+        try {
+            // TODO: Implement user deletion logic
+            res.status(501).json({ message: "Not implemented" });
+        } catch (error) {
+            next(error);
         }
     }
 
