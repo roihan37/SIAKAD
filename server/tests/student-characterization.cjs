@@ -8,8 +8,9 @@ const { Controller } = require('../src/controllers/studentController');
 const { prisma } = require('../src/lib/prisma');
 const { S3Service } = require('../src/services/s3.service');
 
-// Mock S3Service.deleteUrl to avoid real network calls in tests
+// Mock S3Service methods to avoid real network calls in tests
 S3Service.deleteUrl = async () => {};
+S3Service.createReadUrl = async (key) => `https://example.com/${key}`;
 
 function makeRequest(options = {}) {
   return {
@@ -186,8 +187,11 @@ async function testResetPassword() {
   const mockUser = { id: 'user-123', name: 'Student', role: 'Mahasiswa', mahasiswa: { id: 'm1', nim: '12345' } };
   prisma.user.findUnique = async () => mockUser;
   prisma.$transaction = async (fn) => {
-    await fn({ user: { update: async () => ({}) }, refreshToken: { updateMany: async () => ({}) } });
-    return {};
+    const tx = {
+      user: { findUnique: async () => mockUser, update: async () => ({}) },
+      refreshToken: { updateMany: async () => ({}) },
+    };
+    return fn(tx);
   };
   const req = makeRequest({ params: { userId: 'user-123' }, body: { password: 'newpassword123' } });
   const res = makeResponse();
@@ -199,6 +203,7 @@ async function testResetPassword() {
 
 async function testResetPasswordWeakPassword() {
   console.log('Testing resetPassword weak password rejection...');
+  prisma.$transaction = async (fn) => fn({});
   const req = makeRequest({ params: { userId: 'user-123' }, body: { password: 'short' } });
   const res = makeResponse();
   let error;
@@ -237,8 +242,8 @@ async function testGetStudentById() {
   const res = makeResponse();
   await Controller.getStudentById(req, res, () => {});
   assert.equal(res.getStatusCode(), 200);
-  assert.ok(res.getBody().data.student);
-  assert.equal(res.getBody().data.student.nama, 'Student');
+  assert.ok(res.getBody().student);
+  assert.equal(res.getBody().student.nama, 'Student');
 }
 
 async function testGetStudentAttendance() {

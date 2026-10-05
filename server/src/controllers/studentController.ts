@@ -7,6 +7,11 @@ import { S3Service } from "../services/s3.service";
 import { resourceId, text } from "../validation/master-data";
 import { attendanceCounts, percentage } from "../services/attendance.service";
 import { getStudentFinance, listStudentTuitionBills } from "../services/tuition.service";
+import { StudentFinanceService } from "../services/student-finance.service";
+import { StudentAccountService } from "../services/student-account.service";
+import { StudentManagementService } from "../services/student-management.service";
+import { StudentAttendanceService } from "../services/student-attendance.service";
+
 
 export class Controller {
 
@@ -15,9 +20,10 @@ export class Controller {
             const userId = text("ID user mahasiswa", 100)(req.params.id);
             const tahunAkademikId = req.query.tahunAkademikId === undefined ? undefined : resourceId(req.query.tahunAkademikId);
             const now = new Date();
-            const data = await prisma.$transaction(tx => getStudentFinance(tx, userId, tahunAkademikId, now), {
-                isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
-            });
+            const data = await prisma.$transaction(
+                (tx) => StudentFinanceService.getFinance(tx, userId, tahunAkademikId, now),
+                { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead }
+            );
             return res.status(200).json({ message: "Student financial data retrieved successfully", data });
         } catch (error) {
             next(error);
@@ -28,9 +34,10 @@ export class Controller {
         try {
             const userId = text("ID user mahasiswa", 100)(req.params.id);
             const now = new Date();
-            const data = await prisma.$transaction(tx => listStudentTuitionBills(tx, userId, now), {
-                isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
-            });
+            const data = await prisma.$transaction(
+                (tx) => StudentFinanceService.getUKTBills(tx, userId, now),
+                { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead }
+            );
             return res.status(200).json({ message: "Tuition bills retrieved successfully", data });
         } catch (error) {
             next(error);
@@ -43,9 +50,10 @@ export class Controller {
             if (req.userLogin.role !== "Mahasiswa") throw { name: "Forbidden", message: "Akses hanya untuk mahasiswa." };
             const userId = req.userLogin.id;
             const now = new Date();
-            const data = await prisma.$transaction(tx => listStudentTuitionBills(tx, userId, now), {
-                isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
-            });
+            const data = await prisma.$transaction(
+                (tx) => StudentFinanceService.getMyUKT(tx, userId, now),
+                { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead }
+            );
             return res.status(200).json({ message: "Tuition bills retrieved successfully", data });
         } catch (error) {
             next(error);
@@ -56,59 +64,10 @@ export class Controller {
         try {
             const userId = text("ID user mahasiswa", 100)(req.params.id);
             const tahunAkademikId = resourceId(req.query.tahunAkademikId);
-            const data = await prisma.$transaction(async (tx) => {
-                const user = await tx.user.findUnique({
-                    where: { id: userId, role: "Mahasiswa" },
-                    select: { mahasiswa: { select: { id: true } } },
-                });
-                if (!user?.mahasiswa) throw { name: "NotFound", message: "Mahasiswa tidak ditemukan." };
-                const year = await tx.tahunAkademik.findUnique({
-                    where: { id: tahunAkademikId },
-                    select: { id: true, tahun: true, semester: true },
-                });
-                if (!year) throw { name: "NotFound", message: "Tahun akademik tidak ditemukan." };
-                const records = await tx.absensi.findMany({
-                    where: { mahasiswaId: user.mahasiswa.id, pertemuan: { jadwal: { tahunAkademikId } } },
-                    select: {
-                        status: true,
-                        pertemuan: { select: { jadwal: { select: { kelasMataKuliah: { select: {
-                            mataKuliah: { select: { id: true, kode: true, nama: true } },
-                        } } } } } },
-                    },
-                });
-                const totals = attendanceCounts(records);
-                const grouped = new Map<number, {
-                    course: { id: number; code: string; name: string };
-                    counts: ReturnType<typeof attendanceCounts>;
-                }>();
-                for (const record of records) {
-                    const course = record.pertemuan.jadwal.kelasMataKuliah.mataKuliah;
-                    const group = grouped.get(course.id) ?? {
-                        course: { id: course.id, code: course.kode, name: course.nama },
-                        counts: attendanceCounts([]),
-                    };
-                    const counts = attendanceCounts([record]);
-                    for (const key of ["present", "permission", "sick", "absent", "total"] as const) group.counts[key] += counts[key];
-                    grouped.set(course.id, group);
-                }
-                return {
-                    academicYear: { id: year.id, year: year.tahun, semester: year.semester },
-                    summary: {
-                        attendancePercentage: percentage(totals.present, totals.total),
-                        present: totals.present, permission: totals.permission, sick: totals.sick,
-                        absent: totals.absent, totalRecords: totals.total,
-                    },
-                    courses: [...grouped.values()].sort((a, b) => a.course.code.localeCompare(b.course.code) || a.course.id - b.course.id)
-                        .map(({ course, counts }) => ({
-                            course,
-                            meetings: counts.total,
-                            attendance: {
-                                present: counts.present, permission: counts.permission, sick: counts.sick,
-                                absent: counts.absent, percentage: percentage(counts.present, counts.total),
-                            },
-                        })),
-                };
-            }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
+            const data = await prisma.$transaction(
+                (tx) => StudentAttendanceService.getStudentAttendance(tx, userId, tahunAkademikId),
+                { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead }
+            );
             return res.status(200).json({ message: "Student attendance retrieved successfully", data });
         } catch (error) { next(error); }
     }
@@ -1039,73 +998,9 @@ export class Controller {
             const search = String(req.query.search ?? "");
             const sortBy = String(req.query.sortBy ?? "name");
             const sortOrder = req.query.sortOrder === "desc" ? "desc" : "asc";
-
-
-            const skip = (page - 1) * limit;
-
-            const where: Prisma.UserWhereInput = {
-                role: "Mahasiswa",
-                ...(search
-                    ? {
-                        OR: [
-                            { name: { contains: search, mode: Prisma.QueryMode.insensitive } },
-                            { mahasiswa: { nim: { contains: search, mode: Prisma.QueryMode.insensitive } } },
-                        ],
-                    }
-                    : {}),
-            };
-
-            const sortableFields: Record<string, Prisma.UserOrderByWithRelationInput> = {
-                name: { name: sortOrder },
-                nim: { mahasiswa: { nim: sortOrder } },
-                semester: { mahasiswa: { semester: sortOrder } },
-            };
-
-            const orderBy = sortableFields[sortBy] ?? { name: sortOrder };
-
-
-            const [students, totalRows] = await Promise.all([
-                prisma.user.findMany({
-                    where,
-                    skip,
-                    take: limit,
-                    orderBy,
-                    select: {
-                        id: true,
-                        name: true,
-                        role: true,
-                        avatarUrl: true,
-                        mahasiswa: {
-                            select: {
-                                id: true,
-                                nim: true,
-                                status: true,
-                                semester: true,
-                                prodi: {
-                                    select: { name: true },
-                                },
-                            },
-                        },
-                    },
-                }),
-                prisma.user.count({ where }),
-            ]);
-
-            res.status(200).json({
-                students: students.map((student) => ({
-                    ...student,
-                    avatarUrl: student.avatarUrl ?? null,
-                })),
-                pagination: {
-                    page,
-                    limit,
-                    totalRows,
-                    totalPages: Math.max(1, Math.ceil(totalRows / limit)),
-                },
-            });
-        } catch (error) {
-            next(error);
-        }
+            const data = await StudentManagementService.getAllStudents(prisma, page, limit, search, sortBy, sortOrder);
+            return res.status(200).json(data);
+        } catch (error) { next(error); }
     }
 
     static async getStudentById(
@@ -1113,214 +1008,11 @@ export class Controller {
         res: Response,
         next: NextFunction
     ) {
-
         try {
             const { id } = req.params;
-
-            const student = await prisma.user.findUnique({
-                where: {
-                    id: id as string,
-                    role: "Mahasiswa",
-                },
-                select: {
-                    id: true,
-                    name: true,
-                    email: true,
-                    phoneNumber: true,
-                    address: true,
-                    birthDate: true,
-                    gender: true,
-                    nik: true,
-                    birthPlace: true,
-                    avatarKey: true,
-                    mahasiswa: {
-                        select: {
-                            id: true,
-                            nim: true,
-                            angkatan: true,
-                            semester: true,
-                            status: true,
-                            riwayatStatus: {
-                                orderBy: {
-                                    tanggal: "desc",
-                                },
-                                select: {
-                                    id: true,
-                                    statusBaru: true,
-                                    alasan: true,
-                                    tanggal: true,
-                                },
-                            },
-                            prodi: {
-                                select: {
-                                    id: true,
-                                    name: true,
-                                    fakultas: {
-                                        select: {
-                                            id: true,
-                                            name: true,
-                                        },
-                                    },
-                                    kurikulum: {
-                                        where: {
-                                            isActive: true,
-                                        },
-                                        orderBy: {
-                                            tahun: "desc",
-                                        },
-                                        take: 1,
-                                        select: {
-                                            id: true,
-                                            kode: true,
-                                            nama: true,
-                                            tahun: true,
-                                        },
-                                    },
-                                },
-                            },
-                            dosen: {
-                                select: {
-                                    id: true,
-                                    user: {
-                                        select: {
-                                            name: true,
-                                        },
-                                    },
-                                },
-                            },
-                            krs: {
-                                select: {
-                                    tahunAkademik: {
-                                        select: {
-                                            tahun: true,
-                                            semester: true,
-                                        },
-                                    },
-                                    details: {
-                                        select: {
-                                            kelasMataKuliah: {
-                                                select: {
-                                                    mataKuliah: {
-                                                        select: {
-                                                            sks: true,
-                                                        },
-                                                    },
-                                                },
-                                            },
-                                            transkrip: {
-                                                select: {
-                                                    bobot: true,
-                                                },
-                                            },
-                                        },
-                                    },
-                                },
-                            },
-                        },
-                    },
-                },
-            });
-
-            let avatarUrl: string | null = null;
-
-            if (student?.avatarKey) {
-                avatarUrl = await S3Service.createReadUrl(
-                    student.avatarKey
-                );
-            }
-
-            if (!student || !student.mahasiswa) {
-                throw {
-                    name: "NotFound",
-                    message: "Mahasiswa tidak ditemukan",
-                };
-            }
-
-            const mahasiswa = student.mahasiswa;
-            const jenisKelamin = student.gender === "Male" ? "L" : student.gender === "Female" ? "P" : null;
-            const tanggalLahir = student.birthDate
-                ? new Date(student.birthDate).toISOString().split("T")[0]
-                : null;
-            const semesterOrder = {
-                GANJIL: 1,
-                GENAP: 2,
-            } as const;
-            const getStartYear = (tahun: string) => Number(tahun.split("/")[0]);
-            const round = (value: number) => Math.round(value * 100) / 100;
-
-            const gradedDetails = mahasiswa.krs.flatMap((krs) =>
-                krs.details
-                    .filter((detail) => detail.transkrip[0]?.bobot != null)
-                    .map((detail) => ({
-                        sks: detail.kelasMataKuliah.mataKuliah.sks,
-                        bobot: Number(detail.transkrip[0]!.bobot),
-                    }))
-            );
-            const totalSKS = gradedDetails.reduce((total, detail) => total + detail.sks, 0);
-            const totalGradePoints = gradedDetails.reduce(
-                (total, detail) => total + detail.sks * detail.bobot,
-                0
-            );
-            const semester = mahasiswa.krs.reduce((latest, krs) => {
-                const currentSemester =
-                    (getStartYear(krs.tahunAkademik.tahun) - mahasiswa.angkatan) * 2 +
-                    semesterOrder[krs.tahunAkademik.semester];
-                return Math.max(latest, currentSemester);
-            }, mahasiswa.semester);
-
-
-            res.status(200).json({
-                student: {
-                    id: student.id,
-                    avatarUrl,
-                    nim: mahasiswa.nim,
-                    nama: student.name,
-                    nik: student.nik ?? null,
-                    tempatLahir: student.birthPlace ?? null,
-                    tanggalLahir,
-                    jenisKelamin,
-                    status: student.mahasiswa.status,
-                    riwayatStatus: mahasiswa.riwayatStatus,
-                    email: student.email,
-                    noHp: student.phoneNumber ?? null,
-                    alamat: student.address ?? null,
-                    angkatan: mahasiswa.angkatan,
-                    prodi: mahasiswa.prodi
-                        ? {
-                            id: mahasiswa.prodi.id,
-                            nama: mahasiswa.prodi.name,
-                        }
-                        : null,
-                    fakultas: mahasiswa.prodi?.fakultas
-                        ? {
-                            id: mahasiswa.prodi.fakultas.id,
-                            nama: mahasiswa.prodi.fakultas.name,
-                        }
-                        : null,
-                    kurikulum: mahasiswa.prodi?.kurikulum[0]
-                        ? {
-                            id: mahasiswa.prodi.kurikulum[0].id,
-                            kode: mahasiswa.prodi.kurikulum[0].kode,
-                            nama: mahasiswa.prodi.kurikulum[0].nama,
-                            tahun: mahasiswa.prodi.kurikulum[0].tahun,
-                        }
-                        : null,
-                    dosenPembimbing: mahasiswa.dosen?.user
-                        ? {
-                            id: mahasiswa.dosen.id,
-                            nama: mahasiswa.dosen.user.name,
-                        }
-                        : null,
-                    summary: {
-                        ipk: totalSKS > 0 ? round(totalGradePoints / totalSKS) : 0,
-                        totalSKS,
-                        semester,
-                        kehadiran: null,
-                    },
-                },
-            });
+            const data = await StudentManagementService.getStudentById(prisma, id as string);
+            return res.status(200).json({ student: data });
         } catch (error) {
-            // console.error
             next(error);
         }
     }
@@ -1892,66 +1584,21 @@ export class Controller {
         next: NextFunction
     ) {
         try {
-            const userId = String(req.params.userId)
-            const { password } = req.body
+            const userId = String(req.params.userId);
+            const { password } = req.body;
 
-            if (!password || typeof password !== "string") {
-                throw {
-                    name: "BadRequest",
-                    message: "Password baru wajib diisi",
-                }
-            }
-
-            if (password.length < 8) {
-                throw {
-                    name: "BadRequest",
-                    message: "Password minimal 8 karakter",
-                }
-            }
-
-            const user = await prisma.user.findUnique({
-                where: {
-                    id: userId,
-                },
-                select: {
-                    id: true,
-                    name: true,
-                    role: true,
-                    mahasiswa: {
-                        select: {
-                            id: true,
-                            nim: true,
-                        },
-                    },
-                },
-            })
-
-            if (!user || !user.mahasiswa) {
-                throw {
-                    name: "NotFound",
-                    message: "Mahasiswa tidak ditemukan",
-                }
-            }
-
-            const hashedPassword = await hashPassword(password)
-
-            // Password reset and session revocation must commit together.
-            await prisma.$transaction(async tx => {
-                await tx.user.update({ where: { id: userId }, data: { password: hashedPassword, mustChangePassword: true } });
-                await tx.refreshToken.updateMany({ where: { userId }, data: { revoked: true } });
-            }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+            // Validation is now handled by the service for consistency
+            const result = await prisma.$transaction(
+                (tx) => StudentAccountService.resetPassword(tx, userId, password),
+                { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+            );
 
             return res.status(200).json({
                 message: "Password mahasiswa berhasil direset",
-                data: {
-                    id: user.id,
-                    name: user.name,
-                    nim: user.mahasiswa.nim,
-                    mustChangePassword: true,
-                },
-            })
+                data: result,
+            });
         } catch (error) {
-            next(error)
+            next(error);
         }
     }
 }

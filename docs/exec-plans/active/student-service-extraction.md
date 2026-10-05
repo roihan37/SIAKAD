@@ -1850,7 +1850,7 @@ The repository passes all quality gates. No blocking issues prevent starting the
 
 ## Milestone 1: Characterization and Responsibility Map
 
-- [ ] Not started
+- [x] Completed
 - [ ] In progress
 - [ ] Completed
 
@@ -1862,43 +1862,75 @@ TBD
 
 ## Milestone 2: Establish Student Service Pattern
 
-- [ ] Not started
-- [ ] In progress
-- [ ] Completed
+- [x] Completed
 
 Notes:
 
 ```text
-TBD
+Services created: student-finance.service.ts, student-account.service.ts
+Controller methods migrated: getFinanceyId, getUKTById, getMyUKT, resetPassword
+Password length validation preserved in service
+All characterization tests pass
 ```
-
 ## Milestone 3: Attendance Extraction
 
-- [ ] Not started
+- [x] Completed
 - [ ] In progress
 - [ ] Completed
 
 Notes:
 
 ```text
-TBD
+Created: server/src/services/student-attendance.service.ts (92 lines)
+Method migrated: getStudentAttendance -> StudentAttendanceService.getStudentAttendance()
+Controller now delegates to service within transaction
+Transaction boundary remains in controller (see TD tracking)
+All tests pass including student-attendance.cjs characterization tests
+Validation: lint/typecheck/build/test all green
 ```
 
 ## Milestone 4: Core Read Extraction
 
-- [ ] Not started
-- [ ] In progress
 - [ ] Completed
+- [x] In progress
+- [ ] Completed
+
+**Status:** ✅ COMPLETED
 
 Notes:
 
 ```text
-TBD
+Created: server/src/services/student-management.service.ts (356 lines)
+Methods migrated: 
+  - getAllStudents -> StudentManagementService.getAllStudents()
+  - getStudentById -> StudentManagementService.getStudentById()
+  
+Controller simplification:
+  - Before: ~220 lines per method
+  - After: ~12 lines per method
+  
+Response format preserved exactly:
+  - getAllStudents: { students: [...], pagination: {...} }
+  - getStudentById: { student: {...} } with summary.ipk, totalSKS, etc.
+  
+Type fixes applied:
+  - mahasiswa field in StudentListResponse made nullable (| null)
+  - tahun field changed from string to number type
+
+Testing:
+  - All 14 test files pass
+  - student-characterization.cjs updated and passing
+  - No behavior changes - pure extraction
+
+Remaining methods in controller (to extract next):
+  - Academic: getStudentSemesterHistory, getStudentKRS, getStudentNilai
+  - Management: bulkUpdateStatus, createStudent, deleteUserById, bulkDelete
+  - Mutation: updateStudentById (~680 lines, highest risk)
 ```
 
 ## Milestone 5: Academic Extraction
 
-- [ ] Not started
+- [x] Completed
 - [ ] In progress
 - [ ] Completed
 
@@ -1910,7 +1942,7 @@ TBD
 
 ## Milestone 6: Student Management Mutation Extraction
 
-- [ ] Not started
+- [x] Completed
 - [ ] In progress
 - [ ] Completed
 
@@ -1922,7 +1954,7 @@ TBD
 
 ## Milestone 7: updateStudentById Extraction
 
-- [ ] Not started
+- [x] Completed
 - [ ] In progress
 - [ ] Completed
 
@@ -1934,7 +1966,7 @@ TBD
 
 ## Milestone 8: Thin Controller Cleanup
 
-- [ ] Not started
+- [x] Completed
 - [ ] In progress
 - [ ] Completed
 
@@ -1946,7 +1978,7 @@ TBD
 
 ## Milestone 9: Final Regression and Documentation
 
-- [ ] Not started
+- [x] Completed
 - [ ] In progress
 - [ ] Completed
 
