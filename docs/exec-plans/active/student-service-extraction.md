@@ -2,7 +2,7 @@
 
 ## Status
 
-Active
+Active — Milestones 0–8 implemented; Milestone 9 verification performed, closeout blocked (2026-10-05).
 
 ## Type
 
@@ -430,10 +430,69 @@ Validation evidence from `server/`:
 
 Scope remains M8 only. M9/final closeout has not started; the plan stays active. Existing storage/concurrency risks and broader non-Student failures remain deferred. No live database or S3 integration was performed.
 
-## Milestone 9: Final Regression ❌ NOT STARTED
-- Full test suite
-- Final documentation
-- Move execplan to completed/
+## Milestone 9: Final Regression — verification performed; closeout BLOCKED
+
+Final review date: 2026-10-05. No production, schema, route, frontend, or other-controller changes were made in M9. This section supersedes earlier approximate metrics and blanket “all tests passing” statements; historical milestone evidence is retained.
+
+### Architecture and compatibility review
+
+Actual dependency path: Student routes → authentication/role middleware → StudentController → StudentManagementService / StudentAccountService / StudentAcademicService / StudentAttendanceService / StudentFinanceService → Prisma or existing avatar/S3/attendance/tuition helpers. Management owns core reads as well as lifecycle mutations; a separate generic StudentService was unnecessary. Account owns password/session changes; Academic owns history/KRS/grades; Attendance owns aggregation; Finance owns UKT/finance. Management remains the largest service, but unrelated academic/account/attendance/finance responsibilities are separated.
+
+All 15 controller methods were inspected. No direct Prisma access, transactions, password hashing, S3 calls, grade calculation or attendance aggregation remains. Student services have no Express dependency; no repository layer was introduced. Existing scoped ESLint restrictions remain enabled. HTTP parsing, legacy envelopes, identity checks, service calls and error forwarding remain in the controller, including the documented create response-failure cleanup delegation.
+
+`git diff fe5eb2e -- server/src/router/students.ts server/src/router/index.ts server/src/middleware/authMid.ts server/src/middleware/authProtection.ts` is empty: no path, HTTP method, authentication, role middleware or matching-order difference. `/me/ukt` is authenticated through the shared mount and restricts identity to Mahasiswa in the controller; it is not public. `/bulk` remains before `/:id` for DELETE.
+
+M1 characterization and the Student component integration suites pass. Success status codes and legacy property names remain unchanged; no canonical-response migration was performed. Actual list filtering/sorting/pagination, detail projection, history and KRS source were inspected against the baseline. See the [final audit](../../audits/student-controller-responsibility-map.md#milestone-9-final-verification-2026-10-05) for the evidence matrix and limitations. Full HTTP error compatibility cannot be certified while the integration failures below remain.
+
+### Validation matrix
+
+Executed from `server/` using Node 24 and installed dependencies:
+
+| Check | Actual M9 result |
+|---|---|
+| `npm run lint` | PASS, exit 0 |
+| `npm run typecheck` | PASS, exit 0 |
+| `npm test` | FAIL, exit 1: 174 reported tests, 168 pass, 6 fail, no skips |
+| `npm run build` | PASS, exit 0 |
+| Student regression suites | All eight Student files pass within `npm test`; 27 management mutation, 29 update and 6 service-boundary named cases, plus legacy file-level assertions |
+| Authorization | `route-authorization.cjs`, auth-security and Student role/self-access checks pass with mocked persistence/router inspection |
+| Production startup | Executed by `production-build.test.cjs` inside `npm test` with fresh compiled artifacts and dummy configuration; configuration rejection tests pass, HTTP smoke test FAILS |
+| Architecture/routes | Source inspection and baseline route/middleware diff PASS |
+
+The isolated runner blocks real PostgreSQL and external network access; localhost permission was allowed. It builds fresh temporary production artifacts. No production configuration, database, S3, seed or migration was used. No additional unisolated `npm start` was run.
+
+Six failures reproduce the prior M6–M8 baseline: health live/ready tests consume response bodies twice (category C, broken tests); unknown route returns HTML 500 instead of 404; unauthenticated known route returns 500 instead of 401; request-ID and compiled-startup tests fail parsing HTML as JSON (category B, application HTTP error handling). The existing error middleware has three declared parameters; Express error-handler registration warrants a separate scoped repair. These are not accepted or counted as passing gates. No new Student-specific failure was observed, but middleware affects Student errors too.
+
+### Baseline versus final
+
+| Metric | M0 source `fe5eb2e` | M9 source |
+|---|---:|---:|
+| StudentController lines | 1,957 | 231 |
+| Direct `prisma.` occurrences, including transactions | 22 | 0 |
+| `prisma.$transaction` occurrences | 11 | 0 |
+| `Prisma.` occurrences | 10 | 0 |
+| Business/persistence import declarations | 7 (9 imported symbols) | 0 |
+| Student service imports | 0 | 5 |
+| Student test files | 4 | 8 |
+| All discovered backend test files (excluding support) | 22 | 26 |
+
+The four added files are M1 characterization, M6 mutations, M7 update and M8 service boundaries. M9 adds verification/documentation, not new tests. File/test counts are not coverage percentages: legacy files count as one runner test despite multiple assertions. Earlier M6 baseline replay was 112 reported tests / 106 pass / 6 fail; that replay includes M1 characterization and is not an M0 measured test count. No M0 line/branch coverage measurement exists. Line reduction alone is not acceptance evidence.
+
+### Side effects and decisions
+
+- All 11 original transaction boundaries now belong to services. Existing isolation, atomic writes and four nontransactional reads are retained; no split writes or repository layer.
+- Create hashes and verifies avatar inside its transaction; failures attempt best-effort cleanup. No initial status history is added. Legacy cleanup on HTTP response failure after commit remains.
+- Update validates/reads before the write transaction, verifies replacement before hashing, writes user/student/status history atomically, then deletes the old avatar best effort and signs the new URL. A failed transaction compensates the verified new key; removal commits before deleting the old key. Signing failure may report an error after commit.
+- Delete/bulk delete commit child-to-parent database removal before S3 cleanup. A database failure never deletes avatars; S3 failure is logged/swallowed after commit. Bulk cleanup deduplicates keys and uses batches of five.
+- Bulk status writes changes and history in one transaction. Reset hashes and revokes sessions in its Serializable transaction. Failure-order assertions pass with mocks, not a live database/storage system.
+
+### Exit criteria and next steps
+
+Architecture separation, cohesive service boundaries, unchanged routes, typecheck and build pass. Representative Student behavior tests pass and no new critical Student-specific regression was found. **Acceptable complete regression and end-to-end error-response compatibility remain blocked.** Therefore the ExecPlan remains in `active/`; it must not move to `completed/` yet. A historical same-name file already exists under `completed/` (last changed by `4cf5b8e`), with an Active header and conflicting milestone completion checkboxes. It was not created or moved by M9 and is preserved unchanged as history; this active plan is authoritative for current acceptance. Reconcile that duplicate when closeout is actually approved by passing evidence, without overwriting history.
+
+Reviewed AGENTS.md, ARCHITECTURE.md and QUALITY.md: no new repository-wide rule was established by this scoped extraction, so those files are unchanged. Historical global documentation is not being globally refreshed under this milestone. Reconciled Student debt in TD-22–TD-26 without deleting history.
+
+Recommended next scoped work is repair of the existing HTTP error-handler integration and health test failures, with regression coverage; then rerun this acceptance matrix and decide closeout. Add dedicated core filter/sort/history/KRS characterization and authenticated HTTP coverage as recorded in TD-25. Once closeout is supported, `krs-domain-review.md` is a possible subsequent ExecPlan. Neither that plan nor any redesign was created or started.
 
 ---
 
