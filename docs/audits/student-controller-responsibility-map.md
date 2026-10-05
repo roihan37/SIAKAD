@@ -91,22 +91,31 @@
 - **Response Shape:** { data: {...}, message?: string }
 - **Risk:** HIGH - Transaction with external side effects (S3), password hashing
 
-### 7. updateStudentById ⚠️ HIGHEST RISK
-- **Route:** PATCH /api/v1/students/:id
-- **Auth:** adminMiddleware required
-- **Prisma Models:** user, mahasiswa, avatar (transaction)
-- **Dependencies:** hashPassword(), AvatarService, S3Service
-- **Transactions:** YES - Complex transaction with conditional updates
-- **Validations:** Extensive field-by-field validation (~680 lines)
-- **Business Rules:**
-  - Partial updates allowed (only provided fields)
-  - Status change requires reason if coming from "Aktif"
-  - Avatar replacement triggers S3 cleanup of old file
-  - Birth date format validation
-  - Multiple field validations (name, semester, angkatan, prodi, dosen, avatar)
-- **External Side Effects:** S3 upload/cleanup for avatar
-- **Response Shape:** { data: {...}, message?: string }
-- **Risk:** HIGHEST - Most complex method, extensive validation, transaction with S3
+### 7. updateStudentById — Milestone 7 pre-extraction characterization (2026-10-05)
+
+Inspected the complete original method before production edits. This supersedes the earlier summary (there is no avatar model/upload, no name validation, and reason is required for changes from **any** status).
+
+- Route: `PATCH /api/v1/students/:id`; existing admin middleware is unchanged. `String(req.params.id)` is used without trimming or ID validation.
+- Lookup: `user.findUnique({where:{id}})` selects avatarKey and nested mahasiswa ID, NIM, angkatan, semester, status, prodiId, dosenId. No role predicate. Missing user throws `NotFound: User tidak ditemukan`; missing mahasiswa throws `BadRequest: User ini bukan mahasiswa`. All lookup/relation reads precede the transaction.
+- Editable user fields: name, email, username, password, phoneNumber, gender, address, nik, birthPlace, birthDate, avatarKey. Editable mahasiswa fields: nim, angkatan, semester, status, prodiId, dosenId. Name/email/username/NIM are passed through without trimming, normalization or duplicate preflight. Prisma errors (including uniqueness/null/enum errors) are forwarded unchanged.
+- Non-editable through this method: user/mahasiswa IDs, role, userId, photo, mustChangePassword, timestamps, arbitrary body fields, direct avatarUrl. Username and NIM are **not** immutable. Avatar changes clear persisted avatarUrl.
+- Status: strict inequality to the previously read status when status is not undefined. There is **no explicit status allow-list**. A change requires a non-null/defined reason whose String conversion trims to nonempty; otherwise `BadRequest: Alasan perubahan status wajib diisi`. No maximum length. Unchanged/omitted status ignores reason. Invalid status with reason reaches Prisma; without reason it fails reason validation first. Null/empty status is also treated as a change and forwarded if reason exists.
+- Birth date: undefined omits write; null/empty string clears to null. Other values use String conversion and exact YYYY-MM-DD regex (`birthDate harus menggunakan format YYYY-MM-DD`), then Date.UTC with UTC component equality (`birthDate tidak valid`). Valid dates store UTC midnight; impossible dates and Date.UTC's 0000–0099 year rollover fail.
+- Angkatan/semester/prodiId: undefined omits write. Number conversion must yield integer >0 (`<field> harus berupa angka positif`). Null/empty string becomes zero and fails; numeric strings are accepted (also legacy coercions such as true → 1). No upper bound. Prodi existence lookup follows parsing; missing row throws `NotFound: Program Studi tidak ditemukan`.
+- Dosen: undefined omits write; null/empty string clears relation without lookup. Otherwise String conversion without trimming and existence lookup; missing row throws `NotFound: Dosen tidak ditemukan`.
+- Avatar: undefined preserves key and stored URL. Null/empty string requests removal, skips verification, writes key/URL null. Other values use String conversion, must start `students/${userId}/` (`BadRequest: Avatar tidak valid`), then `S3Service.checkObjectExists` (`BadRequest: File avatar tidak ditemukan` if false). Same key is still verified and stored URL cleared. No upload or AvatarService call occurs here.
+- Password: undefined/null/empty string is ignored. Otherwise hashPassword runs after avatar verification, before transaction, with no added strength rule. The user update sets the hash and revokes all refreshTokens atomically; mustChangePassword is untouched.
+- Transaction: one interactive `$transaction(callback)` with **default options**. Nested `user.update` writes user and mahasiswa together, then status history is created when changed, with previous status from the earlier lookup, new raw status and trimmed reason. History select is id/statusLama/statusBaru/alasan/tanggal. User select is id/name/email/username/avatarKey plus mahasiswa id/nim/angkatan/semester/status/prodiId/dosenId. History/write/commit failures propagate; no independent writes.
+- External ordering: lookup → reason/date/numeric/relation validation → avatar verification → hash → transaction user+mahasiswa+tokens/history → commit → disable new-avatar compensation → best-effort delete old key if replaced/removed → sign read URL for resulting key → HTTP response. No S3 operation is inside the transaction.
+- Compensation: only a verified **different** nonempty new key is marked for cleanup. Subsequent hash/transaction failure attempts deletion of that new key; cleanup errors log `Gagal cleanup avatar baru:` and preserve the original error. Bad prefix, failed/throwing verification, same key, and removal do not register compensation. Old key is never deleted on rollback.
+- Post-commit old-key deletion failure logs `Gagal menghapus avatar lama:` and is swallowed; signing still runs. Signing failure is forwarded **after commit**, with no compensation of the now-owned new key. Response-send failure also forwards with no new-key cleanup. Removal returns avatarUrl null and does not sign.
+- Response: HTTP 200 `{message:"Mahasiswa berhasil diperbarui",data:{id,nama,email,username,avatarUrl,mahasiswa,statusHistory}}`; statusHistory is null if unchanged. All exceptions go to next(error).
+
+Value semantics: raw name/email/username/phoneNumber/gender/address/nik/birthPlace/NIM/status are included exactly when `!== undefined`; empty strings and null are forwarded, with Prisma responsible for required/enum/unique constraints. Nullable phoneNumber/address/nik/birthPlace accept null. Required name/email/username/NIM/gender/status do not become nullable merely because the controller forwards null. An empty patch still executes a nested mahasiswa update and signs any existing avatar. No fallback/default/coalescing may erase omitted-versus-null-versus-empty distinctions.
+
+Risks retained: stale status/avatar snapshots and relation races from reads outside transaction; failed cleanup may orphan objects; failed verification does not clean a new upload; signing can fail after commit; concurrent/reused keys complicate compensation. These are deferred under TD-22, not silently repaired in this extraction. Tests use isolated Prisma/S3 doubles, so actual database rollback/cloud behavior remains an integration-validation limit.
+
+M7 outcome: these responsibilities now live in `StudentManagementService.updateStudent` and its private `prepareStudentUpdate` helper. The controller constructs `UpdateStudentInput` from the explicit supported field list and preserves the HTTP envelope/error forwarding. The original 27 characterization tests passed before extraction and after each risky checkpoint; two service/controller-boundary tests were added afterward. Other controller methods are unchanged; see the ExecPlan for full validation results.
 
 ### 8. deleteUserById
 - **Route:** DELETE /api/v1/students/:id

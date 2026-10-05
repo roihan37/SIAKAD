@@ -376,10 +376,37 @@ Validation results (2026-10-05, commands run from `server/`):
 
 M6 extraction and its focused validation are complete. Full-suite acceptance remains constrained by the six reproduced baseline failures; no unrelated health/error-handler/test-tooling fixes or Milestone 7 work were attempted.
 
-## Milestone 7: updateStudentById ❌ NOT STARTED
-- ~680 line method
-- Contains: Avatar verify/check/delete, password hashing, status history, S3 cleanup
-- Highest complexity migration
+## Milestone 7: updateStudentById — EXTRACTION COMPLETE (2026-10-05)
+
+Scope: only update extraction; no schema/frontend changes or Milestone 8 cleanup. Full-suite acceptance retains the six documented baseline failures below.
+
+- [x] Inspect complete method before editing production code; correct and expand responsibility map section 7.
+- [x] Add and run 27 pre-extraction characterization tests covering validation, partial-value semantics, transaction and S3 failure ordering against the original controller (27/27 PASS).
+- [x] Define explicit `UpdateStudentInput`; focused tests 27/27 and typecheck PASS before moving behavior.
+- [x] Move pure validation and user/prodi/dosen reads into private `prepareStudentUpdate`; focused tests 27/27 and typecheck PASS at that checkpoint.
+- [x] Move transaction/history and guarded avatar orchestration together into `StudentManagementService.updateStudent(input: UpdateStudentInput)`; focused update + M6 mutation tests 54/54 and typecheck PASS.
+- [x] Thin HTTP controller; add two post-extraction tests for direct service use/first avatar and controller field allow-list/error forwarding. Final focused run 56/56 PASS (29 update + 27 M6 mutation tests).
+- [x] Run lint/typecheck/full suite/build; record evidence and TD-22 risks.
+
+Final API: `StudentManagementService.updateStudent(input: UpdateStudentInput)` returns the existing response data fields (`id`, `nama`, `email`, `username`, `avatarUrl`, `mahasiswa`, `statusHistory`). The controller String-converts the path ID, explicitly copies only the supported fields, invokes the service and sends the unchanged 200 message/data envelope or forwards errors. It has no Prisma, transaction, relation checks, history or S3 calls. No Express dependency is introduced into the service.
+
+Input decision: explicit optional scalar properties for user/NIM/password writes, generated Gender/Status types, nullable supported fields; fields already coerced with Number/String use `unknown` to preserve the existing runtime conversion/validation behavior. No Request, raw body object, catch-all record or new `any` crosses the service API. Undefined/null/empty values are not defaulted. The type describes supported scalar writes; it does not add a new HTTP validator or prevent malformed runtime values from reaching the same legacy Prisma checks. Required scalar nulls still reach Prisma at runtime; nullable clear operations remain supported.
+
+Transaction decision: preserve the single default-options interactive transaction, nested user/mahasiswa update and password-triggered refresh-token revocation, followed by status history inside that same transaction. Reads and validation remain before it. No isolation-level change, split writes, status allow-list, duplicate preflight, new reason limit, or normalization. Invalid status remains a Prisma error when a reason is present; missing reason still takes precedence.
+
+Avatar decision: preserve verification before hashing/transaction; register compensation only for a verified different key; hash/write/history/commit failure attempts deletion of that key, preserving the original error if deletion fails. Clear compensation immediately after commit; delete replaced/removed old key best-effort; then sign the resulting key. Same key is verified but never compensated. Removal skips verification/signing. Signing or HTTP response failure after commit does not delete the committed new key. No uploads or external calls were added inside transactions.
+
+Validation from `server/` (2026-10-05):
+
+- `node --test tests/student-update.test.cjs tests/student-management-mutations.test.cjs`: PASS, 56/56. Prisma/S3 doubles assert payloads, failure propagation and event order; no live DB/S3 was used.
+- `npm run lint`: PASS.
+- `npm run typecheck`: PASS.
+- `npm test`: initial sandbox run 168 tests, 159 pass / 9 fail, with localhost listen/connect EPERM. Rerun with local listener permission: **168 tests, 162 pass / 6 fail**. Milestone 1 `student-characterization.cjs` reports PASS, including existing update/status-reason checks.
+- Six full-suite failures match the M6 baseline: health live/ready tests consume response bodies twice; unknown route returns HTML 500 instead of 404; known unauthenticated route returns 500 instead of 401; request-ID and compiled-server smoke tests receive HTML rather than JSON. No new update failure. These are not counted as passed gates or fixed under M7.
+- `npm run build`: PASS.
+- `git diff --check`: PASS. Scope comparison against HEAD confirms all other controller/service methods remain unchanged. Controller import adds only the input type; unused legacy imports are reserved for M8.
+
+Remaining risks: TD-22 records pre-transaction stale reads, concurrent avatar-key reuse/compensation, orphaned objects after cleanup/verification failures, and error responses after successful commits. Isolated tests verify orchestration but not real database rollback or cloud availability. Retained cleanup console logging also belongs to later logging work. No behavior change was required or approved. Milestones 8–9 have not started.
 
 ## Milestone 8: Thin Controller ❌ NOT STARTED
 - Remove direct prisma imports from controller
