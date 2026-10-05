@@ -1,10 +1,10 @@
 import { NextFunction, Request, Response } from "express";
 import { resourceId, text } from "../validation/master-data";
-import { StudentFinanceService } from "../services/student-finance.service";
-import { StudentAccountService } from "../services/student-account.service";
-import { StudentManagementService, type UpdateStudentInput } from "../services/student-management.service";
-import { StudentAttendanceService } from "../services/student-attendance.service";
-import { StudentAcademicService } from "../services/student-academic.service";
+import { StudentFinanceService } from "../services/student-services/student-finance.service";
+import { StudentAccountService } from "../services/student-services/student-account.service";
+import { StudentManagementService, type UpdateStudentInput } from "../services/student-services/student-management.service";
+import { StudentAttendanceService } from "../services/student-services/student-attendance.service";
+import { StudentAcademicService } from "../services/student-services/student-academic.service";
 
 
 export class Controller {

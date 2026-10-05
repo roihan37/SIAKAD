@@ -1,6 +1,6 @@
-import { prisma } from "../lib/prisma";
+import { prisma } from "../../lib/prisma";
 import { Prisma } from "@prisma/client";
-import { attendanceCounts, percentage } from "./attendance.service";
+import { attendanceCounts, percentage } from "../attendance.service";
 
 export interface StudentAttendanceResult {
     academicYear: { id: number; year: string; semester: string };

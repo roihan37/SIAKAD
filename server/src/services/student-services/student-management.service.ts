@@ -1,8 +1,8 @@
 import { Prisma, type Gender, type Status } from "@prisma/client";
-import { prisma } from "../lib/prisma";
-import { hashPassword } from "../lib/bycript";
-import { AvatarService } from "./avatar.service";
-import { S3Service } from "./s3.service";
+import { prisma } from "../../lib/prisma";
+import { hashPassword } from "../../lib/bycript";
+import { AvatarService } from "../avatar.service";
+import { S3Service } from "../s3.service";
 
 /** Supported scalar writes. Coerced fields remain unknown to preserve legacy String/Number parsing.
  * Optional properties are not defaulted: omission, null and empty string have different meanings.

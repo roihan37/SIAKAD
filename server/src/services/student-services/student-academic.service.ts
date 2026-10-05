@@ -1,4 +1,4 @@
-import { prisma } from "../lib/prisma";
+import { prisma } from "../../lib/prisma";
 import { Prisma, Semester } from "@prisma/client";
 
 export interface SemesterRecord {

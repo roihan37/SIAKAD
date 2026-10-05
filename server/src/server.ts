@@ -13,6 +13,12 @@ jwtSecret(); // Auth configuration validates all application settings before lis
 const app = express();
 const port = 4000;
 
+// Request ID middleware — runs on every request, generates/validates request ID
+app.use(requestIdMiddleware);
+
+// Request logging middleware — logs method, path, status, duration, requestId
+app.use(requestLoggerMiddleware);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
@@ -24,12 +30,6 @@ app.use(
     exposedHeaders: ["Retry-After", "X-Request-Id"],
   })
 );
-
-// Request ID middleware — runs on every request, generates/validates request ID
-app.use(requestIdMiddleware);
-
-// Request logging middleware — logs method, path, status, duration, requestId
-app.use(requestLoggerMiddleware);
 
 app.use(router);
 

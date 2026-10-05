@@ -1,6 +1,6 @@
-import { prisma } from "../lib/prisma";
+import { prisma } from "../../lib/prisma";
 import { Prisma } from "@prisma/client";
-import { hashPassword } from "../lib/bycript";
+import { hashPassword } from "../../lib/bycript";
 
 export interface ResetPasswordResult {
     id: string;

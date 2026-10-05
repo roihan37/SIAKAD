@@ -44,7 +44,7 @@ test('/health/live returns 200 with ok status in canonical contract', { timeout:
     await new Promise(resolve => setTimeout(resolve, 50));
   }
   const res = await fetch('http://127.0.0.1:4000/health/live', { signal: AbortSignal.timeout(2000) });
-  assert.equal(res.status, 200, `Expected 200, got ${res.status}: ${await res.text()}`);
+  assert.equal(res.status, 200, `Expected 200, got ${res.status}: ${await res.clone().text()}`);
   const body = await res.json();
   // Canonical contract: { data: { status: "ok" } }
   assert.deepEqual(body, { data: { status: 'ok' } }, 'Live endpoint should return { data: { status: "ok" } }');
@@ -58,9 +58,11 @@ test('/health/ready returns 503 when database is unavailable', { timeout: 15000 
     assert.ok(Date.now() < deadline, `Startup timed out: ${app.output()}`);
     await new Promise(resolve => setTimeout(resolve, 50));
   }
+  const started = performance.now();
   const res = await fetch('http://127.0.0.1:4000/health/ready', { signal: AbortSignal.timeout(2000) });
+  assert.ok(performance.now() - started < 1800, 'Readiness response must be bounded');
   // Database is unreachable (port 1), so readiness should be 503
-  assert.equal(res.status, 503, `Expected 503 for unhealthy DB, got ${res.status}: ${await res.text()}`);
+  assert.equal(res.status, 503, `Expected 503 for unhealthy DB, got ${res.status}: ${await res.clone().text()}`);
   const body = await res.json();
   // Canonical contract: { data: { status: "error", reason: "..." } }
   assert.equal(body.data.status, 'error', 'Ready endpoint should report error status');
@@ -78,7 +80,7 @@ test('unknown API route returns 404 with ROUTE_NOT_FOUND', { timeout: 15000 }, a
   const res = await fetch('http://127.0.0.1:4000/api/definitely-does-not-exist', {
     signal: AbortSignal.timeout(2000),
   });
-  assert.equal(res.status, 404, `Expected 404 for unknown route, got ${res.status}: ${await res.text()}`);
+  assert.equal(res.status, 404, `Expected 404 for unknown route, got ${res.status}: ${await res.clone().text()}`);
   const body = await res.json();
   assert.equal(body.code, 'ROUTE_NOT_FOUND', 'Unknown route should return ROUTE_NOT_FOUND');
   assert.equal(body.message, 'API route not found', 'Should have descriptive message');

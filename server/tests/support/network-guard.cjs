@@ -13,6 +13,12 @@ net.Socket.prototype.connect = function (...args) {
 };
 // All current database suites supply mocks. An incomplete mock must fail, not query.
 const pg = require('pg');
-pg.Client.prototype.connect = function () {
-  throw new Error('Test isolation: real PostgreSQL connections are disabled; provide a mock');
+pg.Client.prototype.connect = function (callback) {
+  const error = new Error('Test isolation: real PostgreSQL connections are disabled; provide a mock');
+  // pg-pool needs the callback to release its pending client before pool.end().
+  if (typeof callback === 'function') {
+    queueMicrotask(() => callback(error));
+    return;
+  }
+  throw error;
 };

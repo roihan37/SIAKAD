@@ -4,6 +4,34 @@ import { sendData } from "../lib/responseHelpers";
 
 const router: Router = express.Router();
 
+// Share outstanding work: a timed-out probe must not create a new DB query per request.
+// The response deadline does not cancel the underlying Prisma operation.
+export function createReadinessCheck(
+  probe: () => PromiseLike<unknown>,
+  timeoutMs = 1_000,
+): () => Promise<boolean> {
+  let pending: Promise<boolean> | undefined;
+  return async () => {
+    if (!pending) {
+      pending = Promise.resolve().then(probe).then(() => true, () => false)
+        .finally(() => { pending = undefined; });
+    }
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      return await Promise.race([
+        pending,
+        new Promise<boolean>(resolve => {
+          timer = setTimeout(() => resolve(false), timeoutMs);
+        }),
+      ]);
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+}
+
+const checkReadiness = createReadinessCheck(() => prisma.$queryRaw`SELECT 1`);
+
 /**
  * GET /health/live
  * Determines whether the application process is alive.
@@ -22,10 +50,9 @@ router.get("/live", (_req, res) => {
  * Follows canonical API contract: { data: { status: "ok" } } or { data: { status: "error", reason: "..." } }
  */
 router.get("/ready", async (_req, res) => {
-  try {
-    await prisma.$queryRaw`SELECT 1`;
+  if (await checkReadiness()) {
     sendData(res, { status: "ok" });
-  } catch {
+  } else {
     sendData(res, { status: "error", reason: "Service Unavailable" }, 503);
   }
 });

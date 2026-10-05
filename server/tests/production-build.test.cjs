@@ -72,7 +72,8 @@ test('compiled server loads runtime dependencies and serves unauthenticated requ
   const response = await fetch('http://127.0.0.1:4000/api/v1/students', { signal: AbortSignal.timeout(2000) });
   const body = await response.json();
   assert.equal(response.status, 401, `${response.status}: ${JSON.stringify(body)}; output=${app.output()}`);
-  assert.deepEqual(body, { code: 'TOKEN_INVALID', message: 'Invalid or expired token' });
+  assert.deepEqual(body, { code: 'TOKEN_INVALID', message: 'Invalid or expired token', requestId: response.headers.get('x-request-id') });
+  assert.ok(body.requestId);
   assert.equal(app.child.exitCode, null, app.output());
   assert.ok(!app.output().includes(environment.DATABASE_URL));
   assert.ok(!app.output().includes('test-only-signing-secret-'));

@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { ErrorRequestHandler, Request, Response } from "express";
+import { ErrorRequestHandler, NextFunction, Request, Response } from "express";
 import { AppError } from "../errors/app-error";
 import { createRequestLogger } from "../lib/logger";
 
@@ -116,7 +116,7 @@ function legacyResponse(error: LegacyError, res: Response, requestId?: string): 
  *
  * All errors are logged with structured logging via Pino.
  */
-export const errorHandler: ErrorRequestHandler = (error: unknown, req: ExpressRequest, res: Response): void => {
+export const errorHandler: ErrorRequestHandler = (error: unknown, req: ExpressRequest, res: Response, _next: NextFunction): void => {
   // Use request-scoped requestId if available
   const requestId = req.requestId;
   
@@ -124,11 +124,13 @@ export const errorHandler: ErrorRequestHandler = (error: unknown, req: ExpressRe
   const log = requestId ? createRequestLogger(requestId) : null;
 
   // Helper to log at appropriate level
+  // Fixed: preserve logger context by calling directly instead of detaching method reference
   const logWithError = (level: "info" | "warn" | "error", meta: Record<string, unknown>, msg: string) => {
     if (!log) return;
-    const logFn = log[level];
+    // Call method directly on logger instance to preserve 'this' binding
+    const logFn = log[level] as ((meta: Record<string, unknown>, msg: string) => void) | undefined;
     if (typeof logFn === "function") {
-      logFn(meta, msg);
+      logFn.call(log, meta, msg);
     }
   };
 

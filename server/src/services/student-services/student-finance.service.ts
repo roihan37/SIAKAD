@@ -1,6 +1,6 @@
-import { prisma } from "../lib/prisma";
+import { prisma } from "../../lib/prisma";
 import { Prisma } from "@prisma/client";
-import { getStudentFinance as getStudentFinanceFromTuition, listStudentTuitionBills as listBillsFromTuition } from "./tuition.service";
+import { getStudentFinance as getStudentFinanceFromTuition, listStudentTuitionBills as listBillsFromTuition } from "../tuition.service";
 
 export interface StudentFinanceResult {
     summary: {
