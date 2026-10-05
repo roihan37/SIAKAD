@@ -1874,9 +1874,11 @@ All characterization tests pass
 ```
 ## Milestone 3: Attendance Extraction
 
-- [x] Completed
-- [ ] In progress
 - [ ] Completed
+- [x] In progress
+- [ ] Completed
+
+**Status:** ✅ COMPLETED
 
 Notes:
 
@@ -1892,8 +1894,10 @@ Validation: lint/typecheck/build/test all green
 ## Milestone 4: Core Read Extraction
 
 - [ ] Completed
-- [x] In progress
-- [ ] Completed
+- [ ] In progress
+- [x] Completed
+
+**Status:** ✅ COMPLETED
 
 **Status:** ✅ COMPLETED
 
@@ -1930,14 +1934,34 @@ Remaining methods in controller (to extract next):
 
 ## Milestone 5: Academic Extraction
 
-- [x] Completed
-- [ ] In progress
+- [ ] Completed
+- [x] In progress
 - [ ] Completed
 
 Notes:
 
 ```text
-TBD
+COMPLETED (2026-10-05)
+
+Modified: server/src/controllers/studentController.ts
+- Removed redundant Prisma user lookup in getStudentKRS method
+- Service already handles user lookup internally, controller now delegates directly
+- Added transaction wrapper for getStudentNilai to match other academic methods
+
+Service status:
+- StudentAcademicService.getStudentSemesterHistory() ✓ (handles user lookup)
+- StudentAcademicService.getStudentKRS() ✓ (handles user lookup)
+- StudentAcademicService.getStudentNilai() ✓ (handles user lookup)
+
+Controller now clean:
+- getStudentSemesterHistory: pure delegation (~8 lines)
+- getStudentKRS: pure delegation (~15 lines, no redundant Prisma calls)
+- getStudentNilai: wrapped in transaction
+
+Remaining in controller (not migrated yet):
+- bulkUpdateStatus, createStudent, deleteUserById, bulkDelete (Milestone 6)
+- updateStudentById (Milestone 7)
+
 ```
 
 ## Milestone 6: Student Management Mutation Extraction

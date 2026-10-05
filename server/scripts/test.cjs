@@ -20,7 +20,7 @@ function run(args, env) {
   return result.status ?? 1;
 }
 try {
-  for (const name of ['src', 'prisma', 'tests', 'tsconfig.json', 'tsconfig.build.json', 'package.json']) {
+  for (const name of ['src', 'prisma', 'tests', 'tsconfig.json', 'tsconfig.build.json', 'package.json', 'dist']) {
     cpSync(path.join(root, name), path.join(workspace, name), { recursive: true });
   }
   symlinkSync(path.join(root, 'node_modules'), path.join(workspace, 'node_modules'), 'junction');
