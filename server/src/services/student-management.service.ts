@@ -377,10 +377,10 @@ export class StudentManagementService {
         const changed = users.flatMap((user) => user.mahasiswa && user.mahasiswa.status !== status ? [user.mahasiswa] : []);
         
         for (const student of changed) {
-            await tx.mahasiswa.update({ where: { id: student.id }, data: { status } });
+            await tx.mahasiswa.update({ where: { id: student.id }, data: { status: status as any } });
             await tx.riwayatStatusMahasiswa.create({ data: {
                 mahasiswaId: student.id, statusLama: student.status,
-                statusBaru: status, alasan: statusReason.trim(),
+                statusBaru: status as any, alasan: statusReason.trim(),
             } });
         }
 
@@ -412,7 +412,7 @@ export class StudentManagementService {
             avatarKey?: string;
             dosenId?: string;
         },
-        hashPassword: (pw: string) => Promise<string>,
+        hashPassword: (pw: string) => string,
         AvatarService: { verifyKey: (key: string) => Promise<void>; getPublicUrl: (key: string) => string }
     ): Promise<{ id: string; name: string }> {
         const {
@@ -437,7 +437,7 @@ export class StudentManagementService {
                 birthDate,
                 role: "Mahasiswa",
                 phoneNumber,
-                gender,
+                gender: gender as any,
                 address,
                 nik,
                 birthPlace,
@@ -451,7 +451,7 @@ export class StudentManagementService {
                 nim,
                 angkatan,
                 semester,
-                status,
+                status: status as any,
                 prodiId,
                 userId: user.id,
                 dosenId
