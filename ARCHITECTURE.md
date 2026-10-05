@@ -55,4 +55,4 @@ Improve feature organization only as scoped features change. Preserve session is
 
 ## Order of work
 
-[Platform hardening](docs/exec-plans/active/platform-hardening.md) first: production build, credential/configuration safety, repeatable validation, errors, health, and observability. StudentController, KRS, frontend state, naming, and broader API documentation follow through separately scoped work. See the [debt tracker](docs/exec-plans/tech-debt-tracker.md).
+[Platform hardening](docs/exec-plans/completed/platform-hardening.md) first: production build, credential/configuration safety, repeatable validation, errors, health, and observability. StudentController, KRS, frontend state, naming, and broader API documentation follow through separately scoped work. See the [debt tracker](docs/exec-plans/tech-debt-tracker.md).

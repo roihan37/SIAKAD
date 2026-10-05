@@ -24,7 +24,7 @@ These are future acceptance criteria, not descriptions of implemented features.
 
 ## Release evidence
 
-Run all backend quality gates from [QUALITY.md](QUALITY.md), verify clean artifact startup in an isolated environment, exercise health during dependency failure, and check redacted logs and graceful shutdown. Do not run migrations or seeds as smoke tests. Record results and rollback steps in the [platform plan](exec-plans/active/platform-hardening.md). Reliability and credential safety precede architectural cleanup.
+Run all backend quality gates from [QUALITY.md](QUALITY.md), verify clean artifact startup in an isolated environment, exercise health during dependency failure, and check redacted logs and graceful shutdown. Do not run migrations or seeds as smoke tests. Record results and rollback steps in the [platform plan](exec-plans/completed/platform-hardening.md). Reliability and credential safety precede architectural cleanup.
 
 ## M4 Validation Evidence
 

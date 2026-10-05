@@ -8,6 +8,6 @@
 | TD-19 | P2 | M3 lint exposes two empty blocks in `userController.ts:235,237` (`deleteUserById`). | Determine intended delete behavior/route exposure under a separate task; do not fill in a domain flow during tooling work. |
 | TD-20 | P2 | M3 lint exposes `prefer-const` at `userController.ts:103`, missing diagnostic cause at `lib/prisma.ts:15`, and an unused suppression warning at `lib/prisma.ts:10`. | Scoped cleanup and safe diagnostic-cause decision; retain failures visibly until fixed. Do not weaken rules to declare M3 green. |
 
-"Platform M#" refers to [platform-hardening.md](active/platform-hardening.md). A foundational improvement does not close every legacy instance: record residual scope explicitly. Close an item only with implementation and validation evidence, and preserve its ID and history.
+"Platform M#" refers to [platform-hardening.md](completed/platform-hardening.md). A foundational improvement does not close every legacy instance: record residual scope explicitly. Close an item only with implementation and validation evidence, and preserve its ID and history.
 
 | TD-21 | P3 | ~~Canonical API response contract not established.~~ | **Resolved 2026-10-05 (M7):** Response helpers (`sendData`, `sendCreated`, `sendPaginated`, `sendWithData`) created; health endpoints migrated to canonical `{ data: {...} }` shape; API contract documented with LEGACY/MIGRATED distinction; no domain behavior changed. |
