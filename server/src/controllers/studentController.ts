@@ -87,24 +87,10 @@ export class Controller {
                 throw { name: "BadRequest", message: "Alasan wajib diisi, maksimal 1000 karakter" };
             }
             const userIds = [...new Set<string>(ids.map((id: string) => id.trim()))];
-            const changedCount = await prisma.$transaction(async (tx) => {
-                const users = await tx.user.findMany({
-                    where: { id: { in: userIds }, role: "Mahasiswa" },
-                    select: { mahasiswa: { select: { id: true, status: true } } },
-                });
-                if (users.length !== userIds.length || users.some((user) => !user.mahasiswa)) {
-                    throw { name: "NotFound", message: "Satu atau lebih mahasiswa tidak ditemukan" };
-                }
-                const changed = users.flatMap((user) => user.mahasiswa && user.mahasiswa.status !== status ? [user.mahasiswa] : []);
-                for (const student of changed) {
-                    await tx.mahasiswa.update({ where: { id: student.id }, data: { status } });
-                    await tx.riwayatStatusMahasiswa.create({ data: {
-                        mahasiswaId: student.id, statusLama: student.status,
-                        statusBaru: status, alasan: statusReason.trim(),
-                    } });
-                }
-                return changed.length;
-            });
+            const changedCount = await prisma.$transaction(
+                (tx) => StudentManagementService.bulkUpdateStatus(tx, userIds, status, statusReason),
+                { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead }
+            );
             return res.status(200).json({ message: `${changedCount} mahasiswa berhasil diperbarui`, data: { ids: userIds, changedCount, status } });
         } catch (error) { next(error); }
     }
@@ -119,71 +105,23 @@ export class Controller {
             nim, angkatan, semester, status, prodiId, birthDate, avatarKey, dosenId
         } = req.body
         try {
-
-            // console.log(req.body);
-            const hash = await hashPassword(password)
-            let avatarUrl: string | undefined;
-
-            if (avatarKey) {
-                await AvatarService.verifyKey(avatarKey);
-                avatarUrl = AvatarService.getPublicUrl(avatarKey);
-            }
-
-            const newUser = await prisma.$transaction(async (tx) => {
-                const user = await tx.user.create({
-                    data: {
-                        name,
-                        email,
-                        username,
-                        password: hash,
-                        birthDate,
-                        role: "Mahasiswa",
-                        phoneNumber,
-                        gender,
-                        address,
-                        nik,
-                        birthPlace,
-                        avatarKey,
-                        avatarUrl
-                    }
-                })
-
-                await tx.mahasiswa.create({
-                    data: {
-                        nim,
-                        angkatan,
-                        semester,
-                        status,
-                        prodiId,
-                        userId: user.id,
-                        dosenId
-                    }
-                })
-                return user
-            })
-
-            // console.log(newUser, '<< NEW USERS');
-
+            const result = await prisma.$transaction(
+                (tx) => StudentManagementService.createStudent(tx, req.body, hashPassword, AvatarService),
+                { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead }
+            );
             res.status(201).json({
-                message: `${newUser.name} created successfully`
-            })
-
+                message: `${result.name} created successfully`
+            });
         } catch (error) {
-
-            if (avatarKey) {
+            // S3 cleanup happens after transaction commit (not inside transaction)
+            if (req.body.avatarKey) {
                 try {
-                    await AvatarService.deleteObject(
-                        avatarKey
-                    );
+                    await AvatarService.deleteObject(req.body.avatarKey);
                 } catch (cleanupError) {
-                    console.error(
-                        "Failed to cleanup avatar:",
-                        cleanupError
-                    );
+                    console.error("Failed to cleanup avatar:", cleanupError);
                 }
             }
-
-            next(error)
+            next(error);
         }
     }
 
@@ -878,36 +816,12 @@ export class Controller {
                 });
             }
 
-            const student = await prisma.$transaction(async (tx) => {
-                const user = await tx.user.findUnique({
-                    where: { id, role: "Mahasiswa" },
-                    select: {
-                        id: true,
-                        name: true,
-                        avatarKey: true,
-                        mahasiswa: { select: { id: true } },
-                    },
-                });
+            const student = await prisma.$transaction(
+                (tx) => StudentManagementService.deleteUserById(tx, id),
+                { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead }
+            );
 
-                if (!user || !user.mahasiswa) {
-                    throw { name: "NotFound", message: "Mahasiswa tidak ditemukan" };
-                }
-
-                const mahasiswaId = user.mahasiswa.id;
-
-                // Hapus relasi dari anak ke induk agar tidak melanggar foreign key.
-                await tx.transkrip.deleteMany({ where: { mahasiswaId } });
-                await tx.kRSDetail.deleteMany({
-                    where: { krs: { mahasiswaId } },
-                });
-                await tx.kRS.deleteMany({ where: { mahasiswaId } });
-
-                // Mahasiswa, riwayat status, dan refresh token mengikuti onDelete: Cascade.
-                await tx.user.delete({ where: { id: user.id } });
-                return user;
-            });
-
-            // Storage tidak ikut transaksi database; kegagalannya tidak membatalkan delete.
+            // Storage cleanup happens after transaction commit
             if (student.avatarKey) {
                 try {
                     await S3Service.deleteUrl(student.avatarKey);
@@ -938,37 +852,10 @@ export class Controller {
             }
 
             const userIds = [...new Set(ids.map((id) => id.trim()))];
-            const students = await prisma.$transaction(async (tx) => {
-                const users = await tx.user.findMany({
-                    where: { id: { in: userIds }, role: "Mahasiswa" },
-                    select: {
-                        id: true,
-                        avatarKey: true,
-                        mahasiswa: { select: { id: true } },
-                    },
-                });
-
-                // Validasi seluruh target sebelum menghapus data apa pun.
-                if (users.length !== userIds.length || users.some((user) => !user.mahasiswa)) {
-                    throw { name: "NotFound", message: "Satu atau lebih mahasiswa tidak ditemukan" };
-                }
-
-                const mahasiswaIds = users.map((user) => user.mahasiswa!.id);
-                await tx.transkrip.deleteMany({ where: { mahasiswaId: { in: mahasiswaIds } } });
-                await tx.kRSDetail.deleteMany({
-                    where: { krs: { mahasiswaId: { in: mahasiswaIds } } },
-                });
-                await tx.kRS.deleteMany({ where: { mahasiswaId: { in: mahasiswaIds } } });
-
-                // Profil mahasiswa, riwayat status, dan refresh token dihapus melalui cascade.
-                const deleted = await tx.user.deleteMany({
-                    where: { id: { in: userIds }, role: "Mahasiswa" },
-                });
-                if (deleted.count !== userIds.length) {
-                    throw { name: "NotFound", message: "Data mahasiswa berubah, silakan ulangi penghapusan" };
-                }
-                return users;
-            });
+            const students = await prisma.$transaction(
+                (tx) => StudentManagementService.bulkDelete(tx, userIds),
+                { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead }
+            );
 
             // Cleanup hanya setelah commit, dengan concurrency terbatas.
             const avatarKeys = [...new Set(students.flatMap((student) => student.avatarKey ? [student.avatarKey] : []))];

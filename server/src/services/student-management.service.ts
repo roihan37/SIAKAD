@@ -352,5 +352,187 @@ export class StudentManagementService {
                 kehadiran: null,
             },
         };
+
+    }
+
+    /**
+     * Bulk update student status with history tracking.
+     * Used by PATCH /api/v1/students/bulk/status
+     */
+    static async bulkUpdateStatus(
+        tx: Prisma.TransactionClient,
+        userIds: string[],
+        status: string,
+        statusReason: string
+    ): Promise<number> {
+        const users = await tx.user.findMany({
+            where: { id: { in: userIds }, role: "Mahasiswa" },
+            select: { mahasiswa: { select: { id: true, status: true } } },
+        });
+
+        if (users.length !== userIds.length || users.some((user) => !user.mahasiswa)) {
+            throw { name: "NotFound", message: "Satu atau lebih mahasiswa tidak ditemukan" };
+        }
+
+        const changed = users.flatMap((user) => user.mahasiswa && user.mahasiswa.status !== status ? [user.mahasiswa] : []);
+        
+        for (const student of changed) {
+            await tx.mahasiswa.update({ where: { id: student.id }, data: { status } });
+            await tx.riwayatStatusMahasiswa.create({ data: {
+                mahasiswaId: student.id, statusLama: student.status,
+                statusBaru: status, alasan: statusReason.trim(),
+            } });
+        }
+
+        return changed.length;
+    }
+
+    /**
+     * Create a new student account with avatar handling.
+     * Used by POST /api/v1/students
+     */
+    static async createStudent(
+        tx: Prisma.TransactionClient,
+        body: {
+            name: string;
+            email: string;
+            nik: string;
+            birthPlace: string;
+            username: string;
+            password: string;
+            phoneNumber: string;
+            gender: string;
+            address: string;
+            nim: string;
+            angkatan: number;
+            semester: number;
+            status: string;
+            prodiId: number;
+            birthDate: string;
+            avatarKey?: string;
+            dosenId?: string;
+        },
+        hashPassword: (pw: string) => Promise<string>,
+        AvatarService: { verifyKey: (key: string) => Promise<void>; getPublicUrl: (key: string) => string }
+    ): Promise<{ id: string; name: string }> {
+        const {
+            name, email, nik, birthPlace, username, password, phoneNumber, gender, address,
+            nim, angkatan, semester, status, prodiId, birthDate, avatarKey, dosenId
+        } = body;
+
+        const hash = await hashPassword(password);
+        let avatarUrl: string | undefined;
+
+        if (avatarKey) {
+            await AvatarService.verifyKey(avatarKey);
+            avatarUrl = AvatarService.getPublicUrl(avatarKey);
+        }
+
+        const user = await tx.user.create({
+            data: {
+                name,
+                email,
+                username,
+                password: hash,
+                birthDate,
+                role: "Mahasiswa",
+                phoneNumber,
+                gender,
+                address,
+                nik,
+                birthPlace,
+                avatarKey,
+                avatarUrl
+            }
+        });
+
+        await tx.mahasiswa.create({
+            data: {
+                nim,
+                angkatan,
+                semester,
+                status,
+                prodiId,
+                userId: user.id,
+                dosenId
+            }
+        });
+
+        return { id: user.id, name: user.name };
+    }
+
+    /**
+     * Delete a student by user ID with cascading deletes.
+     * Used by DELETE /api/v1/students/:id
+     */
+    static async deleteUserById(
+        tx: Prisma.TransactionClient,
+        userId: string
+    ): Promise<{ id: string; name: string; avatarKey: string | null }> {
+        const user = await tx.user.findUnique({
+            where: { id: userId, role: "Mahasiswa" },
+            select: {
+                id: true,
+                name: true,
+                avatarKey: true,
+                mahasiswa: { select: { id: true } },
+            },
+        });
+
+        if (!user || !user.mahasiswa) {
+            throw { name: "NotFound", message: "Mahasiswa tidak ditemukan" };
+        }
+
+        const mahasiswaId = user.mahasiswa.id;
+
+        // Hapus relasi dari anak ke induk agar tidak melanggar foreign key.
+        await tx.transkrip.deleteMany({ where: { mahasiswaId } });
+        await tx.kRSDetail.deleteMany({
+            where: { krs: { mahasiswaId } },
+        });
+        await tx.kRS.deleteMany({ where: { mahasiswaId } });
+
+        // Mahasiswa, riwayat status, dan refresh token mengikuti onDelete: Cascade.
+        await tx.user.delete({ where: { id: user.id } });
+        return user;
+    }
+
+    /**
+     * Bulk delete multiple students by user IDs.
+     * Used by DELETE /api/v1/students/bulk
+     */
+    static async bulkDelete(
+        tx: Prisma.TransactionClient,
+        userIds: string[]
+    ): Promise<Array<{ id: string; avatarKey: string | null }>> {
+        const users = await tx.user.findMany({
+            where: { id: { in: userIds }, role: "Mahasiswa" },
+            select: {
+                id: true,
+                avatarKey: true,
+                mahasiswa: { select: { id: true } },
+            },
+        });
+
+        // Validasi seluruh target sebelum menghapus data apa pun.
+        if (users.length !== userIds.length || users.some((user) => !user.mahasiswa)) {
+            throw { name: "NotFound", message: "Satu atau lebih mahasiswa tidak ditemukan" };
+        }
+
+        const mahasiswaIds = users.map((user) => user.mahasiswa!.id);
+        await tx.transkrip.deleteMany({ where: { mahasiswaId: { in: mahasiswaIds } } });
+        await tx.kRSDetail.deleteMany({
+            where: { krs: { mahasiswaId: { in: mahasiswaIds } } },
+        });
+        await tx.kRS.deleteMany({ where: { mahasiswaId: { in: mahasiswaIds } } });
+
+        // Profil mahasiswa, riwayat status, dan refresh token dihapus melalui cascade.
+        const deleted = await tx.user.deleteMany({
+            where: { id: { in: userIds }, role: "Mahasiswa" },
+        });
+        if (deleted.count !== userIds.length) {
+            throw { name: "NotFound", message: "Data mahasiswa berubah, silakan ulangi penghapusan" };
+        }
+        return users;
     }
 }
