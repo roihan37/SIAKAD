@@ -35,7 +35,7 @@ async function launch(t) {
   return { child, closed, output: () => output };
 }
 
-test('/health/live returns 200 with ok status', { timeout: 15000 }, async t => {
+test('/health/live returns 200 with ok status in canonical contract', { timeout: 15000 }, async t => {
   const app = await launch(t);
   const deadline = Date.now() + 10000;
   while (!app.output().includes('Server started')) {
@@ -46,7 +46,8 @@ test('/health/live returns 200 with ok status', { timeout: 15000 }, async t => {
   const res = await fetch('http://127.0.0.1:4000/health/live', { signal: AbortSignal.timeout(2000) });
   assert.equal(res.status, 200, `Expected 200, got ${res.status}: ${await res.text()}`);
   const body = await res.json();
-  assert.deepEqual(body, { status: 'ok' }, 'Live endpoint should return { status: "ok" }');
+  // Canonical contract: { data: { status: "ok" } }
+  assert.deepEqual(body, { data: { status: 'ok' } }, 'Live endpoint should return { data: { status: "ok" } }');
 });
 
 test('/health/ready returns 503 when database is unavailable', { timeout: 15000 }, async t => {
@@ -61,8 +62,9 @@ test('/health/ready returns 503 when database is unavailable', { timeout: 15000 
   // Database is unreachable (port 1), so readiness should be 503
   assert.equal(res.status, 503, `Expected 503 for unhealthy DB, got ${res.status}: ${await res.text()}`);
   const body = await res.json();
-  assert.equal(body.status, 'error', 'Ready endpoint should report error status');
-  assert.ok(body.reason, 'Ready endpoint should include reason');
+  // Canonical contract: { data: { status: "error", reason: "..." } }
+  assert.equal(body.data.status, 'error', 'Ready endpoint should report error status');
+  assert.ok(body.data.reason, 'Ready endpoint should include reason');
 });
 
 test('unknown API route returns 404 with ROUTE_NOT_FOUND', { timeout: 15000 }, async t => {

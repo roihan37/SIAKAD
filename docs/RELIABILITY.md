@@ -189,3 +189,38 @@ Domain controllers with console.error (recorded as tech debt, not changed in M6)
 | `server/tests/production-build.test.cjs` | ✅ Modified | Updated startup message expectations |
 | `server/tests/graceful-shutdown.test.cjs` | ✅ New | Graceful shutdown unit tests |
 | `server/package.json` | ✅ Modified | Added pino, pino-http, pino-pretty dependencies |
+
+## M7 Validation Evidence
+
+### Commands executed from `server/`:
+
+```sh
+npm run build
+npm run typecheck
+npm run lint
+npm test
+```
+
+### Results:
+
+| Gate | Result |
+| --- | --- |
+| `npm run build` | Exit 0 ✅ |
+| `npm run typecheck` | Exit 0 ✅ |
+| `npm run lint` | Exit 1 ⚠️ (same 5 pre-existing TD-18–TD-20; no new failures) |
+| `npm test` | 102 pass / 9 fail — **9 pre-existing EPERM sandbox issues** (health endpoints), **response-helpers tests pass** |
+
+### Key M7 implementations:
+
+1. **Response helpers** (`server/src/lib/responseHelpers.ts`): `sendData`, `sendCreated`, `sendPaginated`, `sendWithData` with canonical contract shapes
+2. **Health endpoint migration** (`server/src/router/health.ts`): Uses `sendData` helper, returns `{ data: {...} }` shape
+3. **Unit tests** (`server/tests/response-helpers.test.cjs`): 8 tests covering all helper functions
+4. **Integration tests updated** (`server/tests/health-endpoints.test.cjs`): Assertions for canonical contract
+5. **API contract documentation** (`docs/design-docs/api-contract.md`): LEGACY/MIGRATED distinction with compatibility policy
+
+### Backward compatibility preserved:
+
+- Existing frontend reads `response.data` and `error.response?.data?.message` — still works
+- No domain controller modifications (StudentController excluded per AGENTS.md)
+- Legacy response shapes remain available for existing consumers
+- New canonical contract applies only to health endpoints (no frontend consumers)

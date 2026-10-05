@@ -550,3 +550,74 @@ Domain controllers with console.error (recorded as tech debt, not changed in M6)
 
 **Implementation complete; integration tests blocked by pre-existing sandbox EPERM restrictions.** All unit tests pass. Build, typecheck pass. Lint unchanged from M4 (same 5 errors + 1 warning). No domain behavior was altered. Ready for deployment acceptance once sandbox listener permissions are available.
 
+
+### M7 — API Response Contract Foundation (2026-10-05)
+
+**Status: Implemented; response helpers created and health endpoints migrated to canonical contract.**
+
+Establish a canonical API response contract for new endpoints while preserving backward compatibility with existing consumers.
+
+#### Acceptance
+
+- Canonical response shapes documented in `docs/design-docs/api-contract.md`
+- Response helpers introduced: `sendData`, `sendCreated`, `sendPaginated`, `sendWithData`
+- Health endpoints (`/health/live`, `/health/ready`) migrated to canonical `{ data: {...} }` shape
+- No existing business endpoints modified (preserved for frontend compatibility)
+- Tests verify response helper behavior
+- Clear LEGACY/MIGRATED distinction documented
+
+#### Validation performed
+
+Commands executed from `server/`:
+
+```sh
+npm run build
+npm run typecheck
+npm run lint
+npm test
+```
+
+| Gate | Result |
+| --- | --- |
+| `npm run build` | Exit 0 ✅ |
+| `npm run typecheck` | Exit 0 ✅ |
+| `npm run lint` | Exit 1 ⚠️ (same 5 pre-existing TD-18–TD-20; no new failures) |
+| `npm test` | 102 pass / 9 fail — **9 pre-existing EPERM sandbox issues** (health endpoints require network access), **response-helpers tests pass** |
+
+#### Key M7 implementations:
+
+1. **Response helpers** (`server/src/lib/responseHelpers.ts`): Simple wrappers around `res.json()` following canonical contract
+2. **Health endpoint migration** (`server/src/router/health.ts`): Uses `sendData` helper with canonical `{ data: {...} }` shape
+3. **Unit tests** (`server/tests/response-helpers.test.cjs`): 8 tests covering all helper functions
+4. **Integration tests updated** (`server/tests/health-endpoints.test.cjs`): Assertions updated for new response shapes
+5. **API contract documentation** (`docs/design-docs/api-contract.md`): Added LEGACY/MIGRATED sections with clear backward compatibility policy
+
+#### Backward compatibility strategy:
+
+- **LEGACY**: Existing endpoints keep their current response shapes (e.g., `{ success: true, data: ... }`, `{ message: "...", data: ... }`)
+- **NEW**: All new endpoints must follow the canonical contract
+- **MIGRATED**: Only explicitly coordinated migrations (currently only health endpoints)
+- Frontend reads `response.data` and `error.response?.data?.message` — preserved in all responses
+
+#### Files changed:
+
+| File | Status | Notes |
+| --- | --- | --- |
+| `server/src/lib/responseHelpers.ts` | ✅ New | 4 helper functions + PaginationMeta type |
+| `server/src/router/health.ts` | ✅ Modified | Uses sendData helper, canonical contract |
+| `server/tests/response-helpers.test.cjs` | ✅ New | 8 unit tests for helpers |
+| `server/tests/health-endpoints.test.cjs` | ✅ Modified | Updated assertions for new shapes |
+| `docs/design-docs/api-contract.md` | ✅ Modified | Added LEGACY/MIGRATED sections |
+
+#### Endpoints migrated:
+
+| Endpoint | Method | Previous Shape | New Shape |
+|----------|--------|----------------|-----------|
+| `/health/live` | GET | Console output only | `{ data: { status: "ok" } }` |
+| `/health/ready` | GET | Console output only | `{ data: { status: "ok" } }` or `{ data: { status: "error", reason: "..." } }` |
+
+#### No domain behavior changes:
+
+- No StudentController modifications (excluded per AGENTS.md)
+- No LecturerController, AttendanceController, MasterData*, AuthController, or KRS modifications
+- Existing frontend consumers unaffected

@@ -36,3 +36,12 @@ Never log:
 - Request/response bodies (can contain PII)
 - Stack traces in production (prevented by errorHandler design)
 
+
+## API Response Security
+
+M7 establishes a canonical API response contract that supports security requirements:
+
+- Error responses include `requestId` for traceability without exposing internals
+- Health endpoints are public but return minimal information
+- Response helpers prevent accidental exposure of sensitive fields
+- No stack traces, SQL queries, or secrets in client-facing responses

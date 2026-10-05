@@ -4,29 +4,42 @@
 
 This contract applies to:
 
-- new endpoints
-- significantly modified endpoints
-- explicitly migrated endpoints
+- **NEW endpoints** — must follow the canonical contract exactly
+- **Significantly modified endpoints** — should adopt the canonical contract
+- **Explicitly migrated endpoints** — documented in this file with migration status
 
-Legacy endpoints do not need to be immediately rewritten.
+Legacy endpoints do not need to be immediately rewritten. See [Compatibility](#compatibility) below.
 
 ---
 
-# Success Response
+## Canonical Response Shapes
 
-Single resource:
+### Single Resource Response
 
+```json
+{
+  "data": {
+    "id": 1,
+    "name": "Example"
+  }
+}
+```
+
+When a user-facing message is meaningful:
+
+```json
 {
   "message": "Mahasiswa berhasil ditemukan",
-  "data": {}
+  "data": {
+    "id": 1,
+    "name": "Example"
+  }
 }
+```
 
-`message` may be omitted when it does not provide useful information.
+### Collection Response (Paginated)
 
----
-
-# Collection Response
-
+```json
 {
   "data": [],
   "meta": {
@@ -36,77 +49,94 @@ Single resource:
     "totalPages": 10
   }
 }
+```
 
----
+### Error Response
 
-# Error Response
-
+```json
 {
   "code": "STUDENT_NOT_FOUND",
   "message": "Mahasiswa tidak ditemukan",
   "requestId": "req_xxx"
 }
+```
 
-New and migrated backend flows should use the shared `AppError` foundation. It carries an HTTP status, stable machine-readable `code`, human-readable `message`, and optional safe structured `details`. The centralized middleware preserves `message` for existing frontend consumers.
+### Validation Error Response
 
-Unexpected errors return HTTP 500 with `INTERNAL_SERVER_ERROR` and a generic message. Responses never include stack traces, Prisma metadata, SQL, filesystem paths, environment values, or secrets. Legacy named errors remain mapped for compatibility while callers migrate incrementally.
-
-**Frontend compatibility**: Frontend code reads `error.response?.data?.message` and `error.response?.data?.code`. These fields are preserved in all error responses.
-
----
-
-# Validation Error
-
+```json
 {
   "code": "VALIDATION_ERROR",
   "message": "Input tidak valid",
   "details": {
-    "field": [
-      "Field wajib diisi"
-    ]
+    "field": ["Field wajib diisi"]
   },
   "requestId": "req_xxx"
 }
-
-The `details` field is optional and only present when validation provides structured information. An empty details object is omitted from the response.
-
----
-
-# HTTP Status Usage
-
-200
-Successful request
-
-201
-Resource created
-
-204
-Successful operation with no response body
-
-400
-Invalid request
-
-401
-Unauthenticated
-
-403
-Authenticated but not authorized
-
-404
-Resource or API route not found
-
-409
-Conflict with current resource state
-
-422
-Semantically invalid input when appropriate
-
-500
-Unexpected server error
+```
 
 ---
 
-# Error Codes
+## Legacy Response Patterns
+
+The following patterns are used by existing endpoints and are preserved for backward compatibility:
+
+| Pattern | Shape | Examples |
+|---------|-------|----------|
+| A | `{ data: ... }` | Health endpoints (pre-M7), some auth responses |
+| B | `{ message: "...", data: ... }` | AttendanceController, most domain controllers |
+| C | `{ success: true, data: ... }` | None found |
+| D | Raw arrays | None found |
+| E | `{ students, pagination: {...} }` | Legacy attendance pagination shape |
+| F | `{ fakultas, pagination: {...} }` | Legacy master data pagination shape |
+
+**Frontend compatibility**: Frontend code reads `response.data` and `error.response?.data?.message`. These access patterns are preserved in all responses.
+
+---
+
+## Migration Status
+
+### MIGRATED Endpoints
+
+These endpoints have been migrated to the canonical contract:
+
+| Endpoint | Method | Status | Response Shape |
+|----------|--------|--------|----------------|
+| `/health/live` | GET | ✅ MIGRATED | `{ data: { status: "ok" } }` |
+| `/health/ready` | GET | ✅ MIGRATED | `{ data: { status: "ok" } }` or `{ data: { status: "error", reason: "..." } }` |
+
+### LEGACY Endpoints (No Migration Required)
+
+These endpoints remain on their existing response shapes until explicitly migrated:
+
+| Controller | Methods | Notes |
+|------------|---------|-------|
+| `StudentController` | All | Excluded from platform hardening per AGENTS.md |
+| `LecturerController` | All | Not yet migrated |
+| `AttendanceController` | All | Uses custom pagination shape |
+| `MasterData*` controllers | All | Legacy `{ entity, pagination }` shape |
+| `AuthController` | login, refreshToken | Returns `{ accessToken, user }` |
+| `KRS*` controllers | All | Custom shapes for academic records |
+
+---
+
+## HTTP Status Usage
+
+| Status | Meaning |
+|--------|---------|
+| 200 | Successful request |
+| 201 | Resource created |
+| 204 | Successful operation with no response body |
+| 400 | Invalid request |
+| 401 | Unauthenticated |
+| 403 | Authenticated but not authorized |
+| 404 | Resource or API route not found |
+| 409 | Conflict with current resource state |
+| 422 | Semantically invalid input when appropriate |
+| 500 | Unexpected server error |
+
+---
+
+## Error Codes
 
 Error codes must:
 
@@ -116,6 +146,7 @@ Error codes must:
 
 Examples:
 
+```
 STUDENT_NOT_FOUND
 INVALID_CREDENTIALS
 FORBIDDEN
@@ -126,18 +157,20 @@ TOKEN_INVALID
 TOKEN_EXPIRED
 PASSWORD_CHANGE_REQUIRED
 INTERNAL_SERVER_ERROR
+ROUTE_NOT_FOUND
+```
 
 ---
 
-# AppError Usage Pattern
+## AppError Usage Pattern
 
 ```typescript
 // In controllers/services
 throw new AppError(
-  404,                    // HTTP status
-  "STUDENT_NOT_FOUND",    // Machine-readable code
-  "Mahasiswa tidak ditemukan", // Human-readable message
-  {                        // Optional structured details
+  404,                              // HTTP status
+  "STUDENT_NOT_FOUND",              // Machine-readable code
+  "Mahasiswa tidak ditemukan",      // Human-readable message
+  {                                 // Optional structured details
     details: { field: 'studentId' }
   }
 );
@@ -152,7 +185,7 @@ The centralized error handler in `middleware/errHendler.ts` processes errors in 
 
 ---
 
-# Prisma Error Mapping
+## Prisma Error Mapping
 
 | Prisma Code | HTTP Status | Error Code | Notes |
 |-------------|-------------|------------|-------|
@@ -165,7 +198,7 @@ Unknown Prisma error codes fall through to the generic 500 handler.
 
 ---
 
-# Legacy Error Compatibility
+## Legacy Error Compatibility
 
 The following legacy error name patterns are supported for backward compatibility while controller code is incrementally migrated:
 
@@ -183,7 +216,7 @@ The following legacy error name patterns are supported for backward compatibilit
 
 ---
 
-# Security Requirements
+## Security Requirements
 
 Error responses MUST NOT expose:
 
@@ -194,70 +227,11 @@ Error responses MUST NOT expose:
 - Secrets or tokens
 - Internal implementation details
 
-All errors are logged internally via `console.error` for debugging, but only safe, sanitized information is returned to clients.
+All errors are logged internally via structured logging (Pino), but only safe, sanitized information is returned to clients.
 
 ---
 
-# requestId
-
-Every error response includes a `requestId` field for correlation:
-
-```json
-{
-  "code": "STUDENT_NOT_FOUND",
-  "message": "Mahasiswa tidak ditemukan",
-  "requestId": "req_a1b2c3d4e5f6g7h8"
-}
-```
-
-This enables tracing requests across distributed systems and log aggregation.
-
----
-
-# Compatibility
-
-Do not migrate every legacy endpoint at once.
-
-Existing response contracts must remain compatible with
-existing frontend consumers unless a coordinated migration
-has been approved.
-
----
-
-# Health Endpoints
-
-These endpoints are intentionally placed before authentication middleware and do not require authorization.
-
-## GET /health/live
-
-Returns `200` when the application process is alive. Does not check external dependencies.
-
-```json
-{
-  "status": "ok"
-}
-```
-
-## GET /health/ready
-
-Returns `200` when all critical dependencies (e.g., PostgreSQL) are reachable, `503` otherwise.
-
-```json
-{
-  "status": "ok"
-}
-```
-
-```json
-{
-  "status": "error",
-  "reason": "Service Unavailable"
-}
-```
-
----
-
-# Request ID
+## Request ID
 
 Every request receives a unique identifier that flows through the entire stack.
 
@@ -275,3 +249,56 @@ Example error response with request ID:
   "requestId": "550e8400-e29b-41d4-a716-446655440000"
 }
 ```
+
+---
+
+## Response Helpers
+
+The following helpers are available in `server/src/lib/responseHelpers.ts`:
+
+```typescript
+// Send single resource with optional message
+sendData(res, data, statusCode = 200)
+sendWithData(res, data, message?, statusCode = 200)
+
+// Send created resource
+sendCreated(res, data)
+
+// Send paginated collection
+sendPaginated(res, data, meta)
+```
+
+Usage example:
+
+```typescript
+// Instead of:
+res.status(200).json({ data: student })
+
+// Use:
+sendData(res, student)
+
+// With message:
+sendWithData(res, student, "Student retrieved successfully")
+
+// Paginated:
+sendPaginated(res, students, { page: 1, limit: 10, total: 50, totalPages: 5 })
+```
+
+---
+
+## Compatibility
+
+Do not migrate every legacy endpoint at once.
+
+Existing response contracts must remain compatible with
+existing frontend consumers unless a coordinated migration
+has been approved.
+
+To migrate an endpoint:
+
+1. Verify frontend does not depend on legacy shape
+2. Update controller to use response helpers
+3. Update/add tests
+4. Update this document to reflect MIGRATED status
+
+**Critical**: StudentController is excluded from migration during platform hardening. A separate execution plan covers its decomposition.
