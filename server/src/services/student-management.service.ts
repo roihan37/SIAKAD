@@ -849,7 +849,6 @@ export class StudentManagementService {
      * Used by GET /api/v1/students
      */
     static async getAllStudents(
-        prismaClient: Prisma.TransactionClient,
         page: number,
         limit: number,
         search: string,
@@ -879,7 +878,7 @@ export class StudentManagementService {
         const orderBy = sortableFields[sortBy] ?? { name: sortOrder };
 
         const [students, totalRows] = await Promise.all([
-            prismaClient.user.findMany({
+            prisma.user.findMany({
                 where,
                 skip,
                 take: limit,
@@ -902,7 +901,7 @@ export class StudentManagementService {
                     },
                 },
             }),
-            prismaClient.user.count({ where }),
+            prisma.user.count({ where }),
         ]);
 
         return {
@@ -924,10 +923,9 @@ export class StudentManagementService {
      * Used by GET /api/v1/students/:id
      */
     static async getStudentById(
-        prismaClient: Prisma.TransactionClient,
         userId: string
     ): Promise<StudentResponse> {
-        const student = await prismaClient.user.findUnique({
+        const student = await prisma.user.findUnique({
             where: {
                 id: userId,
                 role: "Mahasiswa",

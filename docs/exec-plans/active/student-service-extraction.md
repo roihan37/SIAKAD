@@ -408,11 +408,27 @@ Validation from `server/` (2026-10-05):
 
 Remaining risks: TD-22 records pre-transaction stale reads, concurrent avatar-key reuse/compensation, orphaned objects after cleanup/verification failures, and error responses after successful commits. Isolated tests verify orchestration but not real database rollback or cloud availability. Retained cleanup console logging also belongs to later logging work. No behavior change was required or approved. Milestones 8–9 have not started.
 
-## Milestone 8: Thin Controller ❌ NOT STARTED
-- Remove direct prisma imports from controller
-- Remove direct hashPassword import
-- Remove direct AvatarService/S3Service imports (where possible)
-- Only imports remaining: Request, Response, NextFunction, service classes
+## Milestone 8: Thin Controller — implementation complete (2026-10-05)
+
+- Audited all 15 methods and every import; detailed A/B responsibility classification and reproducible baseline metrics are in the responsibility map's M8 section.
+- Removed seven business/persistence import declarations. Controller now imports only Express types, HTTP validators, and five existing student services plus the typed update input. No direct Prisma usage, transaction, hashing, storage call, or domain helper remains.
+- Moved the six remaining transaction wrappers into existing services without changing callback operations or isolation: Finance getFinance/getUKTBills/getMyUKT, Attendance getStudentAttendance and Academic getStudentNilai retain RepeatableRead; Account resetPassword retains Serializable. Public APIs now take domain values without a Prisma client. Finance still captures the date before transaction entry.
+- Management getAllStudents/getStudentById and Academic getStudentSemesterHistory/getStudentKRS now obtain Prisma internally; these four reads remain nontransactional. No repository or generic controller abstraction was introduced.
+- Preserved mutation methods, S3/avatar ordering, request parsing, authorization, HTTP envelopes, and centralized legacy-error handling. The create response-failure cleanup bridge remains transport coordination that delegates to Management. No updateStudent implementation changes.
+- Added scoped ESLint no-restricted-imports rules preventing controller Prisma imports and student-service Express imports. All three forbidden-import probes failed as intended. No broader architecture tooling project was needed.
+- Added six transaction-boundary tests covering exact arguments/client, isolation, single transaction, result identity, operation failure and commit failure. Existing Student behavior/integration tests exercise the service bodies through controllers.
+
+Metrics: M0 commit `fe5eb2e` → M8: 1,957 → 231 controller lines; 22 → 0 direct `prisma.` occurrences (including transactions); 11 → 0 transactions; 10 → 0 `Prisma.` usages; seven → zero business/persistence import declarations; zero → five student-service imports. Immediately before M8 there were 260 lines and six transaction wrappers. Line count is informational.
+
+Validation evidence from `server/`:
+
+- Focused mutation/update tests: PASS, 56/56.
+- New service transaction-boundary tests: PASS, 6/6.
+- `npm run lint`, `npm run typecheck`, `npm run build`: PASS.
+- `npm test`: initial sandbox run blocked local HTTP listeners (EPERM); permitted rerun completed with **174 tests: 168 pass, 6 fail**. All Student suites passed: attendance, M1 characterization, finance, grades, tuition, management mutations, update, and service boundaries. The six failures match the documented M7 baseline: two health response-body double reads, unknown-route 500 versus 404, unauthenticated-route 500 versus 401, and request-ID/compiled-server HTML versus JSON. Full-suite gate remains failing; no unrelated fixes were made.
+- `git diff --check`: PASS. Source searches confirm zero controller Prisma references and zero Express imports in student services. Routes, schema, frontend, and mutation implementations are unchanged.
+
+Scope remains M8 only. M9/final closeout has not started; the plan stays active. Existing storage/concurrency risks and broader non-Student failures remain deferred. No live database or S3 integration was performed.
 
 ## Milestone 9: Final Regression ❌ NOT STARTED
 - Full test suite
@@ -508,7 +524,7 @@ The StudentController extraction should not be coupled to the separate KRS domai
 
 ---
 
-## Decision 005 (historical; superseded for the four M6 mutations on 2026-10-05)
+## Decision 005 (historical; fully superseded by M6–M8 on 2026-10-05)
 
 Transaction boundaries previously remained in the controller for mutations.
 
@@ -528,7 +544,7 @@ Items touched by this refactor:
 
 | ID | Description | Status |
 |----|-------------|--------|
-| TD-001 | Transaction boundaries in controller | Resolved for the four M6 mutations; other methods remain deferred |
+| TD-001 | Transaction boundaries in controller | Resolved for StudentController by M6–M8; all transactions now owned by services |
 | TD-002 | S3 cleanup ordering after commit | Preserved |
 | TD-003 | Console logging in services | To be addressed in structured logging phase |
 

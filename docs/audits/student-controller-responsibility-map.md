@@ -287,3 +287,42 @@ Based on cohesion analysis:
 
 ---
 
+
+## Milestone 8 authoritative controller audit (2026-10-05)
+
+This section supersedes the historical controller inventory above. All 15 methods were inspected statement by statement. Category A is HTTP transport; category B is business/data work. Common A statements are method arguments, `try`/`catch`, service invocation, response status/envelope construction, return, and `next(error)`. The table accounts for each method's additional statements. No B persistence or domain implementation remains in the controller.
+
+| Method | A: remaining transport statements | B: existing service owner |
+|---|---|---|
+| getFinanceyId | Parse path ID and optional academic-year query; send existing envelope | Finance: tuition calculation and RepeatableRead transaction |
+| getUKTById | Parse path ID; send existing envelope | Finance: bills and RepeatableRead transaction |
+| getMyUKT | Check request identity/role, obtain authenticated ID; send envelope | Finance: student lookup, bills and RepeatableRead transaction |
+| getStudentAttendance | Parse path ID and required academic-year query | Attendance: lookup, aggregation and RepeatableRead transaction |
+| bulkUpdateStatus | Destructure body; format changed-count response | Management: validation, updates/history and transaction |
+| createStudent | Forward body; track successful service return; send 201; delegate cleanup if response sending fails | Management: creation/transaction/avatar operations |
+| updateStudentById | Convert path ID; select supported body fields and construct typed input | Management: all update validation, persistence, history and avatar orchestration |
+| deleteUserById | Validate path ID shape; preserve direct 400 envelope and success message | Management: lookup, transaction, deletion and cleanup |
+| bulkDelete | Validate request array size/type before trim/dedup; preserve 400 and count/IDs envelope | Management: selected users, batching, transactions and cleanup |
+| getAllStudents | Parse/default pagination, search and sort query; send result | Management: filtering, ordering, count and list reads |
+| getStudentById | Extract path ID; send student envelope | Management: lookup and projection |
+| getStudentSemesterHistory | Convert path ID; send result | Academic: history reads and calculations |
+| getStudentKRS | Convert path ID; validate required positive-integer query | Academic: lookup and KRS projection |
+| getStudentNilai | Parse path ID and required academic-year query | Academic: grades/calculations and RepeatableRead transaction |
+| resetPassword | Convert path ID; extract password; send existing envelope | Account: validation, hashing, updates/revocation and Serializable transaction |
+
+The create response-failure bridge intentionally remains: detecting HTTP send failure belongs to transport; cleanup implementation is delegated to Management. Removing it would change M6 semantics. Bulk-delete request normalization and local identity checks retain compatibility. Legacy named HTTP errors continue through the established centralized handler; no second error strategy or error-envelope migration was introduced.
+
+Removed controller imports: prisma client, Prisma namespace, hashPassword, AvatarService, S3Service, attendanceCounts/percentage, and tuition getStudentFinance/listStudentTuitionBills. Remaining dependencies are Express types, HTTP input validators, and the five Student services (Finance, Account, Management, Attendance, Academic), including the management input type. Services do not import Express. Routes and middleware remain unchanged.
+
+| Metric | M0 (`fe5eb2e`) | Before M8 (`96e73b1`) | After M8 |
+|---|---:|---:|---:|
+| Controller lines | 1,957 | 260 | 231 |
+| `prisma.` occurrences (includes transactions) | 22 | 6 | 0 |
+| `prisma.$transaction` occurrences | 11 | 6 | 0 |
+| `Prisma.` occurrences | 10 | 6 | 0 |
+| Business/persistence import declarations | 7 | 7 | 0 |
+| Student service import declarations | 0 | 5 | 5 |
+
+Metrics count actual source, not the earlier approximate baseline. Line reduction is informational. Six remaining transaction wrappers moved unchanged into existing services: five RepeatableRead reads and one Serializable password reset. Finance captures its clock before transaction entry as before. Four previously nontransactional reads remain nontransactional. Mutation workflows and external-side-effect order were not edited.
+
+Existing ESLint now has scoped import restrictions for controller Prisma imports and student-service Express imports. Three in-memory forbidden-import probes confirmed enforcement. This is a static import guard, not a general dependency-graph analyzer. No new tooling dependency was needed. Validation evidence is recorded in Milestone 8 of the active ExecPlan.

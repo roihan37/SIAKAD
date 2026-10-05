@@ -1,3 +1,4 @@
+import { prisma } from "../lib/prisma";
 import { Prisma } from "@prisma/client";
 import { attendanceCounts, percentage } from "./attendance.service";
 
@@ -25,11 +26,18 @@ export interface StudentAttendanceResult {
 }
 
 export class StudentAttendanceService {
+    static async getStudentAttendance(userId: string, tahunAkademikId: number) {
+        return prisma.$transaction(
+            (tx) => this.getStudentAttendanceInTransaction(tx, userId, tahunAkademikId),
+            { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead }
+        );
+    }
+
     /**
      * Get attendance data for a student by user ID and academic year.
      * Used by GET /api/v1/students/:id/presensi
      */
-    static async getStudentAttendance(
+    private static async getStudentAttendanceInTransaction(
         prismaClient: Prisma.TransactionClient,
         userId: string,
         tahunAkademikId: number

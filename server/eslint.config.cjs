@@ -10,4 +10,16 @@ module.exports = [
   tseslint.configs.base,
   tseslint.configs.eslintRecommended,
   { files: ['**/*.ts'], rules: { 'no-undef': 'off' } },
+  // Student extraction boundary; other legacy controllers retain their current scope.
+  { files: ['src/controllers/studentController.ts'], rules: {
+    'no-restricted-imports': ['error', { patterns: [
+      { group: ['**/prisma', '**/prisma.*', '@prisma/client', '@prisma/client/**'],
+        message: 'StudentController must delegate persistence to student services.' },
+    ] }],
+  } },
+  { files: ['src/services/student-*.service.ts'], rules: {
+    'no-restricted-imports': ['error', { patterns: [
+      { group: ['express', 'express/**'], message: 'Student services must be independent of HTTP transport.' },
+    ] }],
+  } },
 ];

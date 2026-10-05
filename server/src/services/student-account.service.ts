@@ -1,3 +1,4 @@
+import { prisma } from "../lib/prisma";
 import { Prisma } from "@prisma/client";
 import { hashPassword } from "../lib/bycript";
 
@@ -9,14 +10,20 @@ export interface ResetPasswordResult {
 }
 
 export class StudentAccountService {
+    static async resetPassword(userId: string, newPassword: string) {
+        return prisma.$transaction(
+            (tx) => this.resetPasswordInTransaction(tx, userId, newPassword),
+            { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+        );
+    }
+
     /**
      * Reset a student's password and revoke existing sessions.
      * Used by PATCH /api/v1/students/:userId/reset-password
      * 
-     * Note: This method expects a TransactionClient because the caller
-     * (controller) wraps the entire operation in a transaction.
+     * The public service method owns the transaction boundary.
      */
-    static async resetPassword(
+    private static async resetPasswordInTransaction(
         prismaClient: Prisma.TransactionClient,
         userId: string,
         newPassword: string
@@ -56,7 +63,7 @@ export class StudentAccountService {
         const hashedPassword = await hashPassword(newPassword);
 
         // Password reset and session revocation are performed within
-        // the transaction opened by the controller.
+        // the transaction opened by this service.
         await prismaClient.user.update({ 
             where: { id: userId }, 
             data: { password: hashedPassword, mustChangePassword: true } 

@@ -1,3 +1,4 @@
+import { prisma } from "../lib/prisma";
 import { Prisma, Semester } from "@prisma/client";
 
 export interface SemesterRecord {
@@ -86,15 +87,21 @@ type KRSRecordForNilai = {
 };
 
 export class StudentAcademicService {
+    static async getStudentNilai(userId: string, tahunAkademikId: number) {
+        return prisma.$transaction(
+            (tx) => this.getStudentNilaiInTransaction(tx, userId, tahunAkademikId),
+            { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead }
+        );
+    }
+
     /**
      * Get student semester history with IPK calculation.
      * Used by GET /api/v1/students/:id/history-semester
      */
     static async getStudentSemesterHistory(
-        prismaClient: Prisma.TransactionClient,
         userId: string
     ): Promise<{ riwayatSemester: SemesterRecord[] }> {
-        const user = await prismaClient.user.findUnique({
+        const user = await prisma.user.findUnique({
             where: { id: userId },
             select: {
                 role: true,
@@ -117,7 +124,7 @@ export class StudentAcademicService {
         const mahasiswaId = user.mahasiswa.id;
         const angkatan = user.mahasiswa.angkatan;
 
-        const krsRows = await prismaClient.kRS.findMany({
+        const krsRows = await prisma.kRS.findMany({
             where: { mahasiswaId },
             select: {
                 id: true,
@@ -203,11 +210,10 @@ export class StudentAcademicService {
      * Used by GET /api/v1/students/:id/krs
      */
     static async getStudentKRS(
-        prismaClient: Prisma.TransactionClient,
         userId: string,
         tahunAkademikId: number
     ): Promise<{ krs: KRSData | null }> {
-        const user = await prismaClient.user.findUnique({
+        const user = await prisma.user.findUnique({
             where: { id: userId, role: "Mahasiswa" },
             select: { mahasiswa: { select: { id: true } } },
         });
@@ -216,7 +222,7 @@ export class StudentAcademicService {
             throw { name: "NotFound", message: "Mahasiswa tidak ditemukan" };
         }
 
-        const krs = await prismaClient.kRS.findUnique({
+        const krs = await prisma.kRS.findUnique({
             where: {
                 mahasiswaId_tahunAkademikId: {
                     mahasiswaId: user.mahasiswa.id,
@@ -303,7 +309,7 @@ export class StudentAcademicService {
      * Get student grades/transcript for a specific academic year.
      * Used by GET /api/v1/students/:id/nilai
      */
-    static async getStudentNilai(
+    private static async getStudentNilaiInTransaction(
         prismaClient: Prisma.TransactionClient,
         userId: string,
         tahunAkademikId: number

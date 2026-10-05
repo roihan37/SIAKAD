@@ -1,12 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { prisma } from "../lib/prisma";
-import { hashPassword } from "../lib/bycript";
-import { Prisma } from "@prisma/client";
-import { AvatarService } from "../services/avatar.service";
-import { S3Service } from "../services/s3.service";
 import { resourceId, text } from "../validation/master-data";
-import { attendanceCounts, percentage } from "../services/attendance.service";
-import { getStudentFinance, listStudentTuitionBills } from "../services/tuition.service";
 import { StudentFinanceService } from "../services/student-finance.service";
 import { StudentAccountService } from "../services/student-account.service";
 import { StudentManagementService, type UpdateStudentInput } from "../services/student-management.service";
@@ -20,11 +13,7 @@ export class Controller {
         try {
             const userId = text("ID user mahasiswa", 100)(req.params.id);
             const tahunAkademikId = req.query.tahunAkademikId === undefined ? undefined : resourceId(req.query.tahunAkademikId);
-            const now = new Date();
-            const data = await prisma.$transaction(
-                (tx) => StudentFinanceService.getFinance(tx, userId, tahunAkademikId, now),
-                { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead }
-            );
+            const data = await StudentFinanceService.getFinance(userId, tahunAkademikId);
             return res.status(200).json({ message: "Student financial data retrieved successfully", data });
         } catch (error) {
             next(error);
@@ -34,11 +23,7 @@ export class Controller {
     static async getUKTById(req: Request, res: Response, next: NextFunction) {
         try {
             const userId = text("ID user mahasiswa", 100)(req.params.id);
-            const now = new Date();
-            const data = await prisma.$transaction(
-                (tx) => StudentFinanceService.getUKTBills(tx, userId, now),
-                { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead }
-            );
+            const data = await StudentFinanceService.getUKTBills(userId);
             return res.status(200).json({ message: "Tuition bills retrieved successfully", data });
         } catch (error) {
             next(error);
@@ -50,11 +35,7 @@ export class Controller {
             if (!req.userLogin) throw { name: "TokenInvalid" };
             if (req.userLogin.role !== "Mahasiswa") throw { name: "Forbidden", message: "Akses hanya untuk mahasiswa." };
             const userId = req.userLogin.id;
-            const now = new Date();
-            const data = await prisma.$transaction(
-                (tx) => StudentFinanceService.getMyUKT(tx, userId, now),
-                { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead }
-            );
+            const data = await StudentFinanceService.getMyUKT(userId);
             return res.status(200).json({ message: "Tuition bills retrieved successfully", data });
         } catch (error) {
             next(error);
@@ -65,10 +46,7 @@ export class Controller {
         try {
             const userId = text("ID user mahasiswa", 100)(req.params.id);
             const tahunAkademikId = resourceId(req.query.tahunAkademikId);
-            const data = await prisma.$transaction(
-                (tx) => StudentAttendanceService.getStudentAttendance(tx, userId, tahunAkademikId),
-                { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead }
-            );
+            const data = await StudentAttendanceService.getStudentAttendance(userId, tahunAkademikId);
             return res.status(200).json({ message: "Student attendance retrieved successfully", data });
         } catch (error) { next(error); }
     }
@@ -169,7 +147,7 @@ export class Controller {
             const search = String(req.query.search ?? "");
             const sortBy = String(req.query.sortBy ?? "name");
             const sortOrder = req.query.sortOrder === "desc" ? "desc" : "asc";
-            const data = await StudentManagementService.getAllStudents(prisma, page, limit, search, sortBy, sortOrder);
+            const data = await StudentManagementService.getAllStudents(page, limit, search, sortBy, sortOrder);
             return res.status(200).json(data);
         } catch (error) { next(error); }
     }
@@ -181,7 +159,7 @@ export class Controller {
     ) {
         try {
             const { id } = req.params;
-            const data = await StudentManagementService.getStudentById(prisma, id as string);
+            const data = await StudentManagementService.getStudentById(id as string);
             return res.status(200).json({ student: data });
         } catch (error) {
             next(error);
@@ -190,7 +168,7 @@ export class Controller {
     static async getStudentSemesterHistory(req: Request, res: Response, next: NextFunction) {
         try {
             const userId = String(req.params.id);
-            const result = await StudentAcademicService.getStudentSemesterHistory(prisma, userId);
+            const result = await StudentAcademicService.getStudentSemesterHistory(userId);
             return res.status(200).json(result);
         } catch (error) {
             next(error);
@@ -210,7 +188,7 @@ export class Controller {
                 throw { name: "BadRequest", message: "tahunAkademikId harus berupa angka positif" };
             }
 
-            const result = await StudentAcademicService.getStudentKRS(prisma, userId, tahunAkademikId);
+            const result = await StudentAcademicService.getStudentKRS(userId, tahunAkademikId);
             return res.status(200).json(result);
         } catch (error) {
             next(error);
@@ -224,10 +202,7 @@ export class Controller {
                 throw { name: "BadRequest", message: "tahunAkademikId wajib diisi" };
             }
 
-            const result = await prisma.$transaction(
-                (tx) => StudentAcademicService.getStudentNilai(tx, userId, tahunAkademikId),
-                { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead }
-            );
+            const result = await StudentAcademicService.getStudentNilai(userId, tahunAkademikId);
             return res.status(200).json(result);
         } catch (error) {
             next(error);
@@ -243,11 +218,7 @@ export class Controller {
             const userId = String(req.params.userId);
             const { password } = req.body;
 
-            // Validation is now handled by the service for consistency
-            const result = await prisma.$transaction(
-                (tx) => StudentAccountService.resetPassword(tx, userId, password),
-                { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
-            );
+            const result = await StudentAccountService.resetPassword(userId, password);
 
             return res.status(200).json({
                 message: "Password mahasiswa berhasil direset",

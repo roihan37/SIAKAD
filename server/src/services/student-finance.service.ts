@@ -1,3 +1,4 @@
+import { prisma } from "../lib/prisma";
 import { Prisma } from "@prisma/client";
 import { getStudentFinance as getStudentFinanceFromTuition, listStudentTuitionBills as listBillsFromTuition } from "./tuition.service";
 
@@ -42,11 +43,35 @@ export interface UKTBillsResult {
 }
 
 export class StudentFinanceService {
+    static async getFinance(userId: string, tahunAkademikId: number | undefined) {
+        const now = new Date();
+        return prisma.$transaction(
+            (tx) => this.getFinanceInTransaction(tx, userId, tahunAkademikId, now),
+            { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead }
+        );
+    }
+
+    static async getUKTBills(userId: string) {
+        const now = new Date();
+        return prisma.$transaction(
+            (tx) => this.getUKTBillsInTransaction(tx, userId, now),
+            { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead }
+        );
+    }
+
+    static async getMyUKT(userId: string) {
+        const now = new Date();
+        return prisma.$transaction(
+            (tx) => this.getMyUKTInTransaction(tx, userId, now),
+            { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead }
+        );
+    }
+
     /**
      * Get student finance data (includes UKT bills with payment history).
      * Used by GET /api/v1/students/:id/keuangan
      */
-    static async getFinance(
+    private static async getFinanceInTransaction(
         prismaClient: Prisma.TransactionClient,
         userId: string,
         tahunAkademikId: number | undefined,
@@ -59,7 +84,7 @@ export class StudentFinanceService {
      * Get UKT bills for a student by user ID.
      * Used by GET /api/v1/students/:id/ukt
      */
-    static async getUKTBills(
+    private static async getUKTBillsInTransaction(
         prismaClient: Prisma.TransactionClient,
         userId: string,
         now: Date
@@ -71,7 +96,7 @@ export class StudentFinanceService {
      * Get UKT bills for the currently authenticated student.
      * Used by GET /api/v1/students/me/ukt
      */
-    static async getMyUKT(
+    private static async getMyUKTInTransaction(
         prismaClient: Prisma.TransactionClient,
         userId: string,
         now: Date
