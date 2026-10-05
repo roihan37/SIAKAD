@@ -76,22 +76,8 @@ export class Controller {
     static async bulkUpdateStatus(req: Request, res: Response, next: NextFunction) {
         try {
             const { ids, status, statusReason } = req.body;
-            if (!Array.isArray(ids) || ids.length === 0 || ids.length > 100 ||
-                !ids.every((id: unknown) => typeof id === "string" && id.trim())) {
-                throw { name: "BadRequest", message: "Pilih 1 sampai 100 mahasiswa yang valid" };
-            }
-            if (status !== "Aktif" && status !== "Cuti" && status !== "Lulus" && status !== "Nonaktif") {
-                throw { name: "BadRequest", message: "Status mahasiswa tidak valid" };
-            }
-            if (typeof statusReason !== "string" || !statusReason.trim() || statusReason.trim().length > 1000) {
-                throw { name: "BadRequest", message: "Alasan wajib diisi, maksimal 1000 karakter" };
-            }
-            const userIds = [...new Set<string>(ids.map((id: string) => id.trim()))];
-            const changedCount = await prisma.$transaction(
-                (tx) => StudentManagementService.bulkUpdateStatus(tx, userIds, status, statusReason),
-                { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead }
-            );
-            return res.status(200).json({ message: `${changedCount} mahasiswa berhasil diperbarui`, data: { ids: userIds, changedCount, status } });
+            const data = await StudentManagementService.bulkUpdateStatus(ids, status, statusReason);
+            return res.status(200).json({ message: `${data.changedCount} mahasiswa berhasil diperbarui`, data });
         } catch (error) { next(error); }
     }
 
@@ -100,27 +86,16 @@ export class Controller {
         res: Response,
         next: NextFunction
     ) {
-        const {
-            name, email, nik, birthPlace, username, password, phoneNumber, gender, address,
-            nim, angkatan, semester, status, prodiId, birthDate, avatarKey, dosenId
-        } = req.body
+        let created = false;
         try {
-            const result = await prisma.$transaction(
-                (tx) => StudentManagementService.createStudent(tx, req.body, hashPassword, AvatarService),
-                { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead }
-            );
+            const result = await StudentManagementService.createStudent(req.body);
+            created = true;
             res.status(201).json({
                 message: `${result.name} created successfully`
             });
         } catch (error) {
-            // S3 cleanup happens after transaction commit (not inside transaction)
-            if (req.body.avatarKey) {
-                try {
-                    await AvatarService.deleteObject(req.body.avatarKey);
-                } catch (cleanupError) {
-                    console.error("Failed to cleanup avatar:", cleanupError);
-                }
-            }
+            // Preserve legacy cleanup even if sending the response fails after commit.
+            if (created) await StudentManagementService.cleanupCreateAvatar(req.body.avatarKey);
             next(error);
         }
     }
@@ -816,19 +791,7 @@ export class Controller {
                 });
             }
 
-            const student = await prisma.$transaction(
-                (tx) => StudentManagementService.deleteUserById(tx, id),
-                { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead }
-            );
-
-            // Storage cleanup happens after transaction commit
-            if (student.avatarKey) {
-                try {
-                    await S3Service.deleteUrl(student.avatarKey);
-                } catch (error) {
-                    console.error("Gagal menghapus avatar mahasiswa:", error);
-                }
-            }
+            const student = await StudentManagementService.deleteUserById(id);
 
             return res.status(200).json({
                 message: `${student.name} berhasil dihapus`,
@@ -852,22 +815,7 @@ export class Controller {
             }
 
             const userIds = [...new Set(ids.map((id) => id.trim()))];
-            const students = await prisma.$transaction(
-                (tx) => StudentManagementService.bulkDelete(tx, userIds),
-                { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead }
-            );
-
-            // Cleanup hanya setelah commit, dengan concurrency terbatas.
-            const avatarKeys = [...new Set(students.flatMap((student) => student.avatarKey ? [student.avatarKey] : []))];
-            for (let index = 0; index < avatarKeys.length; index += 5) {
-                await Promise.all(avatarKeys.slice(index, index + 5).map(async (key) => {
-                    try {
-                        await S3Service.deleteUrl(key);
-                    } catch (error) {
-                        console.error("Gagal menghapus avatar mahasiswa:", error);
-                    }
-                }));
-            }
+            const students = await StudentManagementService.bulkDelete(userIds);
 
             return res.status(200).json({
                 message: `${students.length} mahasiswa berhasil dihapus`,

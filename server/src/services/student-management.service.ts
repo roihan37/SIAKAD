@@ -1,4 +1,7 @@
 import { Prisma } from "@prisma/client";
+import { prisma } from "../lib/prisma";
+import { hashPassword } from "../lib/bycript";
+import { AvatarService } from "./avatar.service";
 import { S3Service } from "./s3.service";
 
 export interface StudentResponse {
@@ -72,6 +75,85 @@ export interface StudentListResponse {
 }
 
 export class StudentManagementService {
+    static async bulkUpdateStatus(ids: unknown, status: unknown, statusReason: unknown) {
+        if (!Array.isArray(ids) || ids.length === 0 || ids.length > 100 ||
+            !ids.every((id: unknown) => typeof id === "string" && id.trim())) {
+            throw { name: "BadRequest", message: "Pilih 1 sampai 100 mahasiswa yang valid" };
+        }
+        if (status !== "Aktif" && status !== "Cuti" && status !== "Lulus" && status !== "Nonaktif") {
+            throw { name: "BadRequest", message: "Status mahasiswa tidak valid" };
+        }
+        if (typeof statusReason !== "string" || !statusReason.trim() || statusReason.trim().length > 1000) {
+            throw { name: "BadRequest", message: "Alasan wajib diisi, maksimal 1000 karakter" };
+        }
+        const userIds = [...new Set<string>(ids.map((id: string) => id.trim()))];
+        const changedCount = await prisma.$transaction(
+            (tx) => this.bulkUpdateStatusInTransaction(tx, userIds, status, statusReason),
+            { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead }
+        );
+        return { ids: userIds, changedCount, status };
+    }
+
+    static async createStudent(body: Parameters<typeof StudentManagementService.createStudentInTransaction>[1]) {
+        try {
+            return await prisma.$transaction(
+                (tx) => this.createStudentInTransaction(tx, body),
+                { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead }
+            );
+        } catch (error) {
+            // Cleanup follows transaction failure, including verification and commit failures.
+            await this.cleanupCreateAvatar(body.avatarKey);
+            throw error;
+        }
+    }
+
+    // Also used when sending the create response fails after a successful commit.
+    static async cleanupCreateAvatar(avatarKey?: string) {
+        if (avatarKey) {
+            try {
+                await AvatarService.deleteObject(avatarKey);
+            } catch (cleanupError) {
+                console.error("Failed to cleanup avatar:", cleanupError);
+            }
+        }
+    }
+
+    static async deleteUserById(userId: string) {
+        const student = await prisma.$transaction(
+            (tx) => this.deleteUserByIdInTransaction(tx, userId),
+            { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead }
+        );
+        // A storage failure must not turn a committed deletion into an HTTP failure.
+        if (student.avatarKey) {
+            try {
+                await S3Service.deleteUrl(student.avatarKey);
+            } catch (error) {
+                console.error("Gagal menghapus avatar mahasiswa:", error);
+            }
+        }
+        return student;
+    }
+
+    static async bulkDelete(userIds: string[]) {
+        const students = await prisma.$transaction(
+            (tx) => this.bulkDeleteInTransaction(tx, userIds),
+            { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead }
+        );
+        // Deduplicate keys and clean up only after commit, in batches of five.
+        const avatarKeys = [...new Set(students.flatMap((student) => student.avatarKey ? [student.avatarKey] : []))];
+        for (let index = 0; index < avatarKeys.length; index += 5) {
+            await Promise.all(avatarKeys.slice(index, index + 5).map(async (key) => {
+                try {
+                    await S3Service.deleteUrl(key);
+                } catch (error) {
+                    console.error("Gagal menghapus avatar mahasiswa:", error);
+                }
+            }));
+        }
+        return students;
+    }
+
+
     /**
      * Get paginated list of all students with search and sorting.
      * Used by GET /api/v1/students
@@ -359,7 +441,7 @@ export class StudentManagementService {
      * Bulk update student status with history tracking.
      * Used by PATCH /api/v1/students/bulk/status
      */
-    static async bulkUpdateStatus(
+    private static async bulkUpdateStatusInTransaction(
         tx: Prisma.TransactionClient,
         userIds: string[],
         status: string,
@@ -391,7 +473,7 @@ export class StudentManagementService {
      * Create a new student account with avatar handling.
      * Used by POST /api/v1/students
      */
-    static async createStudent(
+    private static async createStudentInTransaction(
         tx: Prisma.TransactionClient,
         body: {
             name: string;
@@ -412,8 +494,6 @@ export class StudentManagementService {
             avatarKey?: string;
             dosenId?: string;
         },
-        hashPassword: (pw: string) => string,
-        AvatarService: { verifyKey: (key: string) => Promise<void>; getPublicUrl: (key: string) => string }
     ): Promise<{ id: string; name: string }> {
         const {
             name, email, nik, birthPlace, username, password, phoneNumber, gender, address,
@@ -465,7 +545,7 @@ export class StudentManagementService {
      * Delete a student by user ID with cascading deletes.
      * Used by DELETE /api/v1/students/:id
      */
-    static async deleteUserById(
+    private static async deleteUserByIdInTransaction(
         tx: Prisma.TransactionClient,
         userId: string
     ): Promise<{ id: string; name: string; avatarKey: string | null }> {
@@ -501,7 +581,7 @@ export class StudentManagementService {
      * Bulk delete multiple students by user IDs.
      * Used by DELETE /api/v1/students/bulk
      */
-    static async bulkDelete(
+    private static async bulkDeleteInTransaction(
         tx: Prisma.TransactionClient,
         userIds: string[]
     ): Promise<Array<{ id: string; avatarKey: string | null }>> {

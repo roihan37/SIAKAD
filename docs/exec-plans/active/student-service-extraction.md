@@ -279,11 +279,11 @@ StudentAttendanceService
 StudentManagementService
   - getAllStudents (getAllStudents)
   - getStudentById (getStudentById)
-  - bulkUpdateStatus (bulkUpdateStatus) ← IN PROGRESS
-  - createStudent (createStudent) ← TODO
+  - bulkUpdateStatus (bulkUpdateStatus) ← M6 extracted
+  - createStudent (createStudent) ← M6 extracted
   - updateUser (updateStudentById) ← TODO
-  - deleteUserById (deleteUserById) ← TODO
-  - bulkDelete (bulkDelete) ← TODO
+  - deleteUserById (deleteUserById) ← M6 extracted
+  - bulkDelete (bulkDelete) ← M6 extracted
 
 StudentAcademicService
   - getStudentSemesterHistory (getStudentSemesterHistory)
@@ -340,14 +340,41 @@ StudentAcademicService
 - Migrated: getStudentSemesterHistory, getStudentKRS, getStudentNilai
 - User lookup handled inside service
 
-## Milestone 6: Management Mutations ⚠️ IN PROGRESS
-- Still in progress:
-  - [ ] bulkUpdateStatus
-  - [ ] createStudent
-  - [ ] deleteUserById
-  - [ ] bulkDelete
-- NOT started:
-  - [ ] updateStudentById (~680 lines, highest risk)
+## Milestone 6: Management Mutations — implemented; baseline validation failures remain
+
+2026-10-05 scope: only `createStudent`, `deleteUserById`, `bulkUpdateStatus`, and `bulkDelete`.
+
+- [x] Extended the existing Express-independent `StudentManagementService`; retained existing database operations as private transaction helpers.
+- [x] Moved all four RepeatableRead transaction boundaries into public service methods; no affected controller opens a transaction.
+- [x] Moved bulk-status validation, ID normalization, changed-count orchestration and history writes into the service.
+- [x] Moved create avatar verification/hash dependencies and failure cleanup, single-delete cleanup, and bulk cleanup orchestration into the service.
+- [x] Kept delete request validation and direct 400 envelopes in the controller. IDs still deduplicate after the original 100-item limit, and single-delete IDs remain untrimmed after validation.
+- [x] Added focused mutation/service/controller tests with mocked transactions and storage; repaired the existing bulk-status characterization test that previously swallowed a missing mock dependency and asserted only the default response status.
+- [x] Record focused tests and all four backend validation gates below (full-suite gate remains failing on unchanged baseline).
+
+Inspection evidence and compatibility decisions:
+
+- The responsibility map is historical and differs from executable code. Create currently has no explicit required-field/strength checks, duplicate preflight, or initial status-history write; bcrypt, avatar verification, and Prisma enforce existing failures. Preserve those behaviors and propagate duplicate/other database errors unchanged. Do not add new validation or history during extraction.
+- Create hashes and verifies the supplied avatar inside the transaction, creates user then mahasiswa with the existing optional dosen/prodi linkage, and attempts avatar deletion after any transaction failure. Cleanup failure never replaces the original error. The legacy catch also cleaned the avatar if response writing failed after commit: retain that unusual behavior through a service cleanup method invoked by the controller only after successful creation. No response callback or Express dependency enters the service.
+- Delete checks the student relation, deletes transkrip → KRSDetail → KRS → user in one transaction, retaining existing database cascades. Storage cleanup occurs only after successful commit. Storage failures are logged/swallowed and still produce the success response; a failed commit never triggers deletion of the avatar.
+- Bulk delete validates all selected students before writes, checks deleted count inside the same transaction, then deduplicates avatar keys and processes sequential batches of at most five concurrent cleanup calls. No chunked database transactions or selected-user changes were introduced.
+- Status writes and history stay atomic, skip unchanged students, require a trimmed reason for every status, and retain existing messages/status values/count output.
+
+Remaining management logic: `updateStudentById` is unchanged and reserved for Milestone 7. Other controller transactions/imports belong to later milestones and remain untouched. Milestones 7–9 have not started.
+
+Rollback: revert the M6 controller/service/test changes together; no schema, dependency, route, or data migration is required. Tests use mocked transaction boundaries and failure ordering; they do not establish live PostgreSQL rollback or S3 integration behavior.
+
+Validation results (2026-10-05, commands run from `server/`):
+
+- `node --test tests/student-management-mutations.test.cjs`: PASS, 27 tests, no skips. Covers success responses, validation boundaries, duplicate/database errors, transaction failure ordering, status history, cleanup failures and bulk cleanup concurrency.
+- `npm run lint`: PASS (exit 0).
+- `npm run typecheck`: PASS (exit 0).
+- `npm test`: FAIL (exit 1), 139 tests: 133 pass, 6 fail, no skips after allowing local test servers. Initial sandbox run had 9 localhost EPERM failures; these are not counted as passing checks.
+- Unchanged `HEAD` exported to a temporary directory and tested with the same installed dependencies: FAIL, 112 tests: 106 pass, the same 6 failures. Two health tests consume response bodies twice; unknown-route/authentication tests receive HTML 500 responses; request-ID and compiled-server smoke tests then fail JSON parsing. These pre-existing failures remain outside M6; the full-suite gate is not green.
+- `npm run build`: PASS (exit 0).
+- `git diff --check`: PASS. Compared the complete `updateStudentById` method against `HEAD`: byte-for-byte unchanged.
+
+M6 extraction and its focused validation are complete. Full-suite acceptance remains constrained by the six reproduced baseline failures; no unrelated health/error-handler/test-tooling fixes or Milestone 7 work were attempted.
 
 ## Milestone 7: updateStudentById ❌ NOT STARTED
 - ~680 line method
@@ -454,9 +481,9 @@ The StudentController extraction should not be coupled to the separate KRS domai
 
 ---
 
-## Decision 005
+## Decision 005 (historical; superseded for the four M6 mutations on 2026-10-05)
 
-Transaction boundaries remain in the controller for mutations.
+Transaction boundaries previously remained in the controller for mutations.
 
 Reason:
 
@@ -474,7 +501,7 @@ Items touched by this refactor:
 
 | ID | Description | Status |
 |----|-------------|--------|
-| TD-001 | Transaction boundaries in controller | Documented (by design) |
+| TD-001 | Transaction boundaries in controller | Resolved for the four M6 mutations; other methods remain deferred |
 | TD-002 | S3 cleanup ordering after commit | Preserved |
 | TD-003 | Console logging in services | To be addressed in structured logging phase |
 

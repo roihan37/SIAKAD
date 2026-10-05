@@ -151,15 +151,16 @@ async function testDeleteUserByIdNotFound() {
 async function testBulkUpdateStatus() {
   console.log('Testing bulkUpdateStatus...');
   const users = [{ id: 'u1', mahasiswa: { id: 'm1', status: 'Aktif' } }, { id: 'u2', mahasiswa: { id: 'm2', status: 'Aktif' } }];
-  prisma.user.findMany = async () => users;
-  prisma.$transaction = async (fn) => {
-    await fn({ mahasiswa: { update: async () => ({}) }, riwayatStatusMahasiswa: { create: async () => ({}) } });
-    return {};
-  };
+  prisma.$transaction = async (fn) => fn({
+    user: { findMany: async () => users },
+    mahasiswa: { update: async () => ({}) },
+    riwayatStatusMahasiswa: { create: async () => ({}) },
+  });
   const req = makeRequest({ body: { ids: ['u1', 'u2'], status: 'Cuti', statusReason: 'Sakit' } });
   const res = makeResponse();
-  await Controller.bulkUpdateStatus(req, res, () => {});
+  await Controller.bulkUpdateStatus(req, res, (error) => { throw error; });
   assert.equal(res.getStatusCode(), 200);
+  assert.deepEqual(res.getBody(), { message: '2 mahasiswa berhasil diperbarui', data: { ids: ['u1', 'u2'], changedCount: 2, status: 'Cuti' } });
 }
 
 async function testBulkUpdateStatusInvalid() {
