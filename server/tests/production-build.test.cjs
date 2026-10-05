@@ -51,7 +51,7 @@ for (const variable of ['DATABASE_URL', 'AWS_REGION', 'AWS_BUCKET_NAME']) {
     assert.ok(app.output().includes(`${variable} is required`));
     assert.ok(!app.output().includes(secret));
     assert.ok(!app.output().includes(environment.DATABASE_URL));
-    assert.ok(!app.output().includes('Server berjalan'));
+    assert.ok(!app.output().includes('Server started'));
   });
 }
 
@@ -64,7 +64,7 @@ test('compiled server loads runtime dependencies and serves unauthenticated requ
   await new Promise(resolve => probe.close(resolve));
   const app = await launch(t, { JWT_SECRET: 'test-only-signing-secret-'.repeat(3) });
   const deadline = Date.now() + 10000;
-  while (!app.output().includes('Server berjalan')) {
+  while (!app.output().includes('Server started')) {
     assert.equal(app.child.exitCode, null, app.output());
     assert.ok(Date.now() < deadline, `Startup timed out: ${app.output()}`);
     await new Promise(resolve => setTimeout(resolve, 50));

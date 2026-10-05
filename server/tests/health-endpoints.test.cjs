@@ -38,7 +38,7 @@ async function launch(t) {
 test('/health/live returns 200 with ok status', { timeout: 15000 }, async t => {
   const app = await launch(t);
   const deadline = Date.now() + 10000;
-  while (!app.output().includes('Server berjalan')) {
+  while (!app.output().includes('Server started')) {
     assert.equal(app.child.exitCode, null, app.output());
     assert.ok(Date.now() < deadline, `Startup timed out: ${app.output()}`);
     await new Promise(resolve => setTimeout(resolve, 50));
@@ -52,7 +52,7 @@ test('/health/live returns 200 with ok status', { timeout: 15000 }, async t => {
 test('/health/ready returns 503 when database is unavailable', { timeout: 15000 }, async t => {
   const app = await launch(t);
   const deadline = Date.now() + 10000;
-  while (!app.output().includes('Server berjalan')) {
+  while (!app.output().includes('Server started')) {
     assert.equal(app.child.exitCode, null, app.output());
     assert.ok(Date.now() < deadline, `Startup timed out: ${app.output()}`);
     await new Promise(resolve => setTimeout(resolve, 50));
@@ -68,7 +68,7 @@ test('/health/ready returns 503 when database is unavailable', { timeout: 15000 
 test('unknown API route returns 404 with ROUTE_NOT_FOUND', { timeout: 15000 }, async t => {
   const app = await launch(t);
   const deadline = Date.now() + 10000;
-  while (!app.output().includes('Server berjalan')) {
+  while (!app.output().includes('Server started')) {
     assert.equal(app.child.exitCode, null, app.output());
     assert.ok(Date.now() < deadline, `Startup timed out: ${app.output()}`);
     await new Promise(resolve => setTimeout(resolve, 50));
@@ -88,7 +88,7 @@ test('unknown API route returns 404 with ROUTE_NOT_FOUND', { timeout: 15000 }, a
 test('known resource not found returns distinct NOT_FOUND vs ROUTE_NOT_FOUND', { timeout: 15000 }, async t => {
   const app = await launch(t);
   const deadline = Date.now() + 10000;
-  while (!app.output().includes('Server berjalan')) {
+  while (!app.output().includes('Server started')) {
     assert.equal(app.child.exitCode, null, app.output());
     assert.ok(Date.now() < deadline, `Startup timed out: ${app.output()}`);
     await new Promise(resolve => setTimeout(resolve, 50));
@@ -107,7 +107,7 @@ test('known resource not found returns distinct NOT_FOUND vs ROUTE_NOT_FOUND', {
 test('request ID is present in all responses', { timeout: 15000 }, async t => {
   const app = await launch(t);
   const deadline = Date.now() + 10000;
-  while (!app.output().includes('Server berjalan')) {
+  while (!app.output().includes('Server started')) {
     assert.equal(app.child.exitCode, null, app.output());
     assert.ok(Date.now() < deadline, `Startup timed out: ${app.output()}`);
     await new Promise(resolve => setTimeout(resolve, 50));
@@ -130,7 +130,7 @@ test('request ID is present in all responses', { timeout: 15000 }, async t => {
 test('request ID accepts valid incoming x-request-id header', { timeout: 15000 }, async t => {
   const app = await launch(t);
   const deadline = Date.now() + 10000;
-  while (!app.output().includes('Server berjalan')) {
+  while (!app.output().includes('Server started')) {
     assert.equal(app.child.exitCode, null, app.output());
     assert.ok(Date.now() < deadline, `Startup timed out: ${app.output()}`);
     await new Promise(resolve => setTimeout(resolve, 50));
@@ -149,7 +149,7 @@ test('request ID accepts valid incoming x-request-id header', { timeout: 15000 }
 test('request ID rejects unsafe incoming header values', { timeout: 15000 }, async t => {
   const app = await launch(t);
   const deadline = Date.now() + 10000;
-  while (!app.output().includes('Server berjalan')) {
+  while (!app.output().includes('Server started')) {
     assert.equal(app.child.exitCode, null, app.output());
     assert.ok(Date.now() < deadline, `Startup timed out: ${app.output()}`);
     await new Promise(resolve => setTimeout(resolve, 50));

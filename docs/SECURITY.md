@@ -19,3 +19,20 @@ A targeted current-tree scan found demo passwords in seed configuration/docs and
 - Review security dependency changes and use isolated test credentials/data. Never weaken a control just to make a test pass.
 
 The [platform plan](exec-plans/active/platform-hardening.md) must verify missing/invalid configuration, role credentials, authorization regressions, and log redaction before release. This document schedules no credential rotation, code modification, or infrastructure operation during bootstrap.
+
+
+## Logging Security
+
+Structured logging with Pino (M6) includes automatic redaction of sensitive fields:
+- Authorization headers, session cookies
+- JWT tokens, passwords, refresh tokens
+- Database URLs and connection strings
+
+Redaction configuration is centralized in .
+The censor value  replaces all matched fields.
+
+Never log:
+- Full error objects without sanitization
+- Request/response bodies (can contain PII)
+- Stack traces in production (prevented by errorHandler design)
+

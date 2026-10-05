@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { ErrorRequestHandler, Request, Response } from "express";
 import { AppError } from "../errors/app-error";
+import { createRequestLogger } from "../lib/logger";
 
 type LegacyError = { name?: string; message?: string };
 type ExpressRequest = Request & { requestId?: string };
@@ -77,6 +78,7 @@ function legacyResponse(error: LegacyError, res: Response, requestId?: string): 
     case "LecturerStatusConflict":
       return response(res, 409, "CONFLICT", message || "Data masih digunakan.", undefined, requestId);
     case "Unauthorized":
+    case "InvalidCredential":
       return response(res, 401, "INVALID_CREDENTIALS", message || "Invalid Email / Password", undefined, requestId);
     case "Forbidden":
       return response(res, 403, "FORBIDDEN", message || "Akses ditolak", undefined, requestId);
@@ -111,13 +113,34 @@ function legacyResponse(error: LegacyError, res: Response, requestId?: string): 
  * - filesystem paths
  * - environment variables
  * - secrets
+ *
+ * All errors are logged with structured logging via Pino.
  */
 export const errorHandler: ErrorRequestHandler = (error: unknown, req: ExpressRequest, res: Response): void => {
   // Use request-scoped requestId if available
   const requestId = req.requestId;
+  
+  // Create logger with request ID for correlation
+  const log = requestId ? createRequestLogger(requestId) : null;
+
+  // Helper to log at appropriate level
+  const logWithError = (level: "info" | "warn" | "error", meta: Record<string, unknown>, msg: string) => {
+    if (!log) return;
+    const logFn = log[level];
+    if (typeof logFn === "function") {
+      logFn(meta, msg);
+    }
+  };
 
   // 1. Handle typed AppError instances
   if (error instanceof AppError) {
+    // Log at appropriate level based on status code
+    const level = error.statusCode >= 500 ? "error" : error.statusCode >= 400 ? "warn" : "info";
+    logWithError(level, {
+      code: error.code,
+      message: error.message,
+      statusCode: error.statusCode,
+    }, `${error.code}: ${error.message}`);
     response(res, error.statusCode, error.code, error.message, error.details, requestId);
     return;
   }
@@ -127,32 +150,44 @@ export const errorHandler: ErrorRequestHandler = (error: unknown, req: ExpressRe
     switch (error.code) {
       case "P2002":
         response(res, 409, "DUPLICATE_DATA", duplicateMessage(prismaDuplicateFields(error)), undefined, requestId);
+        logWithError("warn", { code: error.code, message: error.message }, "Prisma duplicate key error");
         return;
       case "P2003":
         response(res, 409, "CONFLICT", "Operasi tidak dapat dilakukan karena data memiliki relasi yang masih digunakan atau referensi tidak valid", undefined, requestId);
+        logWithError("warn", { code: error.code, message: error.message }, "Prisma foreign key constraint error");
         return;
       case "P2034":
         response(res, 409, "CONFLICT", "Data sedang berubah, silakan ulangi operasi", undefined, requestId);
+        logWithError("warn", { code: error.code, message: error.message }, "Prisma stale transaction error");
         return;
       case "P2025":
         response(res, 404, "NOT_FOUND", "Data yang akan diproses tidak ditemukan", undefined, requestId);
+        logWithError("info", { code: error.code, message: error.message }, "Prisma record not found");
         return;
       default:
-        break;
+        // Unknown Prisma errors are internal server errors
+        logWithError("error", { code: error.code, message: error.message }, "Unknown Prisma error");
+        response(res, 500, "INTERNAL_SERVER_ERROR", "Internal Server Error", undefined, requestId);
+        return;
     }
   }
 
   // 3. Handle legacy named error objects for backward compatibility
   const known = legacyResponse(typeof error === "object" && error !== null ? (error as LegacyError) : {}, res, requestId);
   if (known) {
+    // Log the error for observability
+    const name = (typeof error === "object" && error !== null) ? (error as LegacyError).name : "unknown";
+    const message = (typeof error === "object" && error !== null) ? (error as LegacyError).message : undefined;
+    logWithError("warn", { name, message }, "Legacy error handled");
     return;
   }
 
   // 4. Unknown/unexpected errors: log internally, return safe 500
+  // NEVER log the full error object - only safe fields
   if (error instanceof Error) {
-    console.error("[ERROR]", error.message);
+    logWithError("error", { message: error.message, name: error.name }, "Unhandled error occurred");
   } else {
-    console.error("[ERROR]", String(error ?? "unknown error"));
+    logWithError("error", { message: String(error ?? "unknown error") }, "Unhandled error occurred");
   }
 
   response(res, 500, "INTERNAL_SERVER_ERROR", "Internal Server Error", undefined, requestId);

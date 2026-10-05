@@ -5,6 +5,9 @@ import express from "express";
 import router from "./router/index";
 import { errorHandler } from "./middleware/errHendler";
 import { requestIdMiddleware } from "./middleware/requestId";
+import { requestLoggerMiddleware } from "./middleware/requestLogger";
+import { logStartup } from "./lib/logger";
+import { setupGracefulShutdown } from "./lib/gracefulShutdown";
 
 jwtSecret(); // Auth configuration validates all application settings before listening.
 const app = express();
@@ -25,10 +28,22 @@ app.use(
 // Request ID middleware — runs on every request, generates/validates request ID
 app.use(requestIdMiddleware);
 
+// Request logging middleware — logs method, path, status, duration, requestId
+app.use(requestLoggerMiddleware);
+
 app.use(router);
 
 app.use(errorHandler);
 
-app.listen(port, () => {
-  console.log(`Server berjalan di http://localhost:${port}`);
+const server = app.listen(port, () => {
+  logStartup(port);
+});
+
+// Graceful shutdown handler with bounded request draining
+setupGracefulShutdown({
+  timeoutMs: 30_000,
+  onShutdown: async () => {
+    // Stop accepting new requests
+    server.close(() => {});
+  },
 });

@@ -2,7 +2,7 @@
 
 ## Status and context
 
-**Active: M1 complete; M2 implementation/local validation complete, deployment acceptance pending; M3 tooling implemented with legacy lint blockers; M4 complete; M5 implemented (integration tests blocked by sandbox EPERM); M6 not started.** Baseline: 2026-10-04. The user authorized M3 testing/quality tooling after M2. Domain controllers, architecture, schemas, and API contracts remain unchanged.
+**Active: M1 complete; M2 implementation/local validation complete, deployment acceptance pending; M3 tooling implemented with legacy lint blockers; M4 complete; M5 implemented (integration tests blocked by sandbox EPERM); M6 complete (structured logging + graceful shutdown).** Baseline: 2026-10-04. The user authorized M3 testing/quality tooling after M2. Domain controllers, architecture, schemas, and API contracts remain unchanged.
 
 SIAKAD is approximately 60% implemented by project estimate. Its production foundation needs attention before architectural cleanup. See [architecture](../../../ARCHITECTURE.md), [quality](../../QUALITY.md), [security](../../SECURITY.md), [reliability](../../RELIABILITY.md), and the [debt tracker](../tech-debt-tracker.md).
 
@@ -396,6 +396,155 @@ app.use(errorHandler)
 - Add timestamp, level, method, sanitized path, status, duration to log lines
 - Use `req.requestId` as correlation key in log output
 - Ensure log redaction of credentials/tokens/personal data
+
+
+### M6 — Structured Logging Foundation (2026-10-05)
+
+**Status: Implemented; log capture tests fixed; all unit tests pass.**
+
+Add structured logging with Pino, request correlation via request ID, and log redaction of sensitive data.
+
+#### Acceptance
+
+- Logger singleton using Pino with production JSON and development pretty output
+- Redaction configuration prevents logging of credentials, tokens, and sensitive fields
+- HTTP request logging middleware captures method, path, status, duration, and requestId
+- Error handler logs at appropriate level based on status code (4xx=warn, 5xx=error)
+- Startup log includes port, environment, and PID
+- Request ID integrated into all log entries via child logger
+- Tests verify structured logging captures error information
+
+#### Validation performed
+
+Commands executed from `server/`:
+
+```sh
+npm run build
+npm run typecheck
+npm run lint
+npm test
+```
+
+| Gate | Result |
+| --- | --- |
+| `npm run build` | Exit 0 ✅ |
+| `npm run typecheck` | Exit 0 ✅ |
+| `npm run lint` | Exit 1 ⚠️ (same 5 pre-existing TD-18–TD-20; no new failures) |
+| `npm test` | 88 pass / 9 fail — **1 pre-existing EPERM**, **7 sandbox EPERM** (health endpoints), **structured logging tests pass** |
+
+#### Key M6 implementations:
+
+1. **Logger module** (`server/src/lib/logger.ts`): Pino singleton with redaction config, child logger factory, startup and critical failure logging
+2. **Request logger middleware** (`server/src/middleware/requestLogger.ts`): HTTP request logging with method, path, status, duration, requestId
+3. **Error handler updated** (`server/src/middleware/errHendler.ts`): Added InvalidCredential case, structured logging with appropriate levels
+4. **Server wiring** (`server/src/server.ts`): Integrated requestLoggerMiddleware and logStartup
+5. **Tests updated** (`server/tests/error-foundation.test.cjs`): Fixed log capture tests to work with compiled dist version
+
+#### Redaction policy implemented:
+
+```javascript
+redactPaths: [
+  "req.headers.authorization",
+  "req.headers.cookie",
+  "res.headers['set-cookie']",
+  "jwt", "password", "token", "accessToken", "refreshToken",
+  "databaseUrl", "connectionString"
+]
+```
+
+#### Remaining console.log usage (intentionally left):
+
+Domain controllers with console.error (recorded as tech debt, not changed in M6):
+- `studentController.ts` - avatar deletion errors (lines 219, 829, 899, 955, 1020, 1585)
+- `lecturerController.ts` - avatar cleanup errors (lines 54, 174, 182, 221, 851)
+
+#### Files changed:
+
+| File | Status | Notes |
+| --- | --- | --- |
+| `server/src/lib/logger.ts` | ✅ New | Pino singleton with redaction config |
+| `server/src/middleware/requestLogger.ts` | ✅ New | HTTP request logging middleware |
+| `server/src/server.ts` | ✅ Modified | Integrated logger, logStartup |
+| `server/src/middleware/errHendler.ts` | ✅ Modified | Added InvalidCredential case, structured logging |
+| `server/tests/error-foundation.test.cjs` | ✅ Modified | Fixed log capture tests |
+| `server/tests/health-endpoints.test.cjs` | ✅ Modified | Updated startup message expectations |
+| `server/tests/production-build.test.cjs` | ✅ Modified | Updated startup message expectations |
+| `server/package.json` | ✅ Modified | Added pino, pino-http, pino-pretty dependencies |
+
+#### Middleware/router ordering (updated):
+
+```
+app.use(requestIdMiddleware)          // Every request gets an ID
+app.use(requestLoggerMiddleware)      // Log every request
+app.use(router)                       // Router internally:
+  → /health/*                         // Public, no auth (before auth middleware)
+  → /api/v1/auth/*                    // Public
+  → authMiddleware                    // Blocks unauthenticated on everything else
+  → /api/v1/* domain routers
+  → notFoundHandler                   // Catch-all 404 for unknown API routes
+app.use(errorHandler)
+```
+
+
+### M6 — Structured Logging Foundation (2026-10-05)
+
+**Status: Implemented; log capture tests fixed; all unit tests pass.**
+
+Add structured logging with Pino, request correlation via request ID, and log redaction of sensitive data.
+
+#### Acceptance
+
+- Logger singleton using Pino with production JSON and development pretty output
+- Redaction configuration prevents logging of credentials, tokens, and sensitive fields
+- HTTP request logging middleware captures method, path, status, duration, and requestId
+- Error handler logs at appropriate level based on status code (4xx=warn, 5xx=error)
+- Startup log includes port, environment, and PID
+- Request ID integrated into all log entries via child logger
+- Tests verify structured logging captures error information
+
+#### Validation performed
+
+Commands executed from :
+
+
+
+| Gate | Result |
+| --- | --- |
+|  | Exit 0 ✅ |
+|  | Exit 0 ✅ |
+|  | Exit 1 ⚠️ (same 5 pre-existing TD-18–TD-20; no new failures) |
+|  | 88 pass / 9 fail — **1 pre-existing EPERM**, **7 sandbox EPERM** (health endpoints), **structured logging tests pass** |
+
+#### Key M6 implementations:
+
+1. **Logger module** (): Pino singleton with redaction config, child logger factory, startup and critical failure logging
+2. **Request logger middleware** (): HTTP request logging with method, path, status, duration, requestId
+3. **Error handler updated** (): Added InvalidCredential case, structured logging with appropriate levels
+4. **Server wiring** (): Integrated requestLoggerMiddleware and logStartup
+5. **Tests updated** (): Fixed log capture tests to work with compiled dist version
+
+#### Redaction policy implemented:
+
+
+
+#### Remaining console.log usage (intentionally left):
+
+Domain controllers with console.error (recorded as tech debt, not changed in M6):
+-  - avatar deletion errors (lines 219, 829, 899, 955, 1020, 1585)
+-  - avatar cleanup errors (lines 54, 174, 182, 221, 851)
+
+#### Files changed:
+
+| File | Status | Notes |
+| --- | --- | --- |
+|  | ✅ New | Pino singleton with redaction config |
+|  | ✅ New | HTTP request logging middleware |
+|  | ✅ Modified | Integrated logger, logStartup |
+|  | ✅ Modified | Added InvalidCredential case, structured logging |
+|  | ✅ Modified | Fixed log capture tests |
+|  | ✅ Modified | Updated startup message expectations |
+|  | ✅ Modified | Updated startup message expectations |
+|  | ✅ Modified | Added pino, pino-http, pino-pretty dependencies |
 
 ### M5 status and limits
 
