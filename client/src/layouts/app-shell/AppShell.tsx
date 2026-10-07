@@ -4,6 +4,7 @@ import type { ReactNode } from "react"
 import { Link, Outlet, useLocation } from "react-router"
 import { AppSidebar } from "@/components/nav/app-sidebar"
 import { NavUser } from "@/components/nav/nav-user"
+import { StudentNotifications } from "@/components/nav/student-notifications"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -46,7 +47,10 @@ export function AppShell({ dashboardPath, navigation, pageLabels, mobileNavigati
               </BreadcrumbList>
             </Breadcrumb>
           </div>
-          <NavUser student={studentUser} />
+          <div className="flex shrink-0 items-center gap-1">
+            {studentUser && <StudentNotifications />}
+            <NavUser student={studentUser} />
+          </div>
         </header>
         <div className={cn("flex flex-1 flex-col gap-4 p-4 pt-0", hasMobileNavigation && "pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-4")}>
           <Outlet />
