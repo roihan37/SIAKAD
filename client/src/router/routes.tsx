@@ -14,6 +14,7 @@ const AdminLayout = createLazyPage(() => import("@/layouts/admin/AdminLayout"))
 const MahasiswaLayout = createLazyPage(() => import("@/layouts/mahasiswa/MahasiswaLayout"))
 const DosenLayout = createLazyPage(() => import("@/layouts/dosen/DosenLayout"))
 const PortalPendingPage = createLazyPage(() => import("@/pages/Portal/PortalPendingPage"))
+const MahasiswaDashboardPage = createLazyPage(() => import("@/pages/mahasiswa/Dashboard/MahasiswaDashboardPage"))
 export const routes: RouteObject[] = [
   {
     element: <ProtectedRoute />,
@@ -27,7 +28,7 @@ export const routes: RouteObject[] = [
         ],
       },
       { element: <RoleGuard role="Mahasiswa" />, children: [
-        { path: "/mahasiswa", element: <MahasiswaLayout />, children: createPortalRoutes("/mahasiswa", mahasiswaNavigation) },
+        { path: "/mahasiswa", element: <MahasiswaLayout />, children: createPortalRoutes("/mahasiswa", mahasiswaNavigation, { dashboard: <MahasiswaDashboardPage /> }) },
       ] },
       { element: <RoleGuard role="Dosen" />, children: [
         { path: "/dosen", element: <DosenLayout />, children: createPortalRoutes("/dosen", dosenNavigation) },
