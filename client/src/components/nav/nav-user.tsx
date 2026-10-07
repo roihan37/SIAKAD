@@ -1,6 +1,6 @@
 import { useRef, useState } from "react"
 import { ChevronDownIcon, LoaderCircleIcon, LogOutIcon, UserRoundIcon } from "lucide-react"
-import { useNavigate } from "react-router"
+import { Link, useNavigate } from "react-router"
 import { toast } from "sonner"
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -13,10 +13,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { studentProfile } from "@/pages/mahasiswa/Profil/profil-data"
 import { logoutApi } from "@/features/action/authThunk"
 import { useAppDispatch } from "@/hooks/redux"
 
-export function NavUser() {
+export function NavUser({ student = false }: { student?: boolean }) {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
   const pending = useRef(false)
@@ -52,17 +53,33 @@ export function NavUser() {
             {isLoggingOut ? <LoaderCircleIcon className="size-4 animate-spin" /> : <UserRoundIcon className="size-4" />}
           </AvatarFallback>
         </Avatar>
-        <span className="hidden text-sm font-medium sm:block">{isLoggingOut ? "Sedang keluar..." : "Akun Saya"}</span>
-        <ChevronDownIcon aria-hidden="true" className="hidden size-3.5 text-muted-foreground transition-transform group-aria-expanded:rotate-180 sm:block" />
+        <span className={`${student ? "max-w-36 truncate" : "hidden sm:block"} text-sm font-medium`}>{isLoggingOut ? "Sedang keluar..." : student ? studentProfile.fullName : "Akun Saya"}</span>
+        <ChevronDownIcon aria-hidden="true" className={`${student ? "" : "hidden sm:block"} size-3.5 shrink-0 text-muted-foreground transition-transform group-aria-expanded:rotate-180`} />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" side="bottom" sideOffset={8} className="w-64 max-w-[calc(100vw-2rem)] rounded-xl p-2 shadow-lg">
-        <DropdownMenuGroup>
-          <DropdownMenuLabel className="px-2 py-2.5">
-            <span className="block text-sm font-semibold text-foreground">Akun Saya</span>
-            <span className="mt-1 block text-xs font-normal">Sistem Informasi Akademik</span>
-          </DropdownMenuLabel>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
+        {student ? <>
+          <DropdownMenuGroup>
+            <DropdownMenuLabel className="px-2 py-2.5">
+              <span className="block truncate text-sm font-semibold text-foreground">{studentProfile.fullName}</span>
+              <span className="mt-1 block text-xs font-normal">{studentProfile.nim} • Mahasiswa</span>
+              <span className="mt-1 block truncate text-xs font-normal">{studentProfile.studyProgram}</span>
+            </DropdownMenuLabel>
+          </DropdownMenuGroup>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem render={<Link to="/mahasiswa/profil" />} className="min-h-11 cursor-pointer gap-3 rounded-lg px-3">
+            <UserRoundIcon />
+            Profil Saya
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+        </> : <>
+          <DropdownMenuGroup>
+            <DropdownMenuLabel className="px-2 py-2.5">
+              <span className="block text-sm font-semibold text-foreground">Akun Saya</span>
+              <span className="mt-1 block text-xs font-normal">Sistem Informasi Akademik</span>
+            </DropdownMenuLabel>
+          </DropdownMenuGroup>
+          <DropdownMenuSeparator />
+        </>}
         <DropdownMenuItem variant="destructive" disabled={isLoggingOut} onClick={handleLogout} className="min-h-11 cursor-pointer gap-3 rounded-lg px-3">
           <LogOutIcon />
           Keluar

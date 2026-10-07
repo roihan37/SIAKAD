@@ -16,7 +16,7 @@ import { Separator } from "@/components/ui/separator"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 
 
-export function AppShell({ dashboardPath, navigation, pageLabels, mobileNavigation }: { dashboardPath: string; navigation: ReactNode; pageLabels: Record<string, string>; mobileNavigation?: ReactNode }) {
+export function AppShell({ dashboardPath, navigation, pageLabels, mobileNavigation, studentUser = false }: { dashboardPath: string; navigation: ReactNode; pageLabels: Record<string, string>; mobileNavigation?: ReactNode; studentUser?: boolean }) {
   const { pathname } = useLocation()
   const isMobile = useIsMobile()
   const hasMobileNavigation = Boolean(mobileNavigation)
@@ -46,7 +46,7 @@ export function AppShell({ dashboardPath, navigation, pageLabels, mobileNavigati
               </BreadcrumbList>
             </Breadcrumb>
           </div>
-          <NavUser />
+          <NavUser student={studentUser} />
         </header>
         <div className={cn("flex flex-1 flex-col gap-4 p-4 pt-0", hasMobileNavigation && "pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-4")}>
           <Outlet />

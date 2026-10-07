@@ -6,5 +6,5 @@ import { navigationLabels } from "@/navigation/types"
 import { MahasiswaAIFloatingButton } from "./MahasiswaAIFloatingButton"
 const pageLabels = navigationLabels(mahasiswaNavigation)
 export default function MahasiswaLayout() {
-  return <><AppShell dashboardPath="/mahasiswa/dashboard" pageLabels={pageLabels} mobileNavigation={<MahasiswaMobileNavigation />} navigation={<PortalNavigation basePath="/mahasiswa" groups={mahasiswaNavigation} />} /><MahasiswaAIFloatingButton /></>
+  return <><AppShell dashboardPath="/mahasiswa/dashboard" pageLabels={pageLabels} mobileNavigation={<MahasiswaMobileNavigation />} navigation={<PortalNavigation basePath="/mahasiswa" groups={mahasiswaNavigation} />} studentUser /><MahasiswaAIFloatingButton /></>
 }
