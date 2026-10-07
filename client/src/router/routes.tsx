@@ -20,6 +20,7 @@ const MahasiswaJadwalPage = createLazyPage(() => import("@/pages/mahasiswa/Jadwa
 const MahasiswaNilaiKHSPage = createLazyPage(() => import("@/pages/mahasiswa/NilaiKHS/MahasiswaNilaiKHSPage"))
 const MahasiswaTranskripPage = createLazyPage(() => import("@/pages/mahasiswa/Transkrip/MahasiswaTranskripPage"))
 const MahasiswaTagihanUKTPage = createLazyPage(() => import("@/pages/mahasiswa/TagihanUKT/MahasiswaTagihanUKTPage"))
+const MahasiswaRiwayatPembayaranPage = createLazyPage(() => import("@/pages/mahasiswa/RiwayatPembayaran/MahasiswaRiwayatPembayaranPage"))
 const MahasiswaPresensiPage = createLazyPage(() => import("@/pages/mahasiswa/Presensi/MahasiswaPresensiPage"))
 const MahasiswaAIAssistantPage = createLazyPage(() => import("@/pages/mahasiswa/AIAssistant/MahasiswaAIAssistantPage"))
 export const routes: RouteObject[] = [
@@ -35,7 +36,7 @@ export const routes: RouteObject[] = [
         ],
       },
       { element: <RoleGuard role="Mahasiswa" />, children: [
-        { path: "/mahasiswa", element: <MahasiswaLayout />, children: createPortalRoutes("/mahasiswa", mahasiswaNavigation, { dashboard: <MahasiswaDashboardPage />, krs: <MahasiswaKRSPage />, "jadwal-kuliah": <MahasiswaJadwalPage />, "nilai-khs": <MahasiswaNilaiKHSPage />, "transkrip-nilai": <MahasiswaTranskripPage />, presensi: <MahasiswaPresensiPage />, "tagihan-ukt": <MahasiswaTagihanUKTPage />, "ai-assistant": <MahasiswaAIAssistantPage /> }) },
+        { path: "/mahasiswa", element: <MahasiswaLayout />, children: createPortalRoutes("/mahasiswa", mahasiswaNavigation, { dashboard: <MahasiswaDashboardPage />, krs: <MahasiswaKRSPage />, "jadwal-kuliah": <MahasiswaJadwalPage />, "nilai-khs": <MahasiswaNilaiKHSPage />, "transkrip-nilai": <MahasiswaTranskripPage />, presensi: <MahasiswaPresensiPage />, "tagihan-ukt": <MahasiswaTagihanUKTPage />, "riwayat-pembayaran": <MahasiswaRiwayatPembayaranPage />, "ai-assistant": <MahasiswaAIAssistantPage /> }) },
       ] },
       { element: <RoleGuard role="Dosen" />, children: [
         { path: "/dosen", element: <DosenLayout />, children: createPortalRoutes("/dosen", dosenNavigation) },
