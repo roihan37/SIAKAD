@@ -50,18 +50,17 @@ function fixture(options = {}) {
     getPublicUrl(key) { events.push('url'); return `public:${key}`; },
     async deleteObject(key) { events.push(`cleanup:${key}`); if (options.cleanupFails) throw new Error('cleanup unavailable'); },
   };
-  const { StudentManagementService: service } = load('services/student-management.service.ts', {
+  const { StudentManagementService: service } = load('services/student-services/student-management.service.ts', {
     '@prisma/client': { Prisma: { TransactionIsolationLevel: { RepeatableRead: 'RepeatableRead' } } },
-    '../lib/prisma': { prisma }, '../lib/bycript': { hashPassword(password) {
+    '../../lib/prisma': { prisma }, '../../lib/bycript': { hashPassword(password) {
       events.push('hash'); if (options.fail === 'hash') throw failure; return `hashed:${password}`;
-    } }, './avatar.service': { AvatarService }, './s3.service': { S3Service },
+    } }, '../avatar.service': { AvatarService }, '../s3.service': { S3Service },
   });
   const { Controller } = load('controllers/studentController.ts', {
-    '../services/student-management.service': { StudentManagementService: service },
-    ...Object.fromEntries(['../lib/prisma', '../lib/bycript', '@prisma/client', '../services/avatar.service',
-      '../services/s3.service', '../validation/master-data', '../services/attendance.service', '../services/tuition.service',
-      '../services/student-finance.service', '../services/student-account.service', '../services/student-attendance.service',
-      '../services/student-academic.service'].map(name => [name, {}])),
+    '../services/student-services/student-management.service': { StudentManagementService: service },
+    ...Object.fromEntries(['../validation/master-data', '../services/student-services/student-finance.service',
+      '../services/student-services/student-account.service', '../services/student-services/student-attendance.service',
+      '../services/student-services/student-academic.service'].map(name => [name, {}])),
   });
   return { service, Controller, events, writes, failure, maximum: () => maximum };
 }

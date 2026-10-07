@@ -7,13 +7,13 @@ const ts = require('typescript');
 
 function load(domain, prisma) {
   const context = { exports: {}, require(name) {
-    if (name === '../lib/prisma') return { prisma };
+    if (name === '../../lib/prisma') return { prisma };
     if (name === '@prisma/client') return { Prisma: { TransactionIsolationLevel: {
       RepeatableRead: 'RepeatableRead', Serializable: 'Serializable',
     } } };
     return {};
   } };
-  const file = path.join(__dirname, `../src/services/student-${domain}.service.ts`);
+  const file = path.join(__dirname, `../src/services/student-services/student-${domain}.service.ts`);
   vm.runInNewContext(ts.transpileModule(fs.readFileSync(file, 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText, context);

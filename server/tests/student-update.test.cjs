@@ -57,16 +57,15 @@ function fixture(options = {}) {
     async createReadUrl(key) { record('sign', key); return `signed:${key}`; },
   };
   const hashPassword = async value => { record('hash', value); return `hashed:${value}`; };
-  const { StudentManagementService: service } = load('services/student-management.service.ts', {
-    '@prisma/client': {}, '../lib/prisma': { prisma }, '../lib/bycript': { hashPassword },
-    './avatar.service': {}, './s3.service': { S3Service },
+  const { StudentManagementService: service } = load('services/student-services/student-management.service.ts', {
+    '@prisma/client': {}, '../../lib/prisma': { prisma }, '../../lib/bycript': { hashPassword },
+    '../avatar.service': {}, '../s3.service': { S3Service },
   });
   const { Controller } = load('controllers/studentController.ts', {
-    ...Object.fromEntries(['@prisma/client', '../services/avatar.service', '../validation/master-data',
-      '../services/attendance.service', '../services/tuition.service', '../services/student-finance.service',
-      '../services/student-account.service', '../services/student-attendance.service', '../services/student-academic.service'].map(name => [name, {}])),
-    '../lib/prisma': { prisma }, '../lib/bycript': { hashPassword }, '../services/s3.service': { S3Service },
-    '../services/student-management.service': { StudentManagementService: service },
+    ...Object.fromEntries(['../validation/master-data', '../services/student-services/student-finance.service',
+      '../services/student-services/student-account.service', '../services/student-services/student-attendance.service',
+      '../services/student-services/student-academic.service'].map(name => [name, {}])),
+    '../services/student-services/student-management.service': { StudentManagementService: service },
   });
   return { Controller, service, events, calls, failure, user };
 }
