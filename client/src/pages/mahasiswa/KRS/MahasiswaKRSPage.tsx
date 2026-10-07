@@ -115,25 +115,33 @@ function SelectionPanel({
 }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4">
         {courses.length === 0 ? (
-          <div className="flex min-h-40 flex-col items-center justify-center rounded-xl border border-dashed p-5 text-center">
-            <BookOpenCheck className="size-8 text-muted-foreground/60" aria-hidden="true" />
+          <div className="flex min-h-48 flex-col items-center justify-center rounded-xl border border-dashed bg-muted/20 p-5 text-center">
+            <span className="flex size-12 items-center justify-center rounded-full bg-muted">
+              <BookOpenCheck className="size-6 text-muted-foreground" aria-hidden="true" />
+            </span>
             <p className="mt-3 text-sm font-medium">Belum ada mata kuliah</p>
-            <p className="mt-1 max-w-52 text-xs leading-5 text-muted-foreground">Pilih mata kuliah dari daftar yang tersedia.</p>
+            <p className="mt-1 max-w-52 text-xs leading-5 text-muted-foreground">Mata kuliah yang kamu pilih akan muncul di sini.</p>
           </div>
         ) : (
-          <ul className="divide-y divide-border/70">
+          <ul className="space-y-2">
             {courses.map((course) => (
-              <li key={course.id} className="flex items-start gap-3 py-3 first:pt-0">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-xs font-semibold">{course.credits}</span>
+              <li key={course.id} className="group flex items-start gap-3 rounded-xl border border-border/60 bg-muted/25 p-3 transition-colors hover:bg-muted/45">
+                <span className="flex size-10 shrink-0 flex-col items-center justify-center rounded-lg bg-background text-xs font-semibold ring-1 ring-border/70">
+                  <span className="leading-none">{course.credits}</span>
+                  <span className="mt-0.5 text-[9px] font-medium text-muted-foreground">SKS</span>
+                </span>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium leading-5">{course.name}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{course.code} · Kelas {course.className}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{course.schedule}</p>
+                  <p className="mt-0.5 text-xs font-medium text-muted-foreground">{course.code} · Kelas {course.className}</p>
+                  <p className="mt-1.5 flex items-start gap-1.5 text-xs leading-4 text-muted-foreground">
+                    <Clock3 className="mt-px size-3 shrink-0" aria-hidden="true" />
+                    <span>{course.schedule}</span>
+                  </p>
                 </div>
                 {editable && (
-                  <Button type="button" variant="ghost" size="icon-sm" aria-label={`Hapus ${course.name}`} onClick={() => onRemove(course)}>
+                  <Button type="button" variant="ghost" size="icon-sm" className="-mt-1 -mr-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" aria-label={`Hapus ${course.name}`} onClick={() => onRemove(course)}>
                     <Trash2 className="text-destructive" />
                   </Button>
                 )}
@@ -142,17 +150,24 @@ function SelectionPanel({
           </ul>
         )}
       </div>
-      <div className="shrink-0 border-t bg-muted/30 p-4">
+      <div className="shrink-0 border-t bg-muted/20 p-4">
         <div className="mb-3 flex items-end justify-between gap-3">
           <div>
-            <p className="text-xs text-muted-foreground">Total pilihan</p>
+            <p className="text-xs font-medium text-muted-foreground">Beban studi dipilih</p>
             <p className="mt-1 text-sm font-medium">{courses.length} mata kuliah</p>
           </div>
-          <p className="text-2xl font-semibold tabular-nums">{totalCredits}<span className="ml-1 text-sm font-medium text-muted-foreground">/ {creditLimit} SKS</span></p>
+          <p className="text-2xl font-semibold tracking-tight tabular-nums">{totalCredits}<span className="ml-1 text-sm font-medium text-muted-foreground">/ {creditLimit} SKS</span></p>
         </div>
-        <div className="mb-4 h-2 overflow-hidden rounded-full bg-muted" role="progressbar" aria-label="SKS dipilih" aria-valuemin={0} aria-valuemax={creditLimit} aria-valuenow={totalCredits}>
+        <div className="h-2 overflow-hidden rounded-full bg-muted" role="progressbar" aria-label="SKS dipilih" aria-valuemin={0} aria-valuemax={creditLimit} aria-valuenow={totalCredits}>
           <div className="h-full rounded-full bg-primary transition-[width]" style={{ width: `${Math.min(100, (totalCredits / creditLimit) * 100)}%` }} />
         </div>
+        <p className="mt-2 mb-4 text-right text-[11px] text-muted-foreground">Tersisa {Math.max(0, creditLimit - totalCredits)} SKS dari batas studi</p>
+        {!editable && courses.length > 0 && (
+          <div className="mb-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+            <CircleAlert className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+            <span>Aktifkan mode perbaikan untuk mengubah pilihan KRS.</span>
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-2">
           <Button type="button" variant="outline" disabled={!editable || courses.length === 0} onClick={onSave}><Save />Simpan Draft</Button>
           <Button type="button" disabled={!editable || courses.length === 0} onClick={onSubmit}><Send />Ajukan KRS</Button>
@@ -253,13 +268,23 @@ export default function MahasiswaKRSPage() {
       </header>
 
       {status === "Ditolak" && (
-        <Alert className="border-red-200 bg-red-50/70 text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
-          <CircleAlert aria-hidden="true" />
-          <AlertTitle>KRS perlu diperbaiki</AlertTitle>
-          <AlertDescription className="text-red-700/90 dark:text-red-300">
-            {krsProfile.rejectionReason}
-            <Button type="button" size="sm" className="mt-3 w-fit" onClick={() => { setStatus("Belum Diajukan"); toast.info("Mode perbaikan KRS aktif") }}><PencilLine />Perbaiki KRS</Button>
-          </AlertDescription>
+        <Alert className="block overflow-hidden border-red-200 bg-red-50/70 p-0 text-red-950 shadow-sm dark:border-red-900 dark:bg-red-950/35 dark:text-red-100">
+          <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start sm:p-5">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-700 ring-4 ring-red-100/60 dark:bg-red-900/60 dark:text-red-200 dark:ring-red-900/30">
+              <CircleAlert className="size-5" aria-hidden="true" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <AlertTitle className="text-base font-semibold">KRS perlu diperbaiki</AlertTitle>
+              <AlertDescription className="mt-1 text-sm leading-6 text-red-800/90 dark:text-red-200/90">
+                Dosen pembimbing mengembalikan KRS kamu. Periksa catatan berikut sebelum mengajukan ulang.
+              </AlertDescription>
+              <div className="mt-3 rounded-lg border border-red-200/80 bg-background/70 px-3.5 py-3 dark:border-red-900 dark:bg-background/30">
+                <p className="text-[11px] font-semibold tracking-wide text-red-700 uppercase dark:text-red-300">Catatan dosen pembimbing</p>
+                <p className="mt-1 text-sm leading-6 text-foreground">{krsProfile.rejectionReason}</p>
+              </div>
+            </div>
+            <Button type="button" className="w-full shrink-0 sm:w-auto" onClick={() => { setStatus("Belum Diajukan"); toast.info("Mode perbaikan KRS aktif") }}><PencilLine />Perbaiki KRS</Button>
+          </div>
         </Alert>
       )}
 
@@ -346,8 +371,12 @@ export default function MahasiswaKRSPage() {
           </div>
         </section>
 
-        <aside className="sticky top-21 hidden max-h-[calc(100dvh-6.5rem)] overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10 lg:flex lg:flex-col" aria-labelledby="my-krs-title">
-          <div className="flex items-center justify-between border-b px-4 py-4"><div><h2 id="my-krs-title" className="font-semibold">KRS Saya</h2><p className="mt-0.5 text-xs text-muted-foreground">Pilihan semester ini</p></div><Badge variant="secondary">{selectedCourses.length} MK</Badge></div>
+        <aside className="sticky top-21 hidden max-h-[calc(100dvh-6.5rem)] overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-foreground/10 lg:flex lg:flex-col" aria-labelledby="my-krs-title">
+          <div className="flex items-center gap-3 border-b bg-muted/20 px-4 py-4">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground"><FileCheck2 className="size-[18px]" aria-hidden="true" /></span>
+            <div className="min-w-0 flex-1"><h2 id="my-krs-title" className="font-semibold">KRS Saya</h2><p className="mt-0.5 text-xs text-muted-foreground">Pilihan semester ini</p></div>
+            <Badge variant="secondary" className="tabular-nums">{selectedCourses.length} MK</Badge>
+          </div>
           <SelectionPanel courses={selectedCourses} totalCredits={selectedCredits} creditLimit={krsProfile.creditLimit} editable={editable} onRemove={removeCourse} onSave={saveDraft} onSubmit={() => setConfirmationOpen(true)} />
         </aside>
       </div>
