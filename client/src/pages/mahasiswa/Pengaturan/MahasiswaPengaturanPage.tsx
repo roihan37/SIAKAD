@@ -100,7 +100,7 @@ export default function MahasiswaPengaturanPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-4xl space-y-8 pb-28 md:pb-8">
+    <main className="mx-auto w-full max-w-4xl space-y-5 py-5 sm:space-y-6 sm:py-7 sm:pb-28 md:pb-7">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Pengaturan</h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">

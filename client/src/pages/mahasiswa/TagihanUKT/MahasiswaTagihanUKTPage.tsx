@@ -67,7 +67,7 @@ export default function MahasiswaTagihanUKTPage() {
 
   if (!bill) {
     return (
-      <main className="mx-auto w-full max-w-7xl py-5 pb-28 sm:py-7 md:pb-7">
+      <main className="mx-auto w-full max-w-7xl space-y-5 py-5 pb-28 sm:space-y-6 sm:py-7 sm:pb-28 md:pb-7">
         <Card><CardContent className="flex min-h-72 flex-col items-center justify-center px-6 text-center"><ReceiptText className="size-11 text-muted-foreground" aria-hidden="true" /><h1 className="mt-4 text-xl font-semibold">Tagihan belum diterbitkan</h1><p className="mt-2 max-w-md text-sm text-muted-foreground">Tagihan UKT akan tampil setelah periode pembayaran dibuka oleh bagian keuangan.</p></CardContent></Card>
       </main>
     )
@@ -84,7 +84,7 @@ export default function MahasiswaTagihanUKTPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-7xl space-y-5 py-5 pb-28 sm:space-y-6 sm:py-7 md:pb-7">
+    <main className="mx-auto w-full max-w-7xl space-y-5 py-5 pb-28 sm:space-y-6 sm:py-7 sm:pb-28 md:pb-7">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm font-medium text-primary">Keuangan mahasiswa</p>

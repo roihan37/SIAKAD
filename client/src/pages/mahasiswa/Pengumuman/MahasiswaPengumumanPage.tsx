@@ -155,7 +155,7 @@ export default function MahasiswaPengumumanPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-7xl space-y-5 py-5 pb-28 sm:space-y-6 sm:py-7 md:pb-7">
+    <main className="mx-auto w-full max-w-7xl space-y-5 py-5 sm:space-y-6 sm:py-7 sm:pb-28 md:pb-7">
       <header className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-medium text-primary">Informasi kampus</p>

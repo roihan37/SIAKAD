@@ -1,0 +1,27 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  "model": "nara/agnes-2.5-flash",
+
+  "providers": {
+    "nara": {
+      "name": "NaraRouter",
+
+      "env": [
+        "NARA_API_KEY"
+      ],
+
+      "package": "@opencode/ai/providers/openai-compatible",
+
+      "settings": {
+        "baseURL": "https://router.bynara.id/v1"
+      },
+
+      "models": {
+        "agnes-2.5-flash": {
+          "name": "Agnes 2.5 Flash"
+        }
+      }
+    }
+  }
+}

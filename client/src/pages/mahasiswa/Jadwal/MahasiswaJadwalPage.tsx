@@ -151,7 +151,7 @@ export default function MahasiswaJadwalPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-7xl space-y-5 py-5 pb-24 sm:space-y-6 sm:py-7 sm:pb-24 md:pb-7">
+    <main className="mx-auto w-full max-w-7xl space-y-5 py-5 pb-28 sm:space-y-6 sm:py-7 sm:pb-28 md:pb-7">
       <header className="overflow-hidden rounded-2xl border border-border/70 bg-card">
         <div className="relative px-5 py-6 sm:px-7">
           <div aria-hidden="true" className="absolute -top-20 right-0 size-52 rounded-full bg-primary/5 blur-3xl" />

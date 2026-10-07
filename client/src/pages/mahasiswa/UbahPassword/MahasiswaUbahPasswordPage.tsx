@@ -133,7 +133,7 @@ export default function MahasiswaUbahPasswordPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-3xl space-y-6 pb-28 md:space-y-8 md:pb-8">
+    <main className="mx-auto w-full max-w-3xl space-y-5 py-5 pb-28 sm:space-y-6 sm:py-7 sm:pb-28 md:pb-7">
       <header>
         <div className="mb-3 flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
           <KeyRound className="size-5" aria-hidden="true" />

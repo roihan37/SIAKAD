@@ -96,7 +96,7 @@ export default function MahasiswaTranskripPage() {
   const studyProgress = Math.round((transcriptProfile.completedCredits / transcriptProfile.requiredCredits) * 100)
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-5 pb-28 sm:pb-28 md:pb-7">
+    <div className="mx-auto w-full max-w-7xl space-y-5 py-5 sm:space-y-6 sm:py-7 sm:pb-28 md:pb-7">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-sm font-medium text-primary">Riwayat akademik</p>

@@ -156,7 +156,7 @@ export default function MahasiswaRiwayatPembayaranPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-7xl space-y-5 py-5 pb-28 sm:space-y-6 sm:py-7 md:pb-7">
+    <main className="mx-auto w-full max-w-7xl space-y-5 py-5 sm:space-y-6 sm:py-7 sm:pb-28 md:pb-7">
       <header>
         <p className="text-sm font-medium text-primary">Keuangan mahasiswa</p>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">Riwayat Pembayaran</h1>

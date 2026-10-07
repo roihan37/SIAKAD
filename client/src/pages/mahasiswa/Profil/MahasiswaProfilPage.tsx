@@ -163,7 +163,7 @@ export default function MahasiswaProfilPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-6xl space-y-5 pb-28 md:pb-7">
+    <main className="mx-auto w-full max-w-6xl space-y-5 py-5 pb-28 sm:space-y-6 sm:py-7 sm:pb-28 md:pb-7">
       <Card className="overflow-hidden border-primary/10 bg-gradient-to-br from-primary/5 via-card to-card">
         <CardContent className="flex flex-col items-center gap-5 py-7 text-center md:flex-row md:text-left">
           <div className="relative">
