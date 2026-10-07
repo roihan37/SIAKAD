@@ -26,6 +26,7 @@ const MahasiswaAIAssistantPage = createLazyPage(() => import("@/pages/mahasiswa/
 const MahasiswaPengumumanPage = createLazyPage(() => import("@/pages/mahasiswa/Pengumuman/MahasiswaPengumumanPage"))
 const MahasiswaSkripsiPage = createLazyPage(() => import("@/pages/mahasiswa/Skripsi/MahasiswaSkripsiPage"))
 const MahasiswaProfilPage = createLazyPage(() => import("@/pages/mahasiswa/Profil/MahasiswaProfilPage"))
+const MahasiswaPengaturanPage = createLazyPage(() => import("@/pages/mahasiswa/Pengaturan/MahasiswaPengaturanPage"))
 export const routes: RouteObject[] = [
   {
     element: <ProtectedRoute />,
@@ -39,7 +40,7 @@ export const routes: RouteObject[] = [
         ],
       },
       { element: <RoleGuard role="Mahasiswa" />, children: [
-        { path: "/mahasiswa", element: <MahasiswaLayout />, children: createPortalRoutes("/mahasiswa", mahasiswaNavigation, { dashboard: <MahasiswaDashboardPage />, krs: <MahasiswaKRSPage />, "jadwal-kuliah": <MahasiswaJadwalPage />, "nilai-khs": <MahasiswaNilaiKHSPage />, "transkrip-nilai": <MahasiswaTranskripPage />, presensi: <MahasiswaPresensiPage />, "tagihan-ukt": <MahasiswaTagihanUKTPage />, "riwayat-pembayaran": <MahasiswaRiwayatPembayaranPage />, pengumuman: <MahasiswaPengumumanPage />, skripsi: <MahasiswaSkripsiPage />, profil: <MahasiswaProfilPage />, "ai-assistant": <MahasiswaAIAssistantPage /> }) },
+        { path: "/mahasiswa", element: <MahasiswaLayout />, children: createPortalRoutes("/mahasiswa", mahasiswaNavigation, { dashboard: <MahasiswaDashboardPage />, krs: <MahasiswaKRSPage />, "jadwal-kuliah": <MahasiswaJadwalPage />, "nilai-khs": <MahasiswaNilaiKHSPage />, "transkrip-nilai": <MahasiswaTranskripPage />, presensi: <MahasiswaPresensiPage />, "tagihan-ukt": <MahasiswaTagihanUKTPage />, "riwayat-pembayaran": <MahasiswaRiwayatPembayaranPage />, pengumuman: <MahasiswaPengumumanPage />, skripsi: <MahasiswaSkripsiPage />, profil: <MahasiswaProfilPage />, pengaturan: <MahasiswaPengaturanPage />, "ai-assistant": <MahasiswaAIAssistantPage /> }) },
       ] },
       { element: <RoleGuard role="Dosen" />, children: [
         { path: "/dosen", element: <DosenLayout />, children: createPortalRoutes("/dosen", dosenNavigation) },

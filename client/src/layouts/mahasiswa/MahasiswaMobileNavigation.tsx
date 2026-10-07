@@ -17,7 +17,7 @@ const primaryItems = mahasiswaNavigation.flatMap(group => group.items)
 // Keep the mobile menu intentional when new desktop-only entries are added.
 const morePaths = new Set([
   "presensi", "transkrip-nilai", "tagihan-ukt", "riwayat-pembayaran",
-  "pengumuman", "ai-assistant", "skripsi", "profil", "ubah-password",
+  "pengumuman", "ai-assistant", "skripsi", "profil", "pengaturan", "ubah-password",
 ])
 const moreGroups = mahasiswaNavigation.map(group => ({
   ...group, items: group.items.filter(item => morePaths.has(item.path)),
