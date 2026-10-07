@@ -17,6 +17,7 @@ const PortalPendingPage = createLazyPage(() => import("@/pages/Portal/PortalPend
 const MahasiswaDashboardPage = createLazyPage(() => import("@/pages/mahasiswa/Dashboard/MahasiswaDashboardPage"))
 const MahasiswaKRSPage = createLazyPage(() => import("@/pages/mahasiswa/KRS/MahasiswaKRSPage"))
 const MahasiswaJadwalPage = createLazyPage(() => import("@/pages/mahasiswa/Jadwal/MahasiswaJadwalPage"))
+const MahasiswaNilaiKHSPage = createLazyPage(() => import("@/pages/mahasiswa/NilaiKHS/MahasiswaNilaiKHSPage"))
 const MahasiswaAIAssistantPage = createLazyPage(() => import("@/pages/mahasiswa/AIAssistant/MahasiswaAIAssistantPage"))
 export const routes: RouteObject[] = [
   {
@@ -31,7 +32,7 @@ export const routes: RouteObject[] = [
         ],
       },
       { element: <RoleGuard role="Mahasiswa" />, children: [
-        { path: "/mahasiswa", element: <MahasiswaLayout />, children: createPortalRoutes("/mahasiswa", mahasiswaNavigation, { dashboard: <MahasiswaDashboardPage />, krs: <MahasiswaKRSPage />, "jadwal-kuliah": <MahasiswaJadwalPage />, "ai-assistant": <MahasiswaAIAssistantPage /> }) },
+        { path: "/mahasiswa", element: <MahasiswaLayout />, children: createPortalRoutes("/mahasiswa", mahasiswaNavigation, { dashboard: <MahasiswaDashboardPage />, krs: <MahasiswaKRSPage />, "jadwal-kuliah": <MahasiswaJadwalPage />, "nilai-khs": <MahasiswaNilaiKHSPage />, "ai-assistant": <MahasiswaAIAssistantPage /> }) },
       ] },
       { element: <RoleGuard role="Dosen" />, children: [
         { path: "/dosen", element: <DosenLayout />, children: createPortalRoutes("/dosen", dosenNavigation) },
