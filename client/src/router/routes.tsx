@@ -27,6 +27,7 @@ const MahasiswaPengumumanPage = createLazyPage(() => import("@/pages/mahasiswa/P
 const MahasiswaSkripsiPage = createLazyPage(() => import("@/pages/mahasiswa/Skripsi/MahasiswaSkripsiPage"))
 const MahasiswaProfilPage = createLazyPage(() => import("@/pages/mahasiswa/Profil/MahasiswaProfilPage"))
 const MahasiswaPengaturanPage = createLazyPage(() => import("@/pages/mahasiswa/Pengaturan/MahasiswaPengaturanPage"))
+const MahasiswaUbahPasswordPage = createLazyPage(() => import("@/pages/mahasiswa/UbahPassword/MahasiswaUbahPasswordPage"))
 const MahasiswaNotifikasiPage = createLazyPage(() => import("@/components/nav/student-notifications"))
 export const routes: RouteObject[] = [
   {
@@ -41,7 +42,7 @@ export const routes: RouteObject[] = [
         ],
       },
       { element: <RoleGuard role="Mahasiswa" />, children: [
-        { path: "/mahasiswa", element: <MahasiswaLayout />, children: [...createPortalRoutes("/mahasiswa", mahasiswaNavigation, { dashboard: <MahasiswaDashboardPage />, krs: <MahasiswaKRSPage />, "jadwal-kuliah": <MahasiswaJadwalPage />, "nilai-khs": <MahasiswaNilaiKHSPage />, "transkrip-nilai": <MahasiswaTranskripPage />, presensi: <MahasiswaPresensiPage />, "tagihan-ukt": <MahasiswaTagihanUKTPage />, "riwayat-pembayaran": <MahasiswaRiwayatPembayaranPage />, pengumuman: <MahasiswaPengumumanPage />, skripsi: <MahasiswaSkripsiPage />, profil: <MahasiswaProfilPage />, pengaturan: <MahasiswaPengaturanPage />, "ai-assistant": <MahasiswaAIAssistantPage /> }), { path: "notifikasi", element: <MahasiswaNotifikasiPage /> }] },
+        { path: "/mahasiswa", element: <MahasiswaLayout />, children: [...createPortalRoutes("/mahasiswa", mahasiswaNavigation, { dashboard: <MahasiswaDashboardPage />, krs: <MahasiswaKRSPage />, "jadwal-kuliah": <MahasiswaJadwalPage />, "nilai-khs": <MahasiswaNilaiKHSPage />, "transkrip-nilai": <MahasiswaTranskripPage />, presensi: <MahasiswaPresensiPage />, "tagihan-ukt": <MahasiswaTagihanUKTPage />, "riwayat-pembayaran": <MahasiswaRiwayatPembayaranPage />, pengumuman: <MahasiswaPengumumanPage />, skripsi: <MahasiswaSkripsiPage />, profil: <MahasiswaProfilPage />, pengaturan: <MahasiswaPengaturanPage />, "ubah-password": <MahasiswaUbahPasswordPage />, "ai-assistant": <MahasiswaAIAssistantPage /> }), { path: "notifikasi", element: <MahasiswaNotifikasiPage /> }] },
       ] },
       { element: <RoleGuard role="Dosen" />, children: [
         { path: "/dosen", element: <DosenLayout />, children: createPortalRoutes("/dosen", dosenNavigation) },
