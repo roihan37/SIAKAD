@@ -3,7 +3,7 @@ import { authMiddleware } from "../middleware/authMid";
 import routerUser from "./users";
 import routerProdi from "./prodi";
 import routerAunth from "./auth";
-import routerStudents from "./students";
+import routerStudents, { studentProfileRouter } from "./students";
 import routerLecturers from "./lecturers";
 import routerFakultas from "./fakultas";
 import routerAvatars from "./avatars";
@@ -43,6 +43,7 @@ router.use('/api/v1/mata-kuliah', authMiddleware, routerMataKuliah)
 router.use('/api/v1/kelas-mata-kuliah', authMiddleware, routerKelasMataKuliah)
 router.use('/api/v1/jadwal', authMiddleware, routerJadwal)
 router.use('/api/v1/student/me/krs', authMiddleware, studentKRSRouter)
+router.use('/api/v1/student/me', authMiddleware, studentProfileRouter)
 router.use('/api/v1/krs', authMiddleware, routerKRS)
 
 // Catch-all for unknown API routes (must be after all valid routes)

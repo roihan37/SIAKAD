@@ -40,4 +40,11 @@ assert.ok(studentKrs.every((layer, index) => !layer.route || studentKrsGuard < i
 for (const [method, path] of [['get', '/'], ['put', '/draft'], ['post', '/submit']]) {
   assert.ok(studentKrs.some(layer => layer.route?.path === path && layer.route.methods[method]));
 }
+const studentProfile = require('../src/router/students').studentProfileRouter.stack;
+const studentProfileGuard = studentProfile.findIndex(layer => layer.handle === mahasiswaMiddleware);
+assert.ok(studentProfileGuard >= 0);
+assert.ok(studentProfile.every((layer, index) => !layer.route || studentProfileGuard < index));
+for (const [method, path] of [['get', '/profile'], ['patch', '/profile'], ['patch', '/avatar'], ['patch', '/change-password']]) {
+  assert.ok(studentProfile.some(layer => layer.route?.path === path && layer.route.methods[method]));
+}
 console.log('PASS: admin guards precede protected routes; non-admin/unauthenticated denial; student ownership; master-data mutations and password reset protected');

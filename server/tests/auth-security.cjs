@@ -52,6 +52,7 @@ async function main() {
   user.mustChangePassword = true;
   await authMiddleware(request, {}, e => { error = e; }); assert.equal(error.name, 'PasswordChangeRequired');
   await authMiddleware({ ...request, originalUrl: '/api/v1/auth/change-password' }, {}, e => { error = e; }); assert.equal(error, undefined);
+  await authMiddleware({ ...request, originalUrl: '/api/v1/student/me/change-password' }, {}, e => { error = e; }); assert.equal(error, undefined);
   user.mustChangePassword = false;
   await revokeSession(active.refreshToken);
   await authMiddleware(request, {}, e => { error = e; }); assert.equal(error.name, 'TokenInvalid');

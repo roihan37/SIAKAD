@@ -60,7 +60,9 @@ function fixture(options = {}) {
     '../services/student-services/student-management.service': { StudentManagementService: service },
     ...Object.fromEntries(['../validation/master-data', '../services/student-services/student-finance.service',
       '../services/student-services/student-account.service', '../services/student-services/student-attendance.service',
-      '../services/student-services/student-academic.service'].map(name => [name, {}])),
+      '../services/student-services/student-academic.service', '../services/student-services/student-profile.service',
+      '../validation/student-profile', '../auth/validation', '../auth/auth.service', '../auth/session-cookie',
+      '../lib/responseHelpers'].map(name => [name, {}])),
   });
   return { service, Controller, events, writes, failure, maximum: () => maximum };
 }

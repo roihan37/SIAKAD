@@ -5,9 +5,49 @@ import { StudentAccountService } from "../services/student-services/student-acco
 import { StudentManagementService, type UpdateStudentInput } from "../services/student-services/student-management.service";
 import { StudentAttendanceService } from "../services/student-services/student-attendance.service";
 import { StudentAcademicService } from "../services/student-services/student-academic.service";
+import { StudentProfileService } from "../services/student-services/student-profile.service";
+import { studentAvatarPatch, studentProfilePatch } from "../validation/student-profile";
+import { credentials, newPassword } from "../auth/validation";
+import { changeUserPassword } from "../auth/auth.service";
+import { clearSessionCookie } from "../auth/session-cookie";
+import { sendData } from "../lib/responseHelpers";
 
 
 export class Controller {
+
+    static async getMyProfile(req: Request, res: Response, next: NextFunction) {
+        try {
+            const data = await StudentProfileService.getProfile(req.userLogin.id);
+            return sendData(res, data);
+        } catch (error) { next(error); }
+    }
+
+    static async updateMyProfile(req: Request, res: Response, next: NextFunction) {
+        try {
+            const input = studentProfilePatch(req.body);
+            const data = await StudentProfileService.updateProfile(req.userLogin.id, input);
+            return sendData(res, data);
+        } catch (error) { next(error); }
+    }
+
+    static async updateMyAvatar(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { avatarKey } = studentAvatarPatch(req.body);
+            const updated = await StudentManagementService.updateStudent({ userId: req.userLogin.id, avatarKey });
+            return sendData(res, { avatarUrl: updated.avatarUrl });
+        } catch (error) { next(error); }
+    }
+
+    static async changeMyPassword(req: Request, res: Response, next: NextFunction) {
+        try {
+            const userId = req.userLogin.id;
+            const { password: currentPassword } = credentials({ identifier: userId, password: req.body?.currentPassword });
+            const password = newPassword(req.body?.newPassword);
+            await changeUserPassword(userId, currentPassword, password);
+            clearSessionCookie(res);
+            return sendData(res, { message: "Password changed. Please sign in again." });
+        } catch (error) { next(error); }
+    }
 
     static async getFinanceyId(req: Request, res: Response, next: NextFunction) {
         try {

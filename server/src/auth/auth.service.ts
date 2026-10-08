@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { prisma } from '../lib/prisma';
-import { hashCrypto } from '../lib/bycript';
+import { comparePassword, hashCrypto, hashPassword } from '../lib/bycript';
 import { generateAccessToken, generateRefreshToken } from '../lib/sendToken';
 import { sessionLifetimeMs } from './config';
 const userSelect = { id: true, role: true, mustChangePassword: true } satisfies Prisma.UserSelect;
@@ -29,4 +29,23 @@ export async function rotateSession(token: string) {
 }
 export async function revokeSession(token: string) {
   await prisma.refreshToken.updateMany({ where: { hashedToken: hashCrypto(token), revoked: false }, data: { revoked: true } });
+}
+
+export async function changeUserPassword(userId: string, currentPassword: string, newPassword: string) {
+  if (newPassword === currentPassword) {
+    throw { name: 'BadRequest', message: 'New password must differ from the current password.' };
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { password: true } });
+  if (!user || !await comparePassword(currentPassword, user.password)) throw { name: 'Unauthorized' };
+
+  const password = await hashPassword(newPassword);
+  await prisma.$transaction(async tx => {
+    const changed = await tx.user.updateMany({
+      where: { id: userId, password: user.password },
+      data: { password, mustChangePassword: false },
+    });
+    if (changed.count !== 1) throw { name: 'Conflict', message: 'Password has changed. Sign in again.' };
+    await tx.refreshToken.updateMany({ where: { userId }, data: { revoked: true } });
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 }

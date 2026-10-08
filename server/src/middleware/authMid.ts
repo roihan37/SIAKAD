@@ -26,7 +26,9 @@ export async function authMiddleware(
       });
       if (!session || session.userId !== payload.id || session.revoked || session.expireAt <= new Date()) throw { name: "TokenInvalid" };
       const user = session.user;
-      if (user.mustChangePassword && req.originalUrl.split('?')[0] !== '/api/v1/auth/change-password') {
+      const requestPath = req.originalUrl.split('?')[0];
+      const passwordChangePaths = ['/api/v1/auth/change-password', '/api/v1/student/me/change-password'];
+      if (user.mustChangePassword && !passwordChangePaths.includes(requestPath)) {
         throw { name: "PasswordChangeRequired", message: "Change your password before continuing." };
       }
       req.userLogin = {

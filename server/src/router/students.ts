@@ -1,6 +1,13 @@
 import express from "express";
 import { Controller } from "../controllers/studentController";
-import { adminMiddleware, adminOrMahasiswaMiddleware } from "../middleware/authMid";
+import { adminMiddleware, adminOrMahasiswaMiddleware, mahasiswaMiddleware } from "../middleware/authMid";
+
+export const studentProfileRouter = express.Router();
+studentProfileRouter.use(mahasiswaMiddleware);
+studentProfileRouter.get("/profile", Controller.getMyProfile);
+studentProfileRouter.patch("/profile", Controller.updateMyProfile);
+studentProfileRouter.patch("/avatar", Controller.updateMyAvatar);
+studentProfileRouter.patch("/change-password", Controller.changeMyPassword);
 
 const router = express.Router()
 
