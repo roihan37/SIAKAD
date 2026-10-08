@@ -58,6 +58,23 @@ export function adminMiddleware(
   next();
 }
 
+// Gunakan setelah authMiddleware untuk endpoint milik mahasiswa yang sedang login.
+export function mahasiswaMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  if (!req.userLogin) {
+    return next({ name: "TokenInvalid" });
+  }
+
+  if (req.userLogin.role !== Role.Mahasiswa) {
+    return next({ name: "Forbidden", message: "Akses hanya untuk mahasiswa" });
+  }
+
+  next();
+}
+
 // Gunakan setelah authMiddleware pada route dengan :id berupa User.id.
 // Admin dapat mengakses semua data; mahasiswa hanya data miliknya sendiri.
 export function adminOrMahasiswaMiddleware(

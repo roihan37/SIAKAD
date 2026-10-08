@@ -1,10 +1,37 @@
 import { patchBody, resourceId } from "../validation/master-data";
-import { krsPatch, stringId } from "../validation/academic-data";
+import { krsPatch, stringId, studentKrsDraft } from "../validation/academic-data";
 import { NextFunction, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
 import { Prisma, StatusKRS } from "@prisma/client";
+import { StudentKrsService } from "../services/student-services/student-krs.service";
+import { sendData } from "../lib/responseHelpers";
 
 export class Controller {
+  static async getMyKRS(req: Request, res: Response, next: NextFunction) {
+    try {
+      const tahunAkademikId = req.query.tahunAkademikId === undefined
+        ? undefined
+        : resourceId(req.query.tahunAkademikId);
+      const data = await StudentKrsService.getStudentKrsPage(req.userLogin!.id, tahunAkademikId);
+      sendData(res, data);
+    } catch (error) { next(error); }
+  }
+
+  static async saveMyKRSDraft(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { kelasMataKuliahIds } = studentKrsDraft(req.body);
+      const data = await StudentKrsService.saveDraft(req.userLogin!.id, kelasMataKuliahIds);
+      sendData(res, data);
+    } catch (error) { next(error); }
+  }
+
+  static async submitMyKRS(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await StudentKrsService.submit(req.userLogin!.id);
+      sendData(res, data);
+    } catch (error) { next(error); }
+  }
+
   static async createKRS(req: Request, res: Response, next: NextFunction) {
     try {
       const { mahasiswaId, tahunAkademikId } = req.body;

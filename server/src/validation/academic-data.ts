@@ -20,6 +20,23 @@ export const jadwalPatch = {
 };
 export const krsPatch = { mahasiswaId: stringId, tahunAkademikId: integer("Tahun akademik") };
 
+export function studentKrsDraft(body: unknown): { kelasMataKuliahIds: number[] } {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    throw { name: "BadRequest", message: "Body harus berupa objek JSON." };
+  }
+  const entries = Object.entries(body);
+  if (entries.length !== 1 || entries[0][0] !== "kelasMataKuliahIds") {
+    throw { name: "BadRequest", message: "Body hanya boleh berisi kelasMataKuliahIds." };
+  }
+  const value = entries[0][1];
+  if (!Array.isArray(value)) {
+    throw { name: "BadRequest", message: "kelasMataKuliahIds harus berupa array." };
+  }
+  return {
+    kelasMataKuliahIds: value.map((id) => integer("Kelas mata kuliah")(id)),
+  };
+}
+
 export function jadwalCreate(body: unknown) {
   const parsed = patchBody(body, jadwalPatch);
   return {

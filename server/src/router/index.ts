@@ -15,7 +15,7 @@ import routerKelasMataKuliah from "./kelas-mata-kuliah";
 import routerMataKuliah from "./mata-kuliah";
 import routerJadwal from "./jadwal";
 import routerAdmin from "./admin";
-import routerKRS from "./krs";
+import routerKRS, { studentKRSRouter } from "./krs";
 import routerHealth from "./health";
 import { notFoundHandler } from "../middleware/notFound";
 
@@ -42,6 +42,7 @@ router.use('/api/v1/kurikulum', authMiddleware, routerKurikulum)
 router.use('/api/v1/mata-kuliah', authMiddleware, routerMataKuliah)
 router.use('/api/v1/kelas-mata-kuliah', authMiddleware, routerKelasMataKuliah)
 router.use('/api/v1/jadwal', authMiddleware, routerJadwal)
+router.use('/api/v1/student/me/krs', authMiddleware, studentKRSRouter)
 router.use('/api/v1/krs', authMiddleware, routerKRS)
 
 // Catch-all for unknown API routes (must be after all valid routes)
