@@ -13,6 +13,8 @@ import { credentials, newPassword } from "../auth/validation";
 import { changeUserPassword } from "../auth/auth.service";
 import { clearSessionCookie } from "../auth/session-cookie";
 import { sendData } from "../lib/responseHelpers";
+import { StudentPaymentService } from "../services/student-services/student-payment.service";
+import { paymentId } from "../validation/payments";
 
 
 export class Controller {
@@ -26,6 +28,21 @@ export class Controller {
     static async getMyPayments(req: Request, res: Response, next: NextFunction) {
         try {
             return sendData(res, await StudentFinanceService.getMyPayments(req.userLogin.id));
+        } catch (error) { next(error); }
+    }
+
+    static async createMyBillPayment(req: Request, res: Response, next: NextFunction) {
+        try {
+            const billId = paymentId(req.params.billId);
+            const result = await StudentPaymentService.createPayment(req.userLogin.id, billId);
+            return sendData(res, result.payment, result.reused ? 200 : 201);
+        } catch (error) { next(error); }
+    }
+
+    static async getMyPaymentDetail(req: Request, res: Response, next: NextFunction) {
+        try {
+            const id = paymentId(req.params.paymentId);
+            return sendData(res, await StudentPaymentService.getPayment(req.userLogin.id, id));
         } catch (error) { next(error); }
     }
 

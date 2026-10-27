@@ -13,6 +13,12 @@ export interface ValidatedEnv {
   readonly AWS_BUCKET_NAME: string;
 }
 
+export interface MidtransEnv {
+  readonly serverKey: string;
+  readonly clientKey?: string;
+  readonly isProduction: boolean;
+}
+
 function required(source: Environment, name: string): string {
   const value = source[name];
   if (!value?.trim()) throw new Error(`Environment configuration: ${name} is required.`);
@@ -65,6 +71,20 @@ function validateStorageEnv(source: Environment) {
 
 export function getStorageEnv() {
   return validateStorageEnv(process.env);
+}
+
+export function validateMidtransEnv(source: Environment): Readonly<MidtransEnv> {
+  const serverKey = required(source, "MIDTRANS_SERVER_KEY");
+  const rawProduction = source.MIDTRANS_IS_PRODUCTION || "false";
+  if (rawProduction !== "true" && rawProduction !== "false") {
+    throw new Error("Environment configuration: MIDTRANS_IS_PRODUCTION must be true or false.");
+  }
+  const clientKey = source.MIDTRANS_CLIENT_KEY?.trim() || undefined;
+  return Object.freeze({ serverKey, clientKey, isProduction: rawProduction === "true" });
+}
+
+export function getMidtransEnv(): Readonly<MidtransEnv> {
+  return validateMidtransEnv(process.env);
 }
 
 let cached: Readonly<ValidatedEnv> | undefined;

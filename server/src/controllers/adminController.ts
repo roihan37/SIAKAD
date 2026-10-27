@@ -11,8 +11,16 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { resourceId } from "../validation/master-data";
 import { countScheduleConflicts, jakartaWeekday } from "../services/dashboard.service";
+import { StudentPaymentService } from "../services/student-services/student-payment.service";
+import { sendData } from "../lib/responseHelpers";
 
 export class Controller {
+  static async midtransWebhook(req: Request, res: Response, next: NextFunction) {
+    try {
+      return sendData(res, await StudentPaymentService.handleMidtransWebhook(req.body));
+    } catch (error) { next(error); }
+  }
+
   static async getPayments(req: Request, res: Response, next: NextFunction) {
     try {
       const filters = paymentFilters(req.query);

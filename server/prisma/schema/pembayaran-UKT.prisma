@@ -11,6 +11,12 @@ model PembayaranUKT {
   sumber              SumberPembayaran?
 
   reference           String?
+  provider              String?
+  providerOrderId       String?   @unique
+  providerTransactionId String?   @unique
+  providerToken         String?
+  providerRedirectUrl   String?
+  expiresAt             DateTime?
   buktiPembayaranKey  String?
 
   paidAt              DateTime?
@@ -26,5 +32,6 @@ model PembayaranUKT {
 
   @@index([tagihanId])
   @@index([status])
+  @@index([provider, status])
   @@index([createdAt])
 }

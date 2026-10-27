@@ -87,6 +87,8 @@ export async function listStudentPayments(tx: Prisma.TransactionClient, userId: 
     select: {
       id: true, nomorPembayaran: true, nominal: true, metode: true, status: true,
       sumber: true, reference: true, paidAt: true, createdAt: true,
+      provider: true, providerOrderId: true, providerTransactionId: true,
+      providerRedirectUrl: true, expiresAt: true,
       tagihan: {
         select: {
           id: true, nomorTagihan: true, nominal: true, jatuhTempo: true, status: true,
@@ -112,6 +114,11 @@ export async function listStudentPayments(tx: Prisma.TransactionClient, userId: 
       status: payment.status,
       source: payment.sumber,
       reference: payment.reference,
+      provider: payment.provider,
+      providerOrderId: payment.providerOrderId,
+      providerTransactionId: payment.providerTransactionId,
+      redirectUrl: payment.providerRedirectUrl,
+      expiresAt: payment.expiresAt?.toISOString() ?? null,
       paidAt: payment.paidAt?.toISOString() ?? null,
       createdAt: payment.createdAt.toISOString(),
       bill: {

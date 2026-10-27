@@ -1785,6 +1785,16 @@ Payment Provider
 
 Frontend must never directly mark a payment as successful.
 
+Current Midtrans UKT routes:
+
+```text
+POST /api/v1/student/me/bills/:billId/pay
+GET  /api/v1/student/me/payments/:paymentId
+POST /api/v1/payments/midtrans/webhook
+```
+
+The student routes resolve ownership from authentication. The webhook is public at the HTTP layer and authenticates Midtrans notifications with the provider signature before applying an idempotent state transition.
+
 ---
 
 # 78. Payment Amount

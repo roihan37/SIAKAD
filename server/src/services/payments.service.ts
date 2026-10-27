@@ -3,6 +3,7 @@ import { PaymentFilters } from '../validation/payments';
 
 const paymentSelect = {
   id: true, nomorPembayaran: true, nominal: true, metode: true, sumber: true, paidAt: true, status: true,
+  provider: true, providerOrderId: true, providerTransactionId: true, expiresAt: true,
   tagihan: { select: {
     id: true, nomorTagihan: true, nominal: true, jatuhTempo: true, status: true,
     tahunAkademik: { select: { id: true, tahun: true, semester: true } },
@@ -18,6 +19,8 @@ function paymentResponse(row: PaymentRow) {
     // This API currently reads tuition bills exclusively; there is no bill-type column.
     bill: { id: row.tagihan.id, billNumber: row.tagihan.nomorTagihan, type: 'UKT' },
     amount: Number(row.nominal), method: row.metode, source: row.sumber, paidAt: row.paidAt, status: row.status,
+    provider: row.provider, providerOrderId: row.providerOrderId,
+    providerTransactionId: row.providerTransactionId, expiresAt: row.expiresAt,
   };
 }
 export function paymentWhere(filters: PaymentFilters, includeStatus = true): Prisma.PembayaranUKTWhereInput {
@@ -81,8 +84,9 @@ export async function recalculateTuitionBill(tx: Prisma.TransactionClient, billI
   return status;
 }
 export async function changePaymentStatus(tx: Prisma.TransactionClient, id: string, actorId: string, action: 'APPROVE' | 'REJECT' | 'CANCEL', reason?: string) {
-  const payment = await tx.pembayaranUKT.findUnique({ where: { id }, select: { id: true, tagihanId: true, status: true, paidAt: true } });
+  const payment = await tx.pembayaranUKT.findUnique({ where: { id }, select: { id: true, tagihanId: true, status: true, sumber: true, paidAt: true } });
   if (!payment) throw { name: 'NotFound', message: 'Payment not found.' };
+  if (payment.sumber === 'PAYMENT_GATEWAY') throw { name: 'Conflict', message: 'Gateway payments are updated only by the payment provider webhook.' };
   // Successful payments require a separate reversal/refund workflow, which is not defined here.
   if (payment.status !== 'PENDING') throw { name: 'Conflict', message: 'Only pending payments can be verified or cancelled.' };
   const now = new Date();

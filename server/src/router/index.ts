@@ -18,6 +18,7 @@ import routerAdmin from "./admin";
 import routerKRS, { studentKRSRouter } from "./krs";
 import routerHealth from "./health";
 import { notFoundHandler } from "../middleware/notFound";
+import { Controller as AdminController } from "../controllers/adminController";
 
 const router = express.Router()
 
@@ -26,6 +27,9 @@ router.use('/health', routerHealth)
 
 // Auth routes (public)
 router.use('/api/v1/auth',routerAunth)
+
+// Public provider callback; authenticity is enforced by the Midtrans signature.
+router.post('/api/v1/payments/midtrans/webhook', AdminController.midtransWebhook)
 
 // Authenticate every existing protected namespace; unknown namespaces reach the 404.
 router.use('/api/v1/admin', authMiddleware, routerAdmin)

@@ -29,10 +29,10 @@ async function main() {
     assert.equal(status, expected);
   }
   function statefulTx(initial = 'PENDING') {
-    const state = { status: initial, history: [], billStatus: 'BELUM_DIBAYAR', verifiedById: null, verifiedAt: null, paidAt: null };
+    const state = { status: initial, source: 'MANUAL', history: [], billStatus: 'BELUM_DIBAYAR', verifiedById: null, verifiedAt: null, paidAt: null };
     const tx = {
       pembayaranUKT: {
-        findUnique: async () => ({ id: 'p1', tagihanId: 'bill', status: state.status, paidAt: state.paidAt }),
+        findUnique: async () => ({ id: 'p1', tagihanId: 'bill', status: state.status, sumber: state.source, paidAt: state.paidAt }),
         updateMany: async args => { if (state.status !== args.where.status) return { count: 0 }; Object.assign(state, args.data); return { count: 1 }; },
         aggregate: async () => ({ _sum: { nominal: state.status === 'SUCCESS' ? D(2) : null } }),
       },
@@ -50,6 +50,9 @@ async function main() {
     await assert.rejects(() => changePaymentStatus(tx, 'p1', 'admin', action), e => e.name === 'Conflict'); assert.equal(state.history.length, 1);
   }
   for (const status of ['SUCCESS', 'FAILED', 'EXPIRED', 'CANCELLED']) await assert.rejects(() => changePaymentStatus(statefulTx(status).tx, 'p1', 'admin', 'CANCEL', 'Reason'), e => e.name === 'Conflict');
+  const gateway = statefulTx(); gateway.state.source = 'PAYMENT_GATEWAY';
+  await assert.rejects(() => changePaymentStatus(gateway.tx, 'p1', 'admin', 'APPROVE'), e => e.name === 'Conflict');
+  assert.equal(gateway.state.status, 'PENDING'); assert.equal(gateway.state.history.length, 0);
   const race = statefulTx(); race.tx.pembayaranUKT.updateMany = async () => ({ count: 0 });
   await assert.rejects(() => changePaymentStatus(race.tx, 'p1', 'admin', 'APPROVE'), e => e.name === 'Conflict'); assert.equal(race.state.history.length, 0);
   await assert.rejects(() => changePaymentStatus({ pembayaranUKT: { findUnique: async () => null } }, 'missing', 'admin', 'APPROVE'), e => e.name === 'NotFound');
