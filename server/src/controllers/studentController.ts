@@ -46,6 +46,13 @@ export class Controller {
         } catch (error) { next(error); }
     }
 
+    static async refreshMyPayment(req: Request, res: Response, next: NextFunction) {
+        try {
+            const id = paymentId(req.params.paymentId);
+            return sendData(res, await StudentPaymentService.refreshPayment(req.userLogin.id, id));
+        } catch (error) { next(error); }
+    }
+
     static async getMyTranscript(req: Request, res: Response, next: NextFunction) {
         try {
             return sendData(res, await StudentAcademicService.getMyTranscript(req.userLogin.id));

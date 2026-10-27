@@ -30,6 +30,8 @@ router.use('/api/v1/auth',routerAunth)
 
 // Public provider callback; authenticity is enforced by the Midtrans signature.
 router.post('/api/v1/payments/midtrans/webhook', AdminController.midtransWebhook)
+// Return the browser to the trusted frontend origin after the hosted payment page.
+router.get('/api/v1/payments/midtrans/return', AdminController.midtransReturn)
 
 // Authenticate every existing protected namespace; unknown namespaces reach the 404.
 router.use('/api/v1/admin', authMiddleware, routerAdmin)

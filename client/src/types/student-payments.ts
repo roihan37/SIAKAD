@@ -8,6 +8,11 @@ export interface StudentPayment {
   status: StudentPaymentStatus
   source: string | null
   reference: string | null
+  provider: string | null
+  providerOrderId: string | null
+  providerTransactionId: string | null
+  redirectUrl: string | null
+  expiresAt: string | null
   paidAt: string | null
   createdAt: string
   bill: {
@@ -18,6 +23,10 @@ export interface StudentPayment {
     status: string
     academicYear: { id: number; year: string; semester: "GANJIL" | "GENAP" }
   }
+}
+
+export interface StudentGatewayPayment extends StudentPayment {
+  snapToken: string | null
 }
 
 export interface StudentPaymentsResponse {
@@ -38,4 +47,5 @@ export interface PaymentTransaction {
   status: PaymentStatus
   paymentReference: string
   paymentDeadline?: string
+  redirectUrl?: string
 }

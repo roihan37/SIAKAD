@@ -13,6 +13,7 @@ studentProfileRouter.get("/attendance", Controller.getMyAttendance);
 studentProfileRouter.get("/payments", Controller.getMyPayments);
 studentProfileRouter.post("/bills/:billId/pay", Controller.createMyBillPayment);
 studentProfileRouter.get("/payments/:paymentId", Controller.getMyPaymentDetail);
+studentProfileRouter.post("/payments/:paymentId/refresh", Controller.refreshMyPayment);
 studentProfileRouter.get("/transcript", Controller.getMyTranscript);
 studentProfileRouter.get("/grades", Controller.getMyGrades);
 studentProfileRouter.get("/dashboard", Controller.getMyDashboard);

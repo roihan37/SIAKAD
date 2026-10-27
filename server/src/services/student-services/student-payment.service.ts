@@ -8,6 +8,7 @@ import {
   type MidtransNotification,
   type MidtransSnapInput,
   type MidtransSnapResult,
+  type MidtransTransactionStatus,
 } from "../midtrans.service";
 import { recalculateTuitionBill } from "../payments.service";
 
@@ -16,6 +17,7 @@ const PAYMENT_EXPIRY_HOURS = 24;
 
 export interface PaymentGateway {
   createSnapTransaction(input: MidtransSnapInput): Promise<MidtransSnapResult>;
+  getTransactionStatus(orderId: string): Promise<MidtransTransactionStatus>;
   verifyNotification(notification: MidtransNotification): void;
 }
 
@@ -133,6 +135,69 @@ function shouldApplyStatus(current: StatusPembayaran, incoming: StatusPembayaran
   if (current === "SUCCESS") return false;
   if (current !== "PENDING") return false;
   return true;
+}
+
+async function applyMidtransStatus(notification: MidtransTransactionStatus) {
+  const incomingStatus = mapMidtransStatus(notification.transactionStatus, notification.fraudStatus);
+
+  return prisma.$transaction(async (tx) => {
+    const payment = await tx.pembayaranUKT.findUnique({
+      where: { providerOrderId: notification.orderId },
+      select: {
+        id: true,
+        tagihanId: true,
+        nominal: true,
+        status: true,
+        sumber: true,
+        provider: true,
+        providerTransactionId: true,
+        paidAt: true,
+      },
+    });
+    if (!payment || payment.sumber !== "PAYMENT_GATEWAY" || payment.provider !== MIDTRANS_PROVIDER) {
+      throw new AppError(404, "PAYMENT_NOT_FOUND", "Midtrans payment was not found.");
+    }
+    if (!payment.nominal.equals(new Prisma.Decimal(notification.grossAmount))) {
+      throw new AppError(409, "PAYMENT_AMOUNT_MISMATCH", "Midtrans payment amount does not match the recorded amount.");
+    }
+    if (
+      payment.providerTransactionId && notification.transactionId &&
+      payment.providerTransactionId !== notification.transactionId
+    ) {
+      throw new AppError(409, "PAYMENT_REFERENCE_MISMATCH", "Midtrans transaction reference does not match the recorded payment.");
+    }
+
+    const applyStatus = shouldApplyStatus(payment.status, incomingStatus);
+    const transactionId = payment.providerTransactionId ?? notification.transactionId;
+    if (applyStatus || transactionId !== payment.providerTransactionId) {
+      await tx.pembayaranUKT.update({
+        where: { id: payment.id },
+        data: {
+          ...(applyStatus ? {
+            status: incomingStatus,
+            paidAt: incomingStatus === "SUCCESS" ? (payment.paidAt ?? notification.settlementTime ?? new Date()) : null,
+          } : {}),
+          ...(transactionId ? { providerTransactionId: transactionId } : {}),
+        },
+      });
+    }
+
+    if (applyStatus) {
+      await tx.riwayatStatusPembayaran.create({
+        data: {
+          pembayaranId: payment.id,
+          statusLama: payment.status,
+          statusBaru: incomingStatus,
+          alasan: `Midtrans status: ${notification.transactionStatus}`,
+        },
+      });
+      if (payment.status === "SUCCESS" || incomingStatus === "SUCCESS") {
+        await recalculateTuitionBill(tx, payment.tagihanId);
+      }
+    }
+
+    return { received: true, paymentId: payment.id, status: applyStatus ? incomingStatus : payment.status };
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 }
 
 export class StudentPaymentService {
@@ -289,71 +354,39 @@ export class StudentPaymentService {
     return paymentResponse(payment);
   }
 
+  static async refreshPayment(
+    userId: string,
+    paymentId: string,
+    gateway: PaymentGateway = MidtransService.fromEnvironment(),
+  ) {
+    const payment = await prisma.pembayaranUKT.findFirst({
+      where: { id: paymentId, tagihan: { mahasiswa: { userId } } },
+      select: studentPaymentSelect,
+    });
+    if (!payment) throw new AppError(404, "PAYMENT_NOT_FOUND", "Payment not found.");
+    if (
+      payment.status !== "PENDING" ||
+      payment.sumber !== "PAYMENT_GATEWAY" ||
+      payment.provider !== MIDTRANS_PROVIDER ||
+      !payment.providerOrderId
+    ) {
+      return paymentResponse(payment);
+    }
+
+    const status = await gateway.getTransactionStatus(payment.providerOrderId);
+    if (status.orderId !== payment.providerOrderId) {
+      throw new AppError(409, "PAYMENT_REFERENCE_MISMATCH", "Midtrans transaction reference does not match the recorded payment.");
+    }
+    await applyMidtransStatus(status);
+    return StudentPaymentService.getPayment(userId, paymentId);
+  }
+
   static async handleMidtransWebhook(
     body: unknown,
     gateway: PaymentGateway = MidtransService.fromEnvironment(),
   ) {
     const notification = parseMidtransNotification(body);
     gateway.verifyNotification(notification);
-    const incomingStatus = mapMidtransStatus(notification.transactionStatus, notification.fraudStatus);
-
-    return prisma.$transaction(async (tx) => {
-      const payment = await tx.pembayaranUKT.findUnique({
-        where: { providerOrderId: notification.orderId },
-        select: {
-          id: true,
-          tagihanId: true,
-          nominal: true,
-          status: true,
-          sumber: true,
-          provider: true,
-          providerTransactionId: true,
-          paidAt: true,
-        },
-      });
-      if (!payment || payment.sumber !== "PAYMENT_GATEWAY" || payment.provider !== MIDTRANS_PROVIDER) {
-        throw new AppError(404, "PAYMENT_NOT_FOUND", "Midtrans payment was not found.");
-      }
-      if (!payment.nominal.equals(new Prisma.Decimal(notification.grossAmount))) {
-        throw new AppError(409, "PAYMENT_AMOUNT_MISMATCH", "Midtrans payment amount does not match the recorded amount.");
-      }
-      if (
-        payment.providerTransactionId && notification.transactionId &&
-        payment.providerTransactionId !== notification.transactionId
-      ) {
-        throw new AppError(409, "PAYMENT_REFERENCE_MISMATCH", "Midtrans transaction reference does not match the recorded payment.");
-      }
-
-      const applyStatus = shouldApplyStatus(payment.status, incomingStatus);
-      const transactionId = payment.providerTransactionId ?? notification.transactionId;
-      if (applyStatus || transactionId !== payment.providerTransactionId) {
-        await tx.pembayaranUKT.update({
-          where: { id: payment.id },
-          data: {
-            ...(applyStatus ? {
-              status: incomingStatus,
-              paidAt: incomingStatus === "SUCCESS" ? (payment.paidAt ?? notification.settlementTime ?? new Date()) : null,
-            } : {}),
-            ...(transactionId ? { providerTransactionId: transactionId } : {}),
-          },
-        });
-      }
-
-      if (applyStatus) {
-        await tx.riwayatStatusPembayaran.create({
-          data: {
-            pembayaranId: payment.id,
-            statusLama: payment.status,
-            statusBaru: incomingStatus,
-            alasan: `Midtrans notification: ${notification.transactionStatus}`,
-          },
-        });
-        if (payment.status === "SUCCESS" || incomingStatus === "SUCCESS") {
-          await recalculateTuitionBill(tx, payment.tagihanId);
-        }
-      }
-
-      return { received: true, paymentId: payment.id, status: applyStatus ? incomingStatus : payment.status };
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    return applyMidtransStatus(notification);
   }
 }

@@ -28,6 +28,8 @@ export interface MidtransNotification {
   settlementTime: Date | null;
 }
 
+export type MidtransTransactionStatus = Omit<MidtransNotification, "signatureKey">;
+
 function requiredString(input: Record<string, unknown>, key: string, max = 255): string {
   const value = input[key];
   if (typeof value !== "string" || !value.trim() || value.length > max) {
@@ -36,11 +38,28 @@ function requiredString(input: Record<string, unknown>, key: string, max = 255):
   return value;
 }
 
+function requiredResponseString(input: Record<string, unknown>, key: string, max = 255): string {
+  const value = input[key];
+  if (typeof value !== "string" || !value.trim() || value.length > max) {
+    throw new AppError(502, "INVALID_MIDTRANS_RESPONSE", "Midtrans returned an invalid transaction status.");
+  }
+  return value.trim();
+}
+
 function optionalString(input: Record<string, unknown>, key: string, max = 255): string | null {
   const value = input[key];
   if (value === undefined || value === null || value === "") return null;
   if (typeof value !== "string" || value.length > max) {
     throw new AppError(400, "INVALID_MIDTRANS_NOTIFICATION", `Midtrans notification field ${key} is invalid.`);
+  }
+  return value;
+}
+
+function optionalResponseString(input: Record<string, unknown>, key: string, max = 255): string | null {
+  const value = input[key];
+  if (value === undefined || value === null || value === "") return null;
+  if (typeof value !== "string" || value.length > max) {
+    throw new AppError(502, "INVALID_MIDTRANS_RESPONSE", "Midtrans returned an invalid transaction status.");
   }
   return value;
 }
@@ -76,6 +95,27 @@ export function parseMidtransNotification(body: unknown): MidtransNotification {
   };
 }
 
+export function parseMidtransTransactionStatus(body: unknown): MidtransTransactionStatus {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    throw new AppError(502, "INVALID_MIDTRANS_RESPONSE", "Midtrans returned an invalid transaction status.");
+  }
+  const input = body as Record<string, unknown>;
+  const grossAmount = requiredResponseString(input, "gross_amount", 40);
+  if (!/^\d+(?:\.\d{1,2})?$/.test(grossAmount)) {
+    throw new AppError(502, "INVALID_MIDTRANS_RESPONSE", "Midtrans returned an invalid transaction amount.");
+  }
+  const settlementTime = optionalResponseString(input, "settlement_time", 40);
+  return {
+    orderId: requiredResponseString(input, "order_id", 100),
+    transactionId: optionalResponseString(input, "transaction_id", 100),
+    transactionStatus: requiredResponseString(input, "transaction_status", 40).toLowerCase(),
+    fraudStatus: optionalResponseString(input, "fraud_status", 40)?.toLowerCase() ?? null,
+    statusCode: requiredResponseString(input, "status_code", 10),
+    grossAmount,
+    settlementTime: midtransTimestamp(settlementTime),
+  };
+}
+
 export function midtransSignature(orderId: string, statusCode: string, grossAmount: string, serverKey: string): string {
   return createHash("sha512").update(`${orderId}${statusCode}${grossAmount}${serverKey}`, "utf8").digest("hex");
 }
@@ -102,6 +142,28 @@ export class MidtransService {
     if (!verifyMidtransSignature(notification, this.config.serverKey)) {
       throw new AppError(401, "INVALID_MIDTRANS_SIGNATURE", "Midtrans notification signature is invalid.");
     }
+  }
+
+  async getTransactionStatus(orderId: string): Promise<MidtransTransactionStatus> {
+    const baseUrl = this.config.isProduction
+      ? "https://api.midtrans.com"
+      : "https://api.sandbox.midtrans.com";
+    let response: globalThis.Response;
+    try {
+      response = await fetch(`${baseUrl}/v2/${encodeURIComponent(orderId)}/status`, {
+        headers: {
+          Authorization: `Basic ${Buffer.from(`${this.config.serverKey}:`).toString("base64")}`,
+          Accept: "application/json",
+        },
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
+    } catch {
+      throw new AppError(503, "PAYMENT_PROVIDER_UNAVAILABLE", "Midtrans is temporarily unavailable.");
+    }
+    if (!response.ok) {
+      throw new AppError(502, "PAYMENT_PROVIDER_ERROR", "Midtrans could not confirm the transaction status.");
+    }
+    return parseMidtransTransactionStatus(await response.json());
   }
 
   async createSnapTransaction(input: MidtransSnapInput): Promise<MidtransSnapResult> {

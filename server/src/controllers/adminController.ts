@@ -13,8 +13,23 @@ import { resourceId } from "../validation/master-data";
 import { countScheduleConflicts, jakartaWeekday } from "../services/dashboard.service";
 import { StudentPaymentService } from "../services/student-services/student-payment.service";
 import { sendData } from "../lib/responseHelpers";
+import { clientOrigin } from "../auth/config";
 
 export class Controller {
+  static async midtransReturn(req: Request, res: Response, next: NextFunction) {
+    try {
+      const redirectUrl = new URL('/mahasiswa/tagihan-ukt', clientOrigin);
+      const queryKeys = ['order_id', 'status_code', 'transaction_status', 'action'] as const;
+
+      for (const key of queryKeys) {
+        const value = req.query[key];
+        if (typeof value === 'string') redirectUrl.searchParams.set(key, value);
+      }
+
+      return res.redirect(302, redirectUrl.toString());
+    } catch (error) { next(error); }
+  }
+
   static async midtransWebhook(req: Request, res: Response, next: NextFunction) {
     try {
       return sendData(res, await StudentPaymentService.handleMidtransWebhook(req.body));

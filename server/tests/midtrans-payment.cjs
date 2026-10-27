@@ -5,6 +5,7 @@ const {
   MidtransService,
   midtransSignature,
   parseMidtransNotification,
+  parseMidtransTransactionStatus,
   verifyMidtransSignature,
 } = require('../src/services/midtrans.service');
 const {
@@ -63,6 +64,8 @@ async function main() {
   assert.equal(verifyMidtransSignature(parsed, serverKey), true);
   assert.equal(verifyMidtransSignature({ ...parsed, signatureKey: '0'.repeat(128) }, serverKey), false);
   assert.throws(() => parseMidtransNotification({}), error => error.code === 'INVALID_MIDTRANS_NOTIFICATION');
+  assert.equal(parseMidtransTransactionStatus(notification()).transactionStatus, 'settlement');
+  assert.throws(() => parseMidtransTransactionStatus({}), error => error.code === 'INVALID_MIDTRANS_RESPONSE');
   assert.equal(mapMidtransStatus('settlement', null), 'SUCCESS');
   assert.equal(mapMidtransStatus('capture', 'accept'), 'SUCCESS');
   assert.equal(mapMidtransStatus('pending', null), 'PENDING');
@@ -109,6 +112,7 @@ async function main() {
       assert.equal(input.customer.phone, '08123456789');
       return { token: 'snap-token', redirectUrl: 'https://app.sandbox.midtrans.com/snap/v4/redirection/token' };
     },
+    getTransactionStatus: async () => { throw new Error('unused'); },
     verifyNotification: () => {},
   });
   assert.equal(created.reused, false);
@@ -128,6 +132,7 @@ async function main() {
   });
   const reused = await StudentPaymentService.createPayment('student-user', 'bill-1', {
     createSnapTransaction: async () => { throw new Error('duplicate Snap call'); },
+    getTransactionStatus: async () => { throw new Error('unused'); },
     verifyNotification: () => {},
   });
   assert.equal(reused.reused, true);
@@ -139,6 +144,7 @@ async function main() {
   await assert.rejects(
     () => StudentPaymentService.createPayment('another-user', 'bill-1', {
       createSnapTransaction: async () => { throw new Error('unused'); },
+      getTransactionStatus: async () => { throw new Error('unused'); },
       verifyNotification: () => {},
     }),
     error => error.code === 'BILL_NOT_FOUND',
@@ -169,13 +175,32 @@ async function main() {
   prisma.$transaction = async fn => fn(webhookTx);
   const verifiedGateway = {
     createSnapTransaction: async () => { throw new Error('unused'); },
+    getTransactionStatus: async () => { throw new Error('unused'); },
     verifyNotification: value => gateway.verifyNotification(value),
   };
+
+  prisma.pembayaranUKT.findFirst = async args => {
+    assert.deepEqual(args.where, { id: 'payment-1', tagihan: { mahasiswa: { userId: 'student-user' } } });
+    return paymentState;
+  };
+  const refreshedPayment = await StudentPaymentService.refreshPayment('student-user', 'payment-1', {
+    createSnapTransaction: async () => { throw new Error('unused'); },
+    getTransactionStatus: async orderId => {
+      assert.equal(orderId, 'UKT-order-1');
+      return parseMidtransTransactionStatus(notification());
+    },
+    verifyNotification: () => {},
+  });
+  assert.equal(refreshedPayment.status, 'SUCCESS');
+  assert.equal(paymentState.providerTransactionId, 'midtrans-transaction-1');
+  assert.equal(history.length, 1);
+  assert.equal(billStatus, 'LUNAS');
+
   const firstWebhook = await StudentPaymentService.handleMidtransWebhook(notification(), verifiedGateway);
   assert.deepEqual(firstWebhook, { received: true, paymentId: 'payment-1', status: 'SUCCESS' });
   assert.equal(paymentState.status, 'SUCCESS');
   assert.equal(paymentState.providerTransactionId, 'midtrans-transaction-1');
-  assert.equal(history.length, 1);
+  assert.equal(history.length, 1, 'webhook after status reconciliation must be idempotent');
   assert.equal(billStatus, 'LUNAS');
   await StudentPaymentService.handleMidtransWebhook(notification(), verifiedGateway);
   assert.equal(history.length, 1, 'duplicate webhook must not create duplicate history');
@@ -196,8 +221,10 @@ async function main() {
   const studentRoutes = require('../src/router/students').studentProfileRouter.stack;
   assert.ok(studentRoutes.some(layer => layer.route?.path === '/bills/:billId/pay' && layer.route.methods.post));
   assert.ok(studentRoutes.some(layer => layer.route?.path === '/payments/:paymentId' && layer.route.methods.get));
+  assert.ok(studentRoutes.some(layer => layer.route?.path === '/payments/:paymentId/refresh' && layer.route.methods.post));
   const apiRouter = require('../src/router').default.stack;
   assert.ok(apiRouter.some(layer => layer.route?.path === '/api/v1/payments/midtrans/webhook' && layer.route.methods.post));
+  assert.ok(apiRouter.some(layer => layer.route?.path === '/api/v1/payments/midtrans/return' && layer.route.methods.get));
 
   console.log('PASS: Midtrans signature/status mapping, payment creation, pending reuse, ownership, webhook transitions and idempotency');
 }

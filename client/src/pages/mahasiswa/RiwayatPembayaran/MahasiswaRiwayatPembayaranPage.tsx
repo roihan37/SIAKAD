@@ -7,6 +7,7 @@ import {
   CreditCard,
   Download,
   Eye,
+  ExternalLink,
   FileClock,
   FilterX,
   History,
@@ -15,7 +16,7 @@ import {
   WalletCards,
 } from "lucide-react"
 
-import { getStudentPayments, studentPaymentsErrorMessage } from "@/api/student-payments"
+import { getMidtransRedirectUrl, getStudentPayments, studentPaymentsErrorMessage } from "@/api/student-payments"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -104,7 +105,8 @@ function toTransaction(payment: StudentPayment): PaymentTransaction {
     method: paymentMethod[payment.method],
     status: paymentStatus[payment.status],
     paymentReference: payment.reference ?? payment.source ?? "-",
-    paymentDeadline: payment.status === "PENDING" ? `${payment.bill.dueDate}T23:59:59+07:00` : undefined,
+    paymentDeadline: payment.status === "PENDING" ? payment.expiresAt ?? undefined : undefined,
+    redirectUrl: payment.status === "PENDING" ? getMidtransRedirectUrl(payment.redirectUrl) ?? undefined : undefined,
   }
 }
 
@@ -130,6 +132,10 @@ function downloadReceipt(transaction: PaymentTransaction) {
   anchor.download = `bukti-${transaction.transactionNumber}.txt`
   anchor.click()
   URL.revokeObjectURL(url)
+}
+
+function continuePayment(transaction: PaymentTransaction) {
+  if (transaction.redirectUrl) window.location.assign(transaction.redirectUrl)
 }
 
 export default function MahasiswaRiwayatPembayaranPage() {
@@ -352,6 +358,11 @@ export default function MahasiswaRiwayatPembayaranPage() {
 
             <DialogFooter className="gap-2 sm:justify-between">
               {selectedTransaction.status === "Berhasil" && <Button type="button" className="w-full sm:w-auto" onClick={() => downloadReceipt(selectedTransaction)}><Download />Download Bukti Pembayaran</Button>}
+              {selectedTransaction.status === "Menunggu" && selectedTransaction.redirectUrl && (
+                <Button type="button" className="w-full sm:w-auto" onClick={() => continuePayment(selectedTransaction)}>
+                  <ExternalLink />Lanjutkan Pembayaran
+                </Button>
+              )}
               {!(["Berhasil", "Gagal"] as PaymentStatus[]).includes(selectedTransaction.status) && <p className="text-xs leading-5 text-muted-foreground"><History className="mr-1 inline size-3.5" aria-hidden="true" />Status akan diperbarui otomatis setelah ada perubahan.</p>}
             </DialogFooter>
           </DialogContent>
