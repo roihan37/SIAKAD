@@ -10,6 +10,12 @@ export interface Bill {
   dueDate: string
   status: BillStatus
 }
+export type StudentTuitionBill = Omit<Bill, "student"> & {
+  paidAt: string | null
+}
+export interface StudentTuitionBills {
+  bills: StudentTuitionBill[]
+}
 export interface BillFilters { tahunAkademikId?: number; prodiId?: number; status?: BillStatus; search: string }
 export interface BillQuery extends BillFilters { page: number; limit: number }
 export interface BillList {

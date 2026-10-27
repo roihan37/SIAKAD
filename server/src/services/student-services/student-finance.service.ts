@@ -1,6 +1,10 @@
 import { prisma } from "../../lib/prisma";
 import { Prisma } from "@prisma/client";
-import { getStudentFinance as getStudentFinanceFromTuition, listStudentTuitionBills as listBillsFromTuition } from "../tuition.service";
+import {
+    getStudentFinance as getStudentFinanceFromTuition,
+    listStudentPayments as listPaymentsFromTuition,
+    listStudentTuitionBills as listBillsFromTuition,
+} from "../tuition.service";
 
 export interface StudentFinanceResult {
     summary: {
@@ -67,6 +71,13 @@ export class StudentFinanceService {
         );
     }
 
+    static async getMyPayments(userId: string) {
+        return prisma.$transaction(
+            (tx) => this.getMyPaymentsInTransaction(tx, userId),
+            { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead }
+        );
+    }
+
     /**
      * Get student finance data (includes UKT bills with payment history).
      * Used by GET /api/v1/students/:id/keuangan
@@ -102,5 +113,12 @@ export class StudentFinanceService {
         now: Date
     ): Promise<UKTBillsResult> {
         return listBillsFromTuition(prismaClient, userId, now);
+    }
+
+    private static async getMyPaymentsInTransaction(
+        prismaClient: Prisma.TransactionClient,
+        userId: string
+    ) {
+        return listPaymentsFromTuition(prismaClient, userId);
     }
 }

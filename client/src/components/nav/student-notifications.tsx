@@ -2,6 +2,7 @@ import { useState } from "react"
 import { Bell, CheckCheck } from "lucide-react"
 import { Link } from "react-router"
 
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
@@ -29,7 +30,10 @@ function NotificationList({
     <>
       <div className="flex items-start justify-between gap-3 border-b px-4 py-3.5">
         <div>
-          <h2 className="font-semibold">Notifikasi</h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="font-semibold">Notifikasi</h2>
+            <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300">Data Dummy</Badge>
+          </div>
           <p className="mt-0.5 text-xs text-muted-foreground">{unreadCount} belum dibaca</p>
         </div>
         {unreadCount > 0 && <Button type="button" variant="ghost" size="sm" onClick={onReadAll} className="h-8 shrink-0 px-2 text-xs text-primary"><CheckCheck />Tandai semua dibaca</Button>}
@@ -71,7 +75,7 @@ export function StudentNotifications() {
   const trigger = (
     <Button type="button" variant="ghost" size="icon" aria-label={`Notifikasi, ${unreadCount} belum dibaca`} className="relative size-10 shrink-0 rounded-xl">
       <Bell className="size-[18px]" />
-      {unreadCount > 0 && <span className="absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-background bg-destructive px-1 text-[10px] font-semibold leading-none text-destructive-foreground">{unreadCount > 9 ? "9+" : unreadCount}</span>}
+      {unreadCount > 0 && <span className="absolute -top-0.5 -right-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-background bg-destructive px-1 text-[10px] font-semibold leading-none text-white dark:text-background">{unreadCount > 9 ? "9+" : unreadCount}</span>}
     </Button>
   )
 

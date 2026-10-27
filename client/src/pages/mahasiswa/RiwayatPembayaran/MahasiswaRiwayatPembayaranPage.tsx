@@ -1,5 +1,4 @@
-import { useMemo, useState } from "react"
-import { Link } from "react-router"
+import { useEffect, useMemo, useState } from "react"
 import {
   AlertCircle,
   CalendarDays,
@@ -12,11 +11,11 @@ import {
   FilterX,
   History,
   ReceiptText,
-  RefreshCw,
   Search,
   WalletCards,
 } from "lucide-react"
 
+import { getStudentPayments, studentPaymentsErrorMessage } from "@/api/student-payments"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -31,12 +30,14 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
-import {
-  paymentTransactions,
-  type PaymentStatus,
-  type PaymentTransaction,
-} from "./payment-history-data"
+import type {
+  PaymentStatus,
+  PaymentTransaction,
+  StudentPayment,
+  StudentPaymentsResponse,
+} from "@/types/student-payments"
 
 const allStatuses = "Semua Status"
 const allAcademicYears = "Semua Tahun Akademik"
@@ -72,10 +73,39 @@ const monthLabel = new Intl.DateTimeFormat("id-ID", {
 const statusTone: Record<PaymentStatus, string> = {
   Berhasil: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300",
   Menunggu: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300",
-  Diproses: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-300",
   Gagal: "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300",
   Kedaluwarsa: "border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-900 dark:bg-orange-950 dark:text-orange-300",
   Dibatalkan: "border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300",
+}
+
+const paymentStatus: Record<StudentPayment["status"], PaymentStatus> = {
+  SUCCESS: "Berhasil",
+  PENDING: "Menunggu",
+  FAILED: "Gagal",
+  EXPIRED: "Kedaluwarsa",
+  CANCELLED: "Dibatalkan",
+}
+
+const paymentMethod: Record<StudentPayment["method"], string> = {
+  TRANSFER_BANK: "Transfer Bank",
+  VIRTUAL_ACCOUNT: "Virtual Account",
+  CASH: "Tunai",
+}
+
+function toTransaction(payment: StudentPayment): PaymentTransaction {
+  const semester = payment.bill.academicYear.semester === "GANJIL" ? "Ganjil" : "Genap"
+  return {
+    id: payment.id,
+    transactionNumber: payment.paymentNumber,
+    billType: `UKT Semester ${semester}`,
+    academicYear: `${payment.bill.academicYear.year} ${semester}`,
+    date: payment.paidAt ?? payment.createdAt,
+    amount: payment.amount,
+    method: paymentMethod[payment.method],
+    status: paymentStatus[payment.status],
+    paymentReference: payment.reference ?? payment.source ?? "-",
+    paymentDeadline: payment.status === "PENDING" ? `${payment.bill.dueDate}T23:59:59+07:00` : undefined,
+  }
 }
 
 function StatusBadge({ status }: { status: PaymentStatus }) {
@@ -103,25 +133,49 @@ function downloadReceipt(transaction: PaymentTransaction) {
 }
 
 export default function MahasiswaRiwayatPembayaranPage() {
+  const [paymentData, setPaymentData] = useState<StudentPaymentsResponse | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [retryKey, setRetryKey] = useState(0)
   const [query, setQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState(allStatuses)
   const [academicYearFilter, setAcademicYearFilter] = useState(allAcademicYears)
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
   const [selectedTransaction, setSelectedTransaction] = useState<PaymentTransaction | null>(null)
+  const paymentTransactions = useMemo(
+    () => paymentData?.payments.map(toTransaction) ?? [],
+    [paymentData],
+  )
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    void getStudentPayments(controller.signal)
+      .then(setPaymentData)
+      .catch((requestError: unknown) => {
+        if (controller.signal.aborted) return
+        setError(studentPaymentsErrorMessage(requestError, "Riwayat pembayaran gagal dimuat."))
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
+      })
+
+    return () => controller.abort()
+  }, [retryKey])
+
+  const retry = () => {
+    setLoading(true)
+    setError(null)
+    setRetryKey((key) => key + 1)
+  }
 
   const academicYears = useMemo(
     () => [...new Set(paymentTransactions.map((transaction) => transaction.academicYear))],
-    [],
+    [paymentTransactions],
   )
 
-  const summary = useMemo(() => ({
-    totalPaid: paymentTransactions
-      .filter((transaction) => transaction.status === "Berhasil")
-      .reduce((total, transaction) => total + transaction.amount, 0),
-    successful: paymentTransactions.filter((transaction) => transaction.status === "Berhasil").length,
-    pending: paymentTransactions.filter((transaction) => ["Menunggu", "Diproses"].includes(transaction.status)).length,
-  }), [])
+  const summary = paymentData?.summary ?? { totalPaid: 0, successful: 0, pending: 0 }
 
   const groupedTransactions = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
@@ -142,7 +196,7 @@ export default function MahasiswaRiwayatPembayaranPage() {
       groups[label] = [...(groups[label] ?? []), transaction]
       return groups
     }, {})
-  }, [academicYearFilter, endDate, query, startDate, statusFilter])
+  }, [academicYearFilter, endDate, paymentTransactions, query, startDate, statusFilter])
 
   const hasFilters = Boolean(query || startDate || endDate || statusFilter !== allStatuses || academicYearFilter !== allAcademicYears)
   const resultCount = Object.values(groupedTransactions).reduce((total, transactions) => total + transactions.length, 0)
@@ -163,6 +217,17 @@ export default function MahasiswaRiwayatPembayaranPage() {
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">Lacak seluruh transaksi, status pembayaran, dan bukti pembayaran dalam satu tempat.</p>
       </header>
 
+      {loading ? (
+        <div className="space-y-3" aria-label="Memuat riwayat pembayaran">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-3"><Skeleton className="col-span-2 h-28 lg:col-span-1" /><Skeleton className="h-28" /><Skeleton className="h-28" /></div>
+          <Skeleton className="h-40 w-full" />
+        </div>
+      ) : error ? (
+        <Alert variant="destructive">
+          <AlertCircle /><AlertTitle>Riwayat pembayaran tidak dapat dimuat</AlertTitle>
+          <AlertDescription className="space-y-3"><p>{error}</p><Button variant="outline" size="sm" onClick={retry}>Coba Lagi</Button></AlertDescription>
+        </Alert>
+      ) : <>
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-3" aria-label="Ringkasan pembayaran">
         <Card className="col-span-2 lg:col-span-1">
           <CardContent className="flex items-center justify-between gap-4">
@@ -191,7 +256,7 @@ export default function MahasiswaRiwayatPembayaranPage() {
               <SelectTrigger className="h-10 w-full" aria-label="Filter status"><SelectValue /></SelectTrigger>
               <SelectContent align="start">
                 <SelectItem value={allStatuses}>{allStatuses}</SelectItem>
-                {(["Berhasil", "Menunggu", "Diproses", "Gagal", "Kedaluwarsa", "Dibatalkan"] as PaymentStatus[]).map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}
+                {(["Berhasil", "Menunggu", "Gagal", "Kedaluwarsa", "Dibatalkan"] as PaymentStatus[]).map((status) => <SelectItem key={status} value={status}>{status}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={academicYearFilter} onValueChange={(value) => setAcademicYearFilter(value ?? allAcademicYears)}>
@@ -252,6 +317,7 @@ export default function MahasiswaRiwayatPembayaranPage() {
           </CardContent>
         </Card>
       )}
+      </>}
 
       <Dialog open={Boolean(selectedTransaction)} onOpenChange={(open) => !open && setSelectedTransaction(null)}>
         {selectedTransaction && (
@@ -273,10 +339,6 @@ export default function MahasiswaRiwayatPembayaranPage() {
               <div><dt className="text-xs text-muted-foreground">Reference / Payment Code</dt><dd className="mt-1 font-medium break-all">{selectedTransaction.paymentReference}</dd></div>
             </dl>
 
-            {Boolean(selectedTransaction.breakdown?.length) && (
-              <div className="rounded-xl border p-4"><h3 className="text-sm font-semibold">Rincian Nominal</h3><div className="mt-3 space-y-2">{selectedTransaction.breakdown?.map((item) => <div key={item.label} className="flex justify-between gap-4 text-sm"><span className="text-muted-foreground">{item.label}</span><span className="font-medium tabular-nums">{currency.format(item.amount)}</span></div>)}</div></div>
-            )}
-
             {selectedTransaction.status === "Menunggu" && selectedTransaction.paymentDeadline && (
               <Alert className="border-amber-200 bg-amber-50/70 text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
                 <Clock3 aria-hidden="true" /><AlertTitle>Menunggu pembayaran</AlertTitle>
@@ -284,20 +346,12 @@ export default function MahasiswaRiwayatPembayaranPage() {
               </Alert>
             )}
 
-            {selectedTransaction.status === "Diproses" && (
-              <Alert className="border-blue-200 bg-blue-50/70 text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
-                <Clock3 aria-hidden="true" /><AlertTitle>Pembayaran sedang diverifikasi</AlertTitle>
-                <AlertDescription className="text-blue-800 dark:text-blue-300">Jangan membuat transaksi baru. Status akan diperbarui setelah verifikasi selesai.</AlertDescription>
-              </Alert>
-            )}
-
             {selectedTransaction.status === "Gagal" && (
-              <Alert variant="destructive"><AlertCircle aria-hidden="true" /><AlertTitle>Pembayaran belum berhasil</AlertTitle><AlertDescription>{selectedTransaction.failureReason ?? "Transaksi tidak dapat diselesaikan. Tidak ada saldo yang tercatat sebagai pembayaran."}</AlertDescription></Alert>
+              <Alert variant="destructive"><AlertCircle aria-hidden="true" /><AlertTitle>Pembayaran belum berhasil</AlertTitle><AlertDescription>Transaksi tidak dapat diselesaikan. Tidak ada saldo yang tercatat sebagai pembayaran.</AlertDescription></Alert>
             )}
 
             <DialogFooter className="gap-2 sm:justify-between">
               {selectedTransaction.status === "Berhasil" && <Button type="button" className="w-full sm:w-auto" onClick={() => downloadReceipt(selectedTransaction)}><Download />Download Bukti Pembayaran</Button>}
-              {selectedTransaction.status === "Gagal" && selectedTransaction.canRetry && <Button className="w-full sm:w-auto" render={<Link to="/mahasiswa/tagihan-ukt" />}><RefreshCw />Coba Bayar Lagi</Button>}
               {!(["Berhasil", "Gagal"] as PaymentStatus[]).includes(selectedTransaction.status) && <p className="text-xs leading-5 text-muted-foreground"><History className="mr-1 inline size-3.5" aria-hidden="true" />Status akan diperbarui otomatis setelah ada perubahan.</p>}
             </DialogFooter>
           </DialogContent>

@@ -77,6 +77,59 @@ export async function listStudentTuitionBills(tx: Prisma.TransactionClient, user
   }) };
 }
 
+export async function listStudentPayments(tx: Prisma.TransactionClient, userId: string) {
+  const student = await tx.mahasiswa.findUnique({ where: { userId }, select: { id: true } });
+  if (!student) throw { name: "NotFound", message: "Mahasiswa tidak ditemukan." };
+
+  const rows = await tx.pembayaranUKT.findMany({
+    where: { tagihan: { mahasiswaId: student.id } },
+    orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+    select: {
+      id: true, nomorPembayaran: true, nominal: true, metode: true, status: true,
+      sumber: true, reference: true, paidAt: true, createdAt: true,
+      tagihan: {
+        select: {
+          id: true, nomorTagihan: true, nominal: true, jatuhTempo: true, status: true,
+          tahunAkademik: { select: { id: true, tahun: true, semester: true } },
+        },
+      },
+    },
+  });
+
+  const successful = rows.filter((payment) => payment.status === "SUCCESS");
+  return {
+    summary: {
+      totalPayments: rows.length,
+      successful: successful.length,
+      pending: rows.filter((payment) => payment.status === "PENDING").length,
+      totalPaid: successful.reduce((total, payment) => total + Number(payment.nominal), 0),
+    },
+    payments: rows.map((payment) => ({
+      id: payment.id,
+      paymentNumber: payment.nomorPembayaran,
+      amount: Number(payment.nominal),
+      method: payment.metode,
+      status: payment.status,
+      source: payment.sumber,
+      reference: payment.reference,
+      paidAt: payment.paidAt?.toISOString() ?? null,
+      createdAt: payment.createdAt.toISOString(),
+      bill: {
+        id: payment.tagihan.id,
+        billNumber: payment.tagihan.nomorTagihan,
+        amount: Number(payment.tagihan.nominal),
+        dueDate: dateFormat.format(payment.tagihan.jatuhTempo),
+        status: payment.tagihan.status,
+        academicYear: {
+          id: payment.tagihan.tahunAkademik.id,
+          year: payment.tagihan.tahunAkademik.tahun,
+          semester: payment.tagihan.tahunAkademik.semester,
+        },
+      },
+    })),
+  };
+}
+
 type BillRow = {
   prodiId: number; studyProgramName: string;
   id: string; nomorTagihan: string; mahasiswaId: string; userId: string; nim: string; name: string;

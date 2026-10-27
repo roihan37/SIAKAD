@@ -72,6 +72,19 @@ export interface NilaiResult {
     reason: string | null;
 }
 
+export interface StudentTranscriptResult {
+    cumulativeGpa: number;
+    completedCredits: number;
+    semesters: Array<{
+        id: number;
+        semesterNumber: number;
+        academicYear: { id: number; tahun: string; semester: Semester; label: string };
+        semesterGpa: number;
+        totalCredits: number;
+        courses: NilaiData["details"];
+    }>;
+}
+
 type KRSDetailWithGrade = {
     id: string;
     transkrip: Array<{ bobot?: number | null; nilaiAngka?: number | null; nilaiHuruf?: string | null }>;
@@ -90,6 +103,13 @@ export class StudentAcademicService {
     static async getStudentNilai(userId: string, tahunAkademikId: number) {
         return prisma.$transaction(
             (tx) => this.getStudentNilaiInTransaction(tx, userId, tahunAkademikId),
+            { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead }
+        );
+    }
+
+    static async getMyTranscript(userId: string): Promise<StudentTranscriptResult> {
+        return prisma.$transaction(
+            (tx) => this.getMyTranscriptInTransaction(tx, userId),
             { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead }
         );
     }
@@ -339,9 +359,10 @@ export class StudentAcademicService {
                 tahunAkademik: {
                     OR: [
                         { tahun: { lt: year.tahun } },
-                        ...(year.semester === "GANJIL"
-                            ? [{ tahun: year.tahun, semester: year.semester as Semester }]
-                            : []),
+                        {
+                            tahun: year.tahun,
+                            semester: { in: year.semester === "GANJIL" ? [Semester.GANJIL] : [Semester.GANJIL, Semester.GENAP] },
+                        },
                     ],
                 },
             },
@@ -393,10 +414,10 @@ export class StudentAcademicService {
                     throw { name: "Conflict", message: `SKS ${course.kode} tidak valid.` };
                 }
                 if (grade?.bobot != null && (!Number.isFinite(Number(grade.bobot)) || Number(grade.bobot) < 0 || Number(grade.bobot) > 4)) {
-                    throw { name: "Conflict", message: `Bobot nilai ${course.kode} harus antara 0 и 4.` };
+                    throw { name: "Conflict", message: `Bobot nilai ${course.kode} harus antara 0 dan 4.` };
                 }
                 if (grade?.nilaiAngka != null && (!Number.isFinite(Number(grade.nilaiAngka)) || Number(grade.nilaiAngka) < 0 || Number(grade.nilaiAngka) > 100)) {
-                    throw { name: "Conflict", message: `Nilai angka ${course.kode} должен быть between 0 and 100.` };
+                    throw { name: "Conflict", message: `Nilai angka ${course.kode} harus antara 0 dan 100.` };
                 }
                 if (grade?.bobot == null || grade.nilaiAngka == null || !grade.nilaiHuruf?.trim()) continue;
                 const previous = unique.get(course.id)?.transkrip[0];
@@ -446,6 +467,104 @@ export class StudentAcademicService {
                 summary: { totalSKS: semester.sks, ips: semester.ip, ipk: cumulative.ip },
             },
             reason: details.length ? null : "GRADES_NOT_AVAILABLE",
+        };
+    }
+
+
+    private static async getMyTranscriptInTransaction(
+        prismaClient: Prisma.TransactionClient,
+        userId: string
+    ): Promise<StudentTranscriptResult> {
+        const user = await prismaClient.user.findUnique({
+            where: { id: userId, role: "Mahasiswa" },
+            select: { mahasiswa: { select: { id: true, angkatan: true } } },
+        });
+        if (!user?.mahasiswa) throw { name: "NotFound", message: "Mahasiswa tidak ditemukan" };
+        const mahasiswa = user.mahasiswa;
+
+        const records = await prismaClient.kRS.findMany({
+            where: { mahasiswaId: mahasiswa.id, status: "DISETUJUI" },
+            select: {
+                tahunAkademik: { select: { id: true, tahun: true, semester: true } },
+                details: {
+                    where: { status: "DISETUJUI" },
+                    orderBy: { id: "asc" },
+                    select: {
+                        id: true,
+                        kelasMataKuliah: { select: { mataKuliah: { select: { id: true, kode: true, nama: true, sks: true } } } },
+                        transkrip: {
+                            where: { mahasiswaId: mahasiswa.id },
+                            select: { nilaiAngka: true, nilaiHuruf: true, bobot: true },
+                        },
+                    },
+                },
+            },
+        });
+
+        const round = (value: number) => Math.round(value * 100) / 100;
+        const latest = new Map<number, { sks: number; bobot: number }>();
+        const orderedRecords = [...records].sort((first, second) =>
+            first.tahunAkademik.tahun.localeCompare(second.tahunAkademik.tahun) ||
+            (first.tahunAkademik.semester === "GANJIL" ? 0 : 1) - (second.tahunAkademik.semester === "GANJIL" ? 0 : 1)
+        );
+        const semesters = orderedRecords.map((record) => {
+            const unique = new Map<number, (typeof record.details)[number]>();
+            for (const detail of record.details) {
+                const course = detail.kelasMataKuliah.mataKuliah;
+                const grade = detail.transkrip[0];
+                if (!Number.isInteger(course.sks) || course.sks <= 0) {
+                    throw { name: "Conflict", message: `SKS ${course.kode} tidak valid.` };
+                }
+                if (!grade || grade.bobot == null || grade.nilaiAngka == null || !grade.nilaiHuruf?.trim()) continue;
+                const bobot = Number(grade.bobot);
+                const nilai = Number(grade.nilaiAngka);
+                if (!Number.isFinite(bobot) || bobot < 0 || bobot > 4) {
+                    throw { name: "Conflict", message: `Bobot nilai ${course.kode} harus antara 0 dan 4.` };
+                }
+                if (!Number.isFinite(nilai) || nilai < 0 || nilai > 100) {
+                    throw { name: "Conflict", message: `Nilai angka ${course.kode} harus antara 0 dan 100.` };
+                }
+                const previous = unique.get(course.id)?.transkrip[0];
+                if (previous && (Number(previous.bobot) !== bobot || Number(previous.nilaiAngka) !== nilai || previous.nilaiHuruf?.trim() !== grade.nilaiHuruf.trim())) {
+                    throw { name: "Conflict", message: `Terdapat nilai berbeda untuk ${course.kode} pada semester yang sama. Perbaiki duplikasi KRS terlebih dahulu.` };
+                }
+                if (!unique.has(course.id)) unique.set(course.id, detail);
+            }
+
+            const courses = [...unique.values()].map((detail) => {
+                const course = detail.kelasMataKuliah.mataKuliah;
+                const grade = detail.transkrip[0]!;
+                latest.set(course.id, { sks: course.sks, bobot: Number(grade.bobot) });
+                return {
+                    id: detail.id,
+                    mataKuliah: course,
+                    nilai: Number(grade.nilaiAngka),
+                    grade: grade.nilaiHuruf,
+                    bobot: Number(grade.bobot),
+                };
+            });
+            const totalCredits = courses.reduce((sum, course) => sum + course.mataKuliah.sks, 0);
+            const points = courses.reduce((sum, course) => sum + course.mataKuliah.sks * course.bobot, 0);
+            const startYear = Number(record.tahunAkademik.tahun.split("/")[0]);
+            return {
+                id: record.tahunAkademik.id,
+                semesterNumber: (startYear - mahasiswa.angkatan) * 2 + (record.tahunAkademik.semester === "GANJIL" ? 1 : 2),
+                academicYear: {
+                    ...record.tahunAkademik,
+                    label: `${record.tahunAkademik.tahun} ${record.tahunAkademik.semester === "GANJIL" ? "Ganjil" : "Genap"}`,
+                },
+                semesterGpa: totalCredits ? round(points / totalCredits) : 0,
+                totalCredits,
+                courses,
+            };
+        }).filter((semester) => semester.courses.length > 0).sort((a, b) => b.semesterNumber - a.semesterNumber);
+
+        const completedCredits = [...latest.values()].reduce((sum, grade) => sum + grade.sks, 0);
+        const gradePoints = [...latest.values()].reduce((sum, grade) => sum + grade.sks * grade.bobot, 0);
+        return {
+            cumulativeGpa: completedCredits ? round(gradePoints / completedCredits) : 0,
+            completedCredits,
+            semesters,
         };
     }
 }

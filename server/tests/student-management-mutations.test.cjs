@@ -60,6 +60,7 @@ function fixture(options = {}) {
     '../services/student-services/student-management.service': { StudentManagementService: service },
     ...Object.fromEntries(['../validation/master-data', '../services/student-services/student-finance.service',
       '../services/student-services/student-account.service', '../services/student-services/student-attendance.service',
+      '../services/student-services/student-schedule.service', '../services/student-services/student-dashboard.service',
       '../services/student-services/student-academic.service', '../services/student-services/student-profile.service',
       '../validation/student-profile', '../auth/validation', '../auth/auth.service', '../auth/session-cookie',
       '../lib/responseHelpers'].map(name => [name, {}])),

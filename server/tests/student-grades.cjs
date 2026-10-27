@@ -4,7 +4,7 @@ const detail=(id,weight,sks=3)=>({id:`detail-${id}`,kelasMataKuliah:{mataKuliah:
 for(const scenario of ['grades','empty','missingYear','noKrs','duplicate','conflict','invalid','incomplete']){
  let result,error;
  prisma.$transaction=async(fn,options)=>{assert.equal(options.isolationLevel,'RepeatableRead');return fn({user:{findUnique:async()=>({mahasiswa:{id:'m'}})},tahunAkademik:{findUnique:async()=>scenario==='missingYear'?null:{id:3,tahun:'2026/2027',semester:'GANJIL'}},kRS:{findUnique:async()=>null,findMany:async args=>{
- assert.equal(args.where.status,'DISETUJUI');assert.equal(args.select.details.where.status,'DISETUJUI');assert.deepEqual(args.where.tahunAkademik.OR,[{tahun:{lt:'2026/2027'}},{tahun:'2026/2027',semester:'GANJIL'}]);
+ assert.equal(args.where.status,'DISETUJUI');assert.equal(args.select.details.where.status,'DISETUJUI');assert.deepEqual(args.where.tahunAkademik.OR,[{tahun:{lt:'2026/2027'}},{tahun:'2026/2027',semester:{in:['GANJIL']}}]);
  if(scenario==='noKrs')return [];
  return [{tahunAkademikId:2,tahunAkademik:{tahun:'2025/2026',semester:'GENAP'},details:[detail(1,4),detail(2,3)]},{tahunAkademikId:3,tahunAkademik:{tahun:'2026/2027',semester:'GANJIL'},details:scenario==='empty'?[]:[detail(1,scenario==='invalid'?5:2),detail(3,0),detail(4,null),...(scenario==='duplicate'?[detail(1,2)]:scenario==='conflict'?[detail(1,3)]:scenario==='incomplete'?[{...detail(5,3),transkrip:[{bobot:3,nilaiAngka:null,nilaiHuruf:null}]}]:[])]}];
  }}});};

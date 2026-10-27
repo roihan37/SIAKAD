@@ -159,7 +159,10 @@ export default function MahasiswaPengumumanPage() {
       <header className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-medium text-primary">Informasi kampus</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">Pengumuman</h1>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Pengumuman</h1>
+            <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300">Data Dummy</Badge>
+          </div>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">Temukan informasi akademik, keuangan, dan kegiatan kampus beserta tindakan yang perlu kamu lakukan.</p>
         </div>
         {unreadCount > 0 && <Badge variant="secondary" className="mt-1 shrink-0 gap-1.5"><span className="size-1.5 rounded-full bg-primary" aria-hidden="true" />{unreadCount} baru</Badge>}

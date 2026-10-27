@@ -6,6 +6,8 @@ import { StudentManagementService, type UpdateStudentInput } from "../services/s
 import { StudentAttendanceService } from "../services/student-services/student-attendance.service";
 import { StudentAcademicService } from "../services/student-services/student-academic.service";
 import { StudentProfileService } from "../services/student-services/student-profile.service";
+import { StudentScheduleService } from "../services/student-services/student-schedule.service";
+import { StudentDashboardService } from "../services/student-services/student-dashboard.service";
 import { studentAvatarPatch, studentProfilePatch } from "../validation/student-profile";
 import { credentials, newPassword } from "../auth/validation";
 import { changeUserPassword } from "../auth/auth.service";
@@ -14,6 +16,52 @@ import { sendData } from "../lib/responseHelpers";
 
 
 export class Controller {
+
+    static async getMyDashboard(req: Request, res: Response, next: NextFunction) {
+        try {
+            return sendData(res, await StudentDashboardService.getMyDashboard(req.userLogin.id));
+        } catch (error) { next(error); }
+    }
+
+    static async getMyPayments(req: Request, res: Response, next: NextFunction) {
+        try {
+            return sendData(res, await StudentFinanceService.getMyPayments(req.userLogin.id));
+        } catch (error) { next(error); }
+    }
+
+    static async getMyTranscript(req: Request, res: Response, next: NextFunction) {
+        try {
+            return sendData(res, await StudentAcademicService.getMyTranscript(req.userLogin.id));
+        } catch (error) { next(error); }
+    }
+
+    static async getMyGrades(req: Request, res: Response, next: NextFunction) {
+        try {
+            if (req.query.tahunAkademikId === undefined) {
+                throw { name: "BadRequest", message: "tahunAkademikId wajib diisi" };
+            }
+            const tahunAkademikId = resourceId(req.query.tahunAkademikId);
+            return sendData(res, await StudentAcademicService.getStudentNilai(req.userLogin.id, tahunAkademikId));
+        } catch (error) { next(error); }
+    }
+
+    static async getMySchedule(req: Request, res: Response, next: NextFunction) {
+        try {
+            const tahunAkademikId = req.query.tahunAkademikId === undefined
+                ? undefined
+                : resourceId(req.query.tahunAkademikId);
+            return sendData(res, await StudentScheduleService.getMySchedule(req.userLogin.id, tahunAkademikId));
+        } catch (error) { next(error); }
+    }
+
+    static async getMyAttendance(req: Request, res: Response, next: NextFunction) {
+        try {
+            const tahunAkademikId = req.query.tahunAkademikId === undefined
+                ? undefined
+                : resourceId(req.query.tahunAkademikId);
+            return sendData(res, await StudentAttendanceService.getMyAttendance(req.userLogin.id, tahunAkademikId));
+        } catch (error) { next(error); }
+    }
 
     static async getMyProfile(req: Request, res: Response, next: NextFunction) {
         try {

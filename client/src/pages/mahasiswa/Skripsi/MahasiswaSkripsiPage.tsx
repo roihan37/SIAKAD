@@ -315,7 +315,10 @@ export default function MahasiswaSkripsiPage() {
           <div className="relative flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="max-w-3xl">
               <div className="flex flex-wrap items-center gap-2"><p className="text-sm font-medium text-primary">Workspace akademik</p><StatusBadge status={scenario.status} /></div>
-              <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">Skripsi</h1>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Skripsi</h1>
+                <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300">Data Dummy</Badge>
+              </div>
               <p className={cn("mt-2 text-sm leading-6", scenario.title ? "font-medium text-foreground" : "text-muted-foreground")}>{scenario.title ?? "Kelola proses skripsi dari pengajuan judul hingga selesai."}</p>
             </div>
             <div className="w-full rounded-xl border bg-background/70 p-3 lg:w-64">

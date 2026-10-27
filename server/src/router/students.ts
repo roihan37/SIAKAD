@@ -8,6 +8,12 @@ studentProfileRouter.get("/profile", Controller.getMyProfile);
 studentProfileRouter.patch("/profile", Controller.updateMyProfile);
 studentProfileRouter.patch("/avatar", Controller.updateMyAvatar);
 studentProfileRouter.patch("/change-password", Controller.changeMyPassword);
+studentProfileRouter.get("/schedule", Controller.getMySchedule);
+studentProfileRouter.get("/attendance", Controller.getMyAttendance);
+studentProfileRouter.get("/payments", Controller.getMyPayments);
+studentProfileRouter.get("/transcript", Controller.getMyTranscript);
+studentProfileRouter.get("/grades", Controller.getMyGrades);
+studentProfileRouter.get("/dashboard", Controller.getMyDashboard);
 
 const router = express.Router()
 
