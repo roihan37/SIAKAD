@@ -1,4 +1,4 @@
-export type NavigationIcon = "dashboard" | "krs" | "calendar" | "graduation" | "attendance" | "transcript" | "wallet" | "receipt" | "announcement" | "sparkles" | "profile" | "password" | "settings"
+export type NavigationIcon = "dashboard" | "krs" | "calendar" | "graduation" | "attendance" | "transcript" | "wallet" | "receipt" | "announcement" | "sparkles" | "profile" | "password" | "settings" | "course" | "advisees" | "approval"
 export interface PortalNavigationItem { title: string; path: string; icon: NavigationIcon }
 export interface PortalNavigationGroup { label: string; items: PortalNavigationItem[] }
 export function navigationLabels(groups: PortalNavigationGroup[]) {

@@ -176,6 +176,7 @@ Resolved items remain in this document for historical traceability.
 | TD-011 | Frontend quality | The frontend lint gate currently reports 49 errors and 5 warnings in pre-existing admin/shared files, including explicit `any`, React effect/state, static component, and fast-refresh violations. | P2 | VERIFIED | Student Profile Frontend Integration | Frontend Cleanup ExecPlan |
 | TD-012 | Frontend tests | The full frontend Node test suite has two stale tests that import missing `src/pages/Nilai/grade-format.ts` and `src/pages/Pembayaran/payment-format.ts` files. | P2 | VERIFIED | Student Profile Frontend Integration | Frontend Cleanup ExecPlan |
 | TD-013 | Student grades | `GET /students/:id/nilai` excludes the selected academic year when the requested semester is `GENAP`, so an approved Genap KRS cannot be returned. | P1 | VERIFIED | Student Nilai & KHS Frontend Integration | Student Academic Service Fix |
+| TD-014 | Frontend build | Vite reports that `vite.config.ts` uses `__dirname`, which is unsupported by the future default native config loader. The current production build still succeeds. | P3 | VERIFIED | Lecturer Announcement Page | Frontend Build Configuration Cleanup |
 
 ---
 

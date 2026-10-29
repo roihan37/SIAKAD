@@ -14,6 +14,15 @@ const AdminLayout = createLazyPage(() => import("@/layouts/admin/AdminLayout"))
 const MahasiswaLayout = createLazyPage(() => import("@/layouts/mahasiswa/MahasiswaLayout"))
 const DosenLayout = createLazyPage(() => import("@/layouts/dosen/DosenLayout"))
 const PortalPendingPage = createLazyPage(() => import("@/pages/Portal/PortalPendingPage"))
+const DosenDashboardPage = createLazyPage(() => import("@/pages/dosen/Dashboard/DosenDashboardPage"))
+const DosenJadwalMengajarPage = createLazyPage(() => import("@/pages/dosen/JadwalMengajar/DosenJadwalMengajarPage"))
+const DosenKelasMataKuliahPage = createLazyPage(() => import("@/pages/dosen/KelasMataKuliah/DosenKelasMataKuliahPage"))
+const DosenPresensiPage = createLazyPage(() => import("@/pages/dosen/Presensi/DosenPresensiPage"))
+const DosenNilaiPage = createLazyPage(() => import("@/pages/dosen/Nilai/DosenNilaiPage"))
+const DosenMahasiswaPAPage = createLazyPage(() => import("@/pages/dosen/MahasiswaPA/DosenMahasiswaPAPage"))
+const DosenPersetujuanKRSPage = createLazyPage(() => import("@/pages/dosen/PersetujuanKRS/DosenPersetujuanKRSPage"))
+const DosenBimbinganSkripsiPage = createLazyPage(() => import("@/pages/dosen/BimbinganSkripsi/DosenBimbinganSkripsiPage"))
+const DosenPengumumanPage = createLazyPage(() => import("@/pages/dosen/Pengumuman/DosenPengumumanPage"))
 const MahasiswaDashboardPage = createLazyPage(() => import("@/pages/mahasiswa/Dashboard/MahasiswaDashboardPage"))
 const MahasiswaKRSPage = createLazyPage(() => import("@/pages/mahasiswa/KRS/MahasiswaKRSPage"))
 const MahasiswaJadwalPage = createLazyPage(() => import("@/pages/mahasiswa/Jadwal/MahasiswaJadwalPage"))
@@ -45,7 +54,7 @@ export const routes: RouteObject[] = [
         { path: "/mahasiswa", element: <MahasiswaLayout />, children: [...createPortalRoutes("/mahasiswa", mahasiswaNavigation, { dashboard: <MahasiswaDashboardPage />, krs: <MahasiswaKRSPage />, "jadwal-kuliah": <MahasiswaJadwalPage />, "nilai-khs": <MahasiswaNilaiKHSPage />, "transkrip-nilai": <MahasiswaTranskripPage />, presensi: <MahasiswaPresensiPage />, "tagihan-ukt": <MahasiswaTagihanUKTPage />, "riwayat-pembayaran": <MahasiswaRiwayatPembayaranPage />, pengumuman: <MahasiswaPengumumanPage />, skripsi: <MahasiswaSkripsiPage />, profil: <MahasiswaProfilPage />, pengaturan: <MahasiswaPengaturanPage />, "ubah-password": <MahasiswaUbahPasswordPage />, "ai-assistant": <MahasiswaAIAssistantPage /> }), { path: "notifikasi", element: <MahasiswaNotifikasiPage /> }] },
       ] },
       { element: <RoleGuard role="Dosen" />, children: [
-        { path: "/dosen", element: <DosenLayout />, children: createPortalRoutes("/dosen", dosenNavigation) },
+        { path: "/dosen", element: <DosenLayout />, children: createPortalRoutes("/dosen", dosenNavigation, { dashboard: <DosenDashboardPage />, "jadwal-mengajar": <DosenJadwalMengajarPage />, "kelas-mata-kuliah": <DosenKelasMataKuliahPage />, presensi: <DosenPresensiPage />, nilai: <DosenNilaiPage />, "mahasiswa-pa": <DosenMahasiswaPAPage />, "persetujuan-krs": <DosenPersetujuanKRSPage />, "bimbingan-skripsi": <DosenBimbinganSkripsiPage />, pengumuman: <DosenPengumumanPage /> }) },
       ] },
       { path: "/akses-terbatas", element: <PortalPendingPage /> },
       { path: "*", element: <RoleHomeRedirect /> },
